@@ -1,0 +1,120 @@
+{
+  "id": "VoltAgent/awesome-agent-skills",
+  "slug": "voltagent-awesome-agent-skills",
+  "owner": "VoltAgent",
+  "repo": "awesome-agent-skills",
+  "name": "awesome-agent-skills",
+  "url": "https://github.com/VoltAgent/awesome-agent-skills",
+  "entryPath": "registries/repos/VoltAgent-awesome-agent-skills.json",
+  "category": "agent-frameworks",
+  "type": "tooling",
+  "aliases": [
+    "awesome-agent-skills",
+    "VoltAgent/awesome-agent-skills",
+    "voltagent-awesome-agent-skills"
+  ],
+  "stack": [
+    "agent-skills",
+    "ai-agents",
+    "antigravity-skills",
+    "awesome",
+    "awesome-list",
+    "awesome-lists",
+    "claude-code",
+    "claude-code-skills",
+    "claude-skills",
+    "codex-skills",
+    "cursor-skills",
+    "gemini-skills",
+    "opencode-skills",
+    "skills"
+  ],
+  "tags": [
+    "agent-skills",
+    "ai-agents",
+    "antigravity-skills",
+    "awesome",
+    "awesome-list",
+    "awesome-lists",
+    "claude-code",
+    "claude-code-skills",
+    "claude-skills",
+    "codex-skills",
+    "cursor-skills",
+    "gemini-skills",
+    "opencode-skills",
+    "skills",
+    "agent-frameworks",
+    "tooling",
+    "awesome-agent-skills",
+    "VoltAgent"
+  ],
+  "summary": "A curated collection of 1000+ agent skills from official dev teams and the community, compatible with Claude Code, Codex, Gemini CLI, Cursor, and more.",
+  "primaryUseCases": [
+    "starred repo review",
+    "candidate triage"
+  ],
+  "agentUseInstruction": "Inspect the imported starred metadata and compare it with alternatives before recommending any adoption.",
+  "acquisitionMode": "sandbox-research-only",
+  "riskLevel": "high",
+  "riskFlags": [
+    "security-sensitive"
+  ],
+  "riskNotes": "Flags: security-sensitive.",
+  "reviewRequiredBeforeUse": true,
+  "recommendedAgentAction": "compare-before-adoption",
+  "relatedRepos": [],
+  "searchText": "VoltAgent/awesome-agent-skills voltagent-awesome-agent-skills VoltAgent awesome-agent-skills https://github.com/VoltAgent/awesome-agent-skills agent-frameworks tooling agent-skills ai-agents antigravity-skills awesome awesome-list awesome-lists claude-code claude-code-skills claude-skills codex-skills cursor-skills gemini-skills opencode-skills skills A curated collection of 1000+ agent skills from official dev teams and the community, compatible with Claude Code, Codex, Gemini CLI, Cursor, and more. starred repo review candidate triage Inspect the imported starred metadata and compare it with alternatives before recommending any adoption. https://officialskills.sh/",
+  "license": {
+    "spdx": "MIT",
+    "confidence": "high",
+    "name": "MIT License",
+    "url": "https://api.github.com/licenses/mit"
+  },
+  "maintenance": {
+    "state": "active",
+    "notes": "Reviewed from metadata.",
+    "lastReviewedAt": "2026-07-01T11:37:05.790Z",
+    "pushedAt": "2026-06-30T10:58:35Z",
+    "updatedAt": "2026-07-01T11:19:39Z",
+    "createdAt": "2025-10-28T08:55:32Z"
+  },
+  "qualitySignals": {
+    "stars": 27001,
+    "forks": 2894,
+    "watchers": 203,
+    "openIssues": 32,
+    "archived": false,
+    "disabled": false,
+    "private": false,
+    "fork": false,
+    "visibility": "public",
+    "language": null,
+    "topics": [
+      "agent-skills",
+      "ai-agents",
+      "antigravity-skills",
+      "awesome",
+      "awesome-list",
+      "awesome-lists",
+      "claude-code",
+      "claude-code-skills",
+      "claude-skills",
+      "codex-skills",
+      "cursor-skills",
+      "gemini-skills",
+      "opencode-skills",
+      "skills"
+    ],
+    "homepage": "https://officialskills.sh/",
+    "defaultBranch": "main",
+    "size": 630,
+    "pushedAt": "2026-06-30T10:58:35Z",
+    "updatedAt": "2026-07-01T11:19:39Z",
+    "createdAt": "2025-10-28T08:55:32Z"
+  },
+  "notes": [
+    "Imported from GitHub stars.",
+    "security-sensitive"
+  ]
+}

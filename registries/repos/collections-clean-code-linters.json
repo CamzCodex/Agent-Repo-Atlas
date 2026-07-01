@@ -1,0 +1,77 @@
+{
+  "id": "collections/clean-code-linters",
+  "slug": "collections-clean-code-linters",
+  "owner": "github",
+  "repo": "collections/clean-code-linters",
+  "name": "collections/clean-code-linters",
+  "url": "https://github.com/collections/clean-code-linters",
+  "entryPath": "registries/repos/collections-clean-code-linters.json",
+  "category": "code-quality",
+  "type": "collection",
+  "aliases": [
+    "clean code linters",
+    "collections/clean-code-linters",
+    "collections-clean-code-linters"
+  ],
+  "stack": [
+    "GitHub"
+  ],
+  "tags": [
+    "code-quality",
+    "collection",
+    "collections/clean-code-linters",
+    "github"
+  ],
+  "summary": "GitHub collection focused on code-quality and linting tools.",
+  "primaryUseCases": [
+    "linting research",
+    "code-quality tooling discovery"
+  ],
+  "agentUseInstruction": "Use as a discovery surface for code-quality tooling, then validate individual tools separately.",
+  "acquisitionMode": "reference-map-only",
+  "riskLevel": "low",
+  "riskFlags": [],
+  "riskNotes": "No explicit risk notes.",
+  "reviewRequiredBeforeUse": false,
+  "recommendedAgentAction": "search-the-map",
+  "relatedRepos": [
+    "github/topics/code-quality"
+  ],
+  "searchText": "collections/clean-code-linters collections-clean-code-linters github https://github.com/collections/clean-code-linters code-quality collection clean code linters GitHub GitHub collection focused on code-quality and linting tools. linting research code-quality tooling discovery Use as a discovery surface for code-quality tooling, then validate individual tools separately. github/topics/code-quality",
+  "license": {
+    "spdx": "NOASSERTION",
+    "confidence": "low",
+    "name": null,
+    "url": null
+  },
+  "maintenance": {
+    "state": "active",
+    "notes": "Reviewed from metadata.",
+    "lastReviewedAt": "2026-07-01T11:36:54.868Z",
+    "pushedAt": null,
+    "updatedAt": null,
+    "createdAt": null
+  },
+  "qualitySignals": {
+    "stars": 0,
+    "forks": 0,
+    "watchers": 0,
+    "openIssues": 0,
+    "archived": false,
+    "disabled": false,
+    "private": false,
+    "fork": false,
+    "visibility": "public",
+    "language": null,
+    "topics": [],
+    "homepage": null,
+    "defaultBranch": null,
+    "size": 0,
+    "pushedAt": null,
+    "updatedAt": null,
+    "createdAt": null
+  },
+  "notes": [
+    "Collection entries should never be treated as directly installable."
+  ]
+}

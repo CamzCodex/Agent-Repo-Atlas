@@ -1,0 +1,99 @@
+{
+  "id": "mui/material-ui",
+  "slug": "mui-material-ui",
+  "owner": "mui",
+  "repo": "material-ui",
+  "name": "material-ui",
+  "url": "https://github.com/mui/material-ui",
+  "entryPath": "registries/repos/mui-material-ui.json",
+  "category": "design-systems",
+  "type": "design-system",
+  "aliases": [
+    "MUI",
+    "Material UI",
+    "material-ui",
+    "mui-material-ui"
+  ],
+  "stack": [
+    "React",
+    "TypeScript",
+    "JavaScript",
+    "design-system",
+    "material-design",
+    "material-ui",
+    "react",
+    "react-components"
+  ],
+  "tags": [
+    "design-system",
+    "material-design",
+    "material-ui",
+    "react",
+    "react-components",
+    "design-systems",
+    "mui"
+  ],
+  "summary": "Mature React component system implementing Material Design.",
+  "primaryUseCases": [
+    "enterprise UI",
+    "component comparison",
+    "design-system adoption"
+  ],
+  "agentUseInstruction": "Compare against other design systems before recommending adoption.",
+  "acquisitionMode": "dependency-candidate",
+  "riskLevel": "low",
+  "riskFlags": [
+    "large-surface-area"
+  ],
+  "riskNotes": "Flags: large-surface-area.",
+  "reviewRequiredBeforeUse": true,
+  "recommendedAgentAction": "compare-before-adoption",
+  "relatedRepos": [
+    "ant-design/ant-design",
+    "mantinedev/mantine",
+    "radix-ui/primitives"
+  ],
+  "searchText": "mui/material-ui mui-material-ui mui material-ui https://github.com/mui/material-ui design-systems design-system MUI Material UI React TypeScript JavaScript material-design react react-components Mature React component system implementing Material Design. enterprise UI component comparison design-system adoption Compare against other design systems before recommending adoption. ant-design/ant-design mantinedev/mantine radix-ui/primitives https://mui.com/material-ui/",
+  "license": {
+    "spdx": "MIT",
+    "confidence": "high",
+    "name": "MIT License",
+    "url": "https://api.github.com/licenses/mit"
+  },
+  "maintenance": {
+    "state": "active",
+    "notes": "Reviewed from metadata.",
+    "lastReviewedAt": "2026-07-01T11:36:50.493Z",
+    "pushedAt": "2026-07-01T05:55:43Z",
+    "updatedAt": "2026-07-01T09:00:58Z",
+    "createdAt": "2014-08-18T19:11:54Z"
+  },
+  "qualitySignals": {
+    "stars": 98508,
+    "forks": 32595,
+    "watchers": 1304,
+    "openIssues": 1537,
+    "archived": false,
+    "disabled": false,
+    "private": false,
+    "fork": false,
+    "visibility": "public",
+    "language": "JavaScript",
+    "topics": [
+      "design-system",
+      "material-design",
+      "material-ui",
+      "react",
+      "react-components"
+    ],
+    "homepage": "https://mui.com/material-ui/",
+    "defaultBranch": "master",
+    "size": 741480,
+    "pushedAt": "2026-07-01T05:55:43Z",
+    "updatedAt": "2026-07-01T09:00:58Z",
+    "createdAt": "2014-08-18T19:11:54Z"
+  },
+  "notes": [
+    "Useful when a broad, battle-tested React component set is needed."
+  ]
+}

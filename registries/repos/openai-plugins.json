@@ -1,0 +1,80 @@
+{
+  "id": "openai/plugins",
+  "slug": "openai-plugins",
+  "owner": "openai",
+  "repo": "plugins",
+  "name": "plugins",
+  "url": "https://github.com/openai/plugins",
+  "entryPath": "registries/repos/openai-plugins.json",
+  "category": "developer-tools",
+  "type": "tooling",
+  "aliases": [
+    "plugins",
+    "openai/plugins",
+    "openai-plugins"
+  ],
+  "stack": [
+    "JavaScript"
+  ],
+  "tags": [
+    "developer-tools",
+    "tooling",
+    "plugins",
+    "openai"
+  ],
+  "summary": "OpenAI Plugins",
+  "primaryUseCases": [
+    "starred repo review",
+    "candidate triage"
+  ],
+  "agentUseInstruction": "Inspect the imported starred metadata and compare it with alternatives before recommending any adoption.",
+  "acquisitionMode": "implementation-pattern",
+  "riskLevel": "high",
+  "riskFlags": [
+    "missing license",
+    "security-sensitive"
+  ],
+  "riskNotes": "Flags: missing license, security-sensitive.",
+  "reviewRequiredBeforeUse": true,
+  "recommendedAgentAction": "compare-before-adoption",
+  "relatedRepos": [],
+  "searchText": "openai/plugins openai-plugins openai plugins https://github.com/openai/plugins developer-tools tooling JavaScript OpenAI Plugins starred repo review candidate triage Inspect the imported starred metadata and compare it with alternatives before recommending any adoption.",
+  "license": {
+    "spdx": "NOASSERTION",
+    "confidence": "low",
+    "name": null,
+    "url": null
+  },
+  "maintenance": {
+    "state": "active",
+    "notes": "Reviewed from metadata.",
+    "lastReviewedAt": "2026-07-01T11:37:00.971Z",
+    "pushedAt": "2026-06-30T17:44:17Z",
+    "updatedAt": "2026-07-01T11:33:05Z",
+    "createdAt": "2026-03-04T21:52:32Z"
+  },
+  "qualitySignals": {
+    "stars": 3854,
+    "forks": 451,
+    "watchers": 17,
+    "openIssues": 38,
+    "archived": false,
+    "disabled": false,
+    "private": false,
+    "fork": false,
+    "visibility": "public",
+    "language": "JavaScript",
+    "topics": [],
+    "homepage": "",
+    "defaultBranch": "main",
+    "size": 48262,
+    "pushedAt": "2026-06-30T17:44:17Z",
+    "updatedAt": "2026-07-01T11:33:05Z",
+    "createdAt": "2026-03-04T21:52:32Z"
+  },
+  "notes": [
+    "Imported from GitHub stars.",
+    "missing license",
+    "security-sensitive"
+  ]
+}

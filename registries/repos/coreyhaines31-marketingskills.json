@@ -1,0 +1,88 @@
+{
+  "id": "coreyhaines31/marketingskills",
+  "slug": "coreyhaines31-marketingskills",
+  "owner": "coreyhaines31",
+  "repo": "marketingskills",
+  "name": "marketingskills",
+  "url": "https://github.com/coreyhaines31/marketingskills",
+  "entryPath": "registries/repos/coreyhaines31-marketingskills.json",
+  "category": "agent-frameworks",
+  "type": "tooling",
+  "aliases": [
+    "marketingskills",
+    "coreyhaines31/marketingskills",
+    "coreyhaines31-marketingskills"
+  ],
+  "stack": [
+    "JavaScript",
+    "claude",
+    "codex",
+    "marketing"
+  ],
+  "tags": [
+    "claude",
+    "codex",
+    "marketing",
+    "agent-frameworks",
+    "tooling",
+    "marketingskills",
+    "coreyhaines31"
+  ],
+  "summary": "Marketing skills for Claude Code and AI agents. CRO, copywriting, SEO, analytics, and growth engineering.",
+  "primaryUseCases": [
+    "starred repo review",
+    "candidate triage"
+  ],
+  "agentUseInstruction": "Inspect the imported starred metadata and compare it with alternatives before recommending any adoption.",
+  "acquisitionMode": "sandbox-research-only",
+  "riskLevel": "high",
+  "riskFlags": [
+    "security-sensitive"
+  ],
+  "riskNotes": "Flags: security-sensitive.",
+  "reviewRequiredBeforeUse": true,
+  "recommendedAgentAction": "compare-before-adoption",
+  "relatedRepos": [],
+  "searchText": "coreyhaines31/marketingskills coreyhaines31-marketingskills coreyhaines31 marketingskills https://github.com/coreyhaines31/marketingskills agent-frameworks tooling JavaScript claude codex marketing Marketing skills for Claude Code and AI agents. CRO, copywriting, SEO, analytics, and growth engineering. starred repo review candidate triage Inspect the imported starred metadata and compare it with alternatives before recommending any adoption. https://marketing-skills.com",
+  "license": {
+    "spdx": "MIT",
+    "confidence": "high",
+    "name": "MIT License",
+    "url": "https://api.github.com/licenses/mit"
+  },
+  "maintenance": {
+    "state": "active",
+    "notes": "Reviewed from metadata.",
+    "lastReviewedAt": "2026-07-01T11:37:23.767Z",
+    "pushedAt": "2026-06-28T22:30:39Z",
+    "updatedAt": "2026-07-01T11:28:44Z",
+    "createdAt": "2026-01-15T19:45:23Z"
+  },
+  "qualitySignals": {
+    "stars": 35668,
+    "forks": 5816,
+    "watchers": 351,
+    "openIssues": 36,
+    "archived": false,
+    "disabled": false,
+    "private": false,
+    "fork": false,
+    "visibility": "public",
+    "language": "JavaScript",
+    "topics": [
+      "claude",
+      "codex",
+      "marketing"
+    ],
+    "homepage": "https://marketing-skills.com",
+    "defaultBranch": "main",
+    "size": 2378,
+    "pushedAt": "2026-06-28T22:30:39Z",
+    "updatedAt": "2026-07-01T11:28:44Z",
+    "createdAt": "2026-01-15T19:45:23Z"
+  },
+  "notes": [
+    "Imported from GitHub stars.",
+    "security-sensitive"
+  ]
+}

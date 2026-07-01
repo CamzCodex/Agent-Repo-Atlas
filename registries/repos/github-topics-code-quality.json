@@ -1,0 +1,75 @@
+{
+  "id": "github/topics/code-quality",
+  "slug": "github-topics-code-quality",
+  "owner": "github",
+  "repo": "topics/code-quality",
+  "name": "topics/code-quality",
+  "url": "https://github.com/topics/code-quality",
+  "entryPath": "registries/repos/github-topics-code-quality.json",
+  "category": "code-quality",
+  "type": "topic-map",
+  "aliases": [
+    "code quality topic",
+    "topics/code-quality",
+    "github-topics-code-quality"
+  ],
+  "stack": [
+    "GitHub"
+  ],
+  "tags": [
+    "code-quality",
+    "topic-map",
+    "topics/code-quality",
+    "github"
+  ],
+  "summary": "GitHub topic page for code-quality related repositories.",
+  "primaryUseCases": [
+    "tool discovery",
+    "quality tooling mapping"
+  ],
+  "agentUseInstruction": "Use as a topic map to find code-quality repositories that need further triage.",
+  "acquisitionMode": "reference-map-only",
+  "riskLevel": "low",
+  "riskFlags": [],
+  "riskNotes": "No explicit risk notes.",
+  "reviewRequiredBeforeUse": false,
+  "recommendedAgentAction": "search-the-map",
+  "relatedRepos": [
+    "collections/clean-code-linters"
+  ],
+  "searchText": "github/topics/code-quality github-topics-code-quality github topics/code-quality https://github.com/topics/code-quality code-quality topic-map code quality topic GitHub GitHub topic page for code-quality related repositories. tool discovery quality tooling mapping Use as a topic map to find code-quality repositories that need further triage. collections/clean-code-linters",
+  "license": {
+    "spdx": "NOASSERTION",
+    "confidence": "low",
+    "name": null,
+    "url": null
+  },
+  "maintenance": {
+    "state": "active",
+    "notes": "Reviewed from metadata.",
+    "lastReviewedAt": "2026-07-01T11:36:54.868Z",
+    "pushedAt": null,
+    "updatedAt": null,
+    "createdAt": null
+  },
+  "qualitySignals": {
+    "stars": 0,
+    "forks": 0,
+    "watchers": 0,
+    "openIssues": 0,
+    "archived": false,
+    "disabled": false,
+    "private": false,
+    "fork": false,
+    "visibility": "public",
+    "language": null,
+    "topics": [],
+    "homepage": null,
+    "defaultBranch": null,
+    "size": 0,
+    "pushedAt": null,
+    "updatedAt": null,
+    "createdAt": null
+  },
+  "notes": []
+}

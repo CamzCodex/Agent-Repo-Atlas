@@ -1,0 +1,102 @@
+{
+  "id": "mantinedev/mantine",
+  "slug": "mantinedev-mantine",
+  "owner": "mantinedev",
+  "repo": "mantine",
+  "name": "mantine",
+  "url": "https://github.com/mantinedev/mantine",
+  "entryPath": "registries/repos/mantinedev-mantine.json",
+  "category": "design-systems",
+  "type": "design-system",
+  "aliases": [
+    "Mantine",
+    "mantine",
+    "mantinedev-mantine"
+  ],
+  "stack": [
+    "React",
+    "TypeScript",
+    "dark-mode",
+    "dark-theme",
+    "hooks",
+    "react",
+    "typescript",
+    "uikit"
+  ],
+  "tags": [
+    "dark-mode",
+    "dark-theme",
+    "hooks",
+    "react",
+    "typescript",
+    "uikit",
+    "design-systems",
+    "design-system",
+    "mantine",
+    "mantinedev"
+  ],
+  "summary": "Modern React component library with strong ergonomics and theming.",
+  "primaryUseCases": [
+    "fast UI assembly",
+    "themeable components",
+    "product dashboards"
+  ],
+  "agentUseInstruction": "Good adoption candidate when the task needs fast, well-documented React UI building blocks.",
+  "acquisitionMode": "dependency-candidate",
+  "riskLevel": "low",
+  "riskFlags": [
+    "large-surface-area"
+  ],
+  "riskNotes": "Flags: large-surface-area.",
+  "reviewRequiredBeforeUse": true,
+  "recommendedAgentAction": "compare-before-adoption",
+  "relatedRepos": [
+    "mui/material-ui",
+    "ant-design/ant-design",
+    "radix-ui/primitives"
+  ],
+  "searchText": "mantinedev/mantine mantinedev-mantine mantinedev mantine https://github.com/mantinedev/mantine design-systems design-system Mantine React TypeScript dark-mode dark-theme hooks react typescript uikit Modern React component library with strong ergonomics and theming. fast UI assembly themeable components product dashboards Good adoption candidate when the task needs fast, well-documented React UI building blocks. mui/material-ui ant-design/ant-design radix-ui/primitives https://mantine.dev",
+  "license": {
+    "spdx": "MIT",
+    "confidence": "high",
+    "name": "MIT License",
+    "url": "https://api.github.com/licenses/mit"
+  },
+  "maintenance": {
+    "state": "active",
+    "notes": "Reviewed from metadata.",
+    "lastReviewedAt": "2026-07-01T11:36:52.649Z",
+    "pushedAt": "2026-06-28T10:51:19Z",
+    "updatedAt": "2026-07-01T11:02:18Z",
+    "createdAt": "2021-01-07T14:02:19Z"
+  },
+  "qualitySignals": {
+    "stars": 31353,
+    "forks": 2330,
+    "watchers": 100,
+    "openIssues": 29,
+    "archived": false,
+    "disabled": false,
+    "private": false,
+    "fork": false,
+    "visibility": "public",
+    "language": "TypeScript",
+    "topics": [
+      "dark-mode",
+      "dark-theme",
+      "hooks",
+      "react",
+      "typescript",
+      "uikit"
+    ],
+    "homepage": "https://mantine.dev",
+    "defaultBranch": "master",
+    "size": 356197,
+    "pushedAt": "2026-06-28T10:51:19Z",
+    "updatedAt": "2026-07-01T11:02:18Z",
+    "createdAt": "2021-01-07T14:02:19Z"
+  },
+  "notes": [
+    "Often useful when a team wants speed without sacrificing polish."
+  ]
+}

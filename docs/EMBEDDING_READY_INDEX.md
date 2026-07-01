@@ -1,32 +1,29 @@
 # Embedding Ready Index
 
-The atlas is structured so it can be embedded into a retrieval system with minimal transformation.
+The generated index is already shaped for retrieval and embedding pipelines.
 
-## Recommended fields
+## Best fields
 
-- `slug`
+- `id`
 - `name`
-- `description`
+- `owner`
+- `repo`
+- `category`
+- `type`
 - `summary`
+- `aliases`
+- `stack`
 - `tags`
-- `topics`
-- `useCases`
+- `primaryUseCases`
+- `searchText`
+- `riskLevel`
 - `acquisitionMode`
-- `maintenance.state`
-- `risk.flags`
-- `license`
-- `externalUrl`
-- `notes`
+- `entryPath`
 
-## Why these fields matter
+## Why it works
 
-- They are concise enough for embeddings.
-- They carry enough meaning for ranking and comparison.
-- They preserve acquisition safety signals.
-
-## Indexing guidance
-
-- Keep the text factual and compact.
-- Use stable vocabulary.
-- Avoid stuffing the entry with noisy marketing language.
+- It is deterministic.
+- It is compact.
+- It keeps the acquisition and risk signals near the content.
+- It can be regenerated from the full entry set at any time.
 

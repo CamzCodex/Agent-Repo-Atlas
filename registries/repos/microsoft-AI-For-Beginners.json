@@ -1,0 +1,106 @@
+{
+  "id": "microsoft/AI-For-Beginners",
+  "slug": "microsoft-ai-for-beginners",
+  "owner": "microsoft",
+  "repo": "AI-For-Beginners",
+  "name": "AI-For-Beginners",
+  "url": "https://github.com/microsoft/AI-For-Beginners",
+  "entryPath": "registries/repos/microsoft-AI-For-Beginners.json",
+  "category": "developer-tools",
+  "type": "tooling",
+  "aliases": [
+    "AI-For-Beginners",
+    "microsoft/AI-For-Beginners",
+    "microsoft-ai-for-beginners"
+  ],
+  "stack": [
+    "Jupyter Notebook",
+    "ai",
+    "artificial-intelligence",
+    "cnn",
+    "computer-vision",
+    "deep-learning",
+    "gan",
+    "machine-learning",
+    "microsoft-for-beginners",
+    "nlp",
+    "rnn"
+  ],
+  "tags": [
+    "ai",
+    "artificial-intelligence",
+    "cnn",
+    "computer-vision",
+    "deep-learning",
+    "gan",
+    "machine-learning",
+    "microsoft-for-beginners",
+    "nlp",
+    "rnn",
+    "developer-tools",
+    "tooling",
+    "AI-For-Beginners",
+    "microsoft"
+  ],
+  "summary": "12 Weeks, 24 Lessons, AI for All!",
+  "primaryUseCases": [
+    "starred repo review",
+    "candidate triage"
+  ],
+  "agentUseInstruction": "Inspect the imported starred metadata and compare it with alternatives before recommending any adoption.",
+  "acquisitionMode": "implementation-pattern",
+  "riskLevel": "low",
+  "riskFlags": [],
+  "riskNotes": "No explicit risk notes.",
+  "reviewRequiredBeforeUse": true,
+  "recommendedAgentAction": "compare-before-adoption",
+  "relatedRepos": [],
+  "searchText": "microsoft/AI-For-Beginners microsoft-ai-for-beginners microsoft AI-For-Beginners https://github.com/microsoft/AI-For-Beginners developer-tools tooling Jupyter Notebook ai artificial-intelligence cnn computer-vision deep-learning gan machine-learning microsoft-for-beginners nlp rnn 12 Weeks, 24 Lessons, AI for All! starred repo review candidate triage Inspect the imported starred metadata and compare it with alternatives before recommending any adoption.",
+  "license": {
+    "spdx": "MIT",
+    "confidence": "high",
+    "name": "MIT License",
+    "url": "https://api.github.com/licenses/mit"
+  },
+  "maintenance": {
+    "state": "active",
+    "notes": "Reviewed from metadata.",
+    "lastReviewedAt": "2026-07-01T11:37:11.902Z",
+    "pushedAt": "2026-06-11T01:06:57Z",
+    "updatedAt": "2026-07-01T11:36:53Z",
+    "createdAt": "2021-03-03T16:27:36Z"
+  },
+  "qualitySignals": {
+    "stars": 49915,
+    "forks": 10211,
+    "watchers": 534,
+    "openIssues": 12,
+    "archived": false,
+    "disabled": false,
+    "private": false,
+    "fork": false,
+    "visibility": "public",
+    "language": "Jupyter Notebook",
+    "topics": [
+      "ai",
+      "artificial-intelligence",
+      "cnn",
+      "computer-vision",
+      "deep-learning",
+      "gan",
+      "machine-learning",
+      "microsoft-for-beginners",
+      "nlp",
+      "rnn"
+    ],
+    "homepage": "",
+    "defaultBranch": "main",
+    "size": 1416415,
+    "pushedAt": "2026-06-11T01:06:57Z",
+    "updatedAt": "2026-07-01T11:36:53Z",
+    "createdAt": "2021-03-03T16:27:36Z"
+  },
+  "notes": [
+    "Imported from GitHub stars."
+  ]
+}

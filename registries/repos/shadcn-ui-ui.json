@@ -1,0 +1,118 @@
+{
+  "id": "shadcn-ui/ui",
+  "slug": "shadcn-ui-ui",
+  "owner": "shadcn-ui",
+  "repo": "ui",
+  "name": "ui",
+  "url": "https://github.com/shadcn-ui/ui",
+  "entryPath": "registries/repos/shadcn-ui-ui.json",
+  "category": "design-systems",
+  "type": "ui-system",
+  "aliases": [
+    "shadcn",
+    "shadcn ui",
+    "ui",
+    "shadcn-ui-ui"
+  ],
+  "stack": [
+    "React",
+    "TypeScript",
+    "Tailwind CSS",
+    "base-ui",
+    "components",
+    "laravel",
+    "nextjs",
+    "radix-ui",
+    "react",
+    "shadcn",
+    "tailwindcss",
+    "tanstack",
+    "ui",
+    "vite"
+  ],
+  "tags": [
+    "base-ui",
+    "components",
+    "laravel",
+    "nextjs",
+    "radix-ui",
+    "react",
+    "shadcn",
+    "tailwindcss",
+    "tanstack",
+    "ui",
+    "vite",
+    "design-systems",
+    "ui-system",
+    "shadcn-ui"
+  ],
+  "summary": "Composable UI blocks and patterns for building polished React interfaces.",
+  "primaryUseCases": [
+    "UI composition",
+    "design-system reference",
+    "copyable patterns"
+  ],
+  "agentUseInstruction": "Use as a reference for component structure and styling patterns, not as a blind dependency.",
+  "acquisitionMode": "reference-only",
+  "riskLevel": "low",
+  "riskFlags": [
+    "large-surface-area"
+  ],
+  "riskNotes": "Flags: large-surface-area.",
+  "reviewRequiredBeforeUse": false,
+  "recommendedAgentAction": "use-as-reference",
+  "relatedRepos": [
+    "radix-ui/primitives",
+    "mantinedev/mantine",
+    "mui/material-ui"
+  ],
+  "searchText": "shadcn-ui/ui shadcn-ui-ui shadcn-ui ui https://github.com/shadcn-ui/ui design-systems ui-system shadcn shadcn ui React TypeScript Tailwind CSS base-ui components laravel nextjs radix-ui react tailwindcss tanstack vite Composable UI blocks and patterns for building polished React interfaces. UI composition design-system reference copyable patterns Use as a reference for component structure and styling patterns, not as a blind dependency. radix-ui/primitives mantinedev/mantine mui/material-ui https://ui.shadcn.com",
+  "license": {
+    "spdx": "MIT",
+    "confidence": "high",
+    "name": "MIT License",
+    "url": "https://api.github.com/licenses/mit"
+  },
+  "maintenance": {
+    "state": "active",
+    "notes": "Reviewed from metadata.",
+    "lastReviewedAt": "2026-07-01T11:36:49.246Z",
+    "pushedAt": "2026-06-30T06:34:55Z",
+    "updatedAt": "2026-07-01T11:08:13Z",
+    "createdAt": "2023-01-04T12:43:27Z"
+  },
+  "qualitySignals": {
+    "stars": 117751,
+    "forks": 9211,
+    "watchers": 382,
+    "openIssues": 2079,
+    "archived": false,
+    "disabled": false,
+    "private": false,
+    "fork": false,
+    "visibility": "public",
+    "language": "TypeScript",
+    "topics": [
+      "base-ui",
+      "components",
+      "laravel",
+      "nextjs",
+      "radix-ui",
+      "react",
+      "shadcn",
+      "tailwindcss",
+      "tanstack",
+      "ui",
+      "vite"
+    ],
+    "homepage": "https://ui.shadcn.com",
+    "defaultBranch": "main",
+    "size": 66559,
+    "pushedAt": "2026-06-30T06:34:55Z",
+    "updatedAt": "2026-07-01T11:08:13Z",
+    "createdAt": "2023-01-04T12:43:27Z"
+  },
+  "notes": [
+    "Strong visual reference for modern app shells and component composition."
+  ]
+}

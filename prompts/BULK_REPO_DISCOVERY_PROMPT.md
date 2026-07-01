@@ -1,15 +1,16 @@
 # Bulk Repo Discovery Prompt
 
-Find repositories that match the current task and return a compact list suitable for Agent-Repo-Atlas ingestion.
+Find candidate repositories for Agent Repo Atlas.
 
-For each candidate, include:
+For each result, include:
 
-- name
-- external URL
+- repo URL
 - why it matters
-- likely atlas type
+- likely category
+- likely type
 - likely acquisition mode
-- one or two risk notes
+- likely risk level
+- one short review note
 
-Prefer quality and relevance over volume.
+Prefer a compact, high-signal list over volume.
 

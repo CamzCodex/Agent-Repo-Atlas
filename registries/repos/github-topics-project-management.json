@@ -1,0 +1,73 @@
+{
+  "id": "github/topics/project-management",
+  "slug": "github-topics-project-management",
+  "owner": "github",
+  "repo": "topics/project-management",
+  "name": "topics/project-management",
+  "url": "https://github.com/topics/project-management",
+  "entryPath": "registries/repos/github-topics-project-management.json",
+  "category": "project-management",
+  "type": "topic-map",
+  "aliases": [
+    "project management topic",
+    "topics/project-management",
+    "github-topics-project-management"
+  ],
+  "stack": [
+    "GitHub"
+  ],
+  "tags": [
+    "project-management",
+    "topic-map",
+    "topics/project-management",
+    "github"
+  ],
+  "summary": "GitHub topic page for project-management repositories.",
+  "primaryUseCases": [
+    "workflow tooling discovery",
+    "project management research"
+  ],
+  "agentUseInstruction": "Use as a discovery map and compare candidate tools before recommending adoption.",
+  "acquisitionMode": "reference-map-only",
+  "riskLevel": "low",
+  "riskFlags": [],
+  "riskNotes": "No explicit risk notes.",
+  "reviewRequiredBeforeUse": false,
+  "recommendedAgentAction": "search-the-map",
+  "relatedRepos": [],
+  "searchText": "github/topics/project-management github-topics-project-management github topics/project-management https://github.com/topics/project-management project-management topic-map project management topic GitHub GitHub topic page for project-management repositories. workflow tooling discovery project management research Use as a discovery map and compare candidate tools before recommending adoption.",
+  "license": {
+    "spdx": "NOASSERTION",
+    "confidence": "low",
+    "name": null,
+    "url": null
+  },
+  "maintenance": {
+    "state": "active",
+    "notes": "Reviewed from metadata.",
+    "lastReviewedAt": "2026-07-01T11:36:54.868Z",
+    "pushedAt": null,
+    "updatedAt": null,
+    "createdAt": null
+  },
+  "qualitySignals": {
+    "stars": 0,
+    "forks": 0,
+    "watchers": 0,
+    "openIssues": 0,
+    "archived": false,
+    "disabled": false,
+    "private": false,
+    "fork": false,
+    "visibility": "public",
+    "language": null,
+    "topics": [],
+    "homepage": null,
+    "defaultBranch": null,
+    "size": 0,
+    "pushedAt": null,
+    "updatedAt": null,
+    "createdAt": null
+  },
+  "notes": []
+}

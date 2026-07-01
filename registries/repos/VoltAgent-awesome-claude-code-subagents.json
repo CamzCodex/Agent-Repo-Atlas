@@ -1,0 +1,109 @@
+{
+  "id": "VoltAgent/awesome-claude-code-subagents",
+  "slug": "voltagent-awesome-claude-code-subagents",
+  "owner": "VoltAgent",
+  "repo": "awesome-claude-code-subagents",
+  "name": "awesome-claude-code-subagents",
+  "url": "https://github.com/VoltAgent/awesome-claude-code-subagents",
+  "entryPath": "registries/repos/VoltAgent-awesome-claude-code-subagents.json",
+  "category": "agent-frameworks",
+  "type": "tooling",
+  "aliases": [
+    "awesome-claude-code-subagents",
+    "VoltAgent/awesome-claude-code-subagents",
+    "voltagent-awesome-claude-code-subagents"
+  ],
+  "stack": [
+    "Shell",
+    "ai-agent-framework",
+    "ai-agent-tools",
+    "ai-agents",
+    "awesome",
+    "awesome-list",
+    "claude",
+    "claude-ai",
+    "claude-code-subagents",
+    "claude-subagents",
+    "subagents"
+  ],
+  "tags": [
+    "ai-agent-framework",
+    "ai-agent-tools",
+    "ai-agents",
+    "awesome",
+    "awesome-list",
+    "claude",
+    "claude-ai",
+    "claude-code-subagents",
+    "claude-subagents",
+    "subagents",
+    "agent-frameworks",
+    "tooling",
+    "awesome-claude-code-subagents",
+    "VoltAgent"
+  ],
+  "summary": "A collection of 100+ specialized Claude Code subagents covering a wide range of development use cases",
+  "primaryUseCases": [
+    "starred repo review",
+    "candidate triage"
+  ],
+  "agentUseInstruction": "Inspect the imported starred metadata and compare it with alternatives before recommending any adoption.",
+  "acquisitionMode": "do-not-use",
+  "riskLevel": "critical",
+  "riskFlags": [
+    "security-sensitive"
+  ],
+  "riskNotes": "Flags: security-sensitive.",
+  "reviewRequiredBeforeUse": true,
+  "recommendedAgentAction": "do-not-use",
+  "relatedRepos": [],
+  "searchText": "VoltAgent/awesome-claude-code-subagents voltagent-awesome-claude-code-subagents VoltAgent awesome-claude-code-subagents https://github.com/VoltAgent/awesome-claude-code-subagents agent-frameworks tooling Shell ai-agent-framework ai-agent-tools ai-agents awesome awesome-list claude claude-ai claude-code-subagents claude-subagents subagents A collection of 100+ specialized Claude Code subagents covering a wide range of development use cases starred repo review candidate triage Inspect the imported starred metadata and compare it with alternatives before recommending any adoption. https://github.com/VoltAgent/voltagent",
+  "license": {
+    "spdx": "MIT",
+    "confidence": "high",
+    "name": "MIT License",
+    "url": "https://api.github.com/licenses/mit"
+  },
+  "maintenance": {
+    "state": "active",
+    "notes": "Reviewed from metadata.",
+    "lastReviewedAt": "2026-07-01T11:37:04.934Z",
+    "pushedAt": "2026-06-24T06:28:05Z",
+    "updatedAt": "2026-07-01T11:34:23Z",
+    "createdAt": "2025-07-30T12:31:51Z"
+  },
+  "qualitySignals": {
+    "stars": 22660,
+    "forks": 2633,
+    "watchers": 221,
+    "openIssues": 0,
+    "archived": false,
+    "disabled": false,
+    "private": false,
+    "fork": false,
+    "visibility": "public",
+    "language": "Shell",
+    "topics": [
+      "ai-agent-framework",
+      "ai-agent-tools",
+      "ai-agents",
+      "awesome",
+      "awesome-list",
+      "claude",
+      "claude-ai",
+      "claude-code-subagents",
+      "claude-subagents",
+      "subagents"
+    ],
+    "homepage": "https://github.com/VoltAgent/voltagent",
+    "defaultBranch": "main",
+    "size": 1089,
+    "pushedAt": "2026-06-24T06:28:05Z",
+    "updatedAt": "2026-07-01T11:34:23Z",
+    "createdAt": "2025-07-30T12:31:51Z"
+  },
+  "notes": [
+    "Imported from GitHub stars.",
+    "security-sensitive"
+  ]
+}

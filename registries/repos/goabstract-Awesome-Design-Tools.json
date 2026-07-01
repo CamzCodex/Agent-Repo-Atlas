@@ -1,0 +1,102 @@
+{
+  "id": "goabstract/Awesome-Design-Tools",
+  "slug": "goabstract-awesome-design-tools",
+  "owner": "goabstract",
+  "repo": "Awesome-Design-Tools",
+  "name": "Awesome-Design-Tools",
+  "url": "https://github.com/goabstract/Awesome-Design-Tools",
+  "entryPath": "registries/repos/goabstract-Awesome-Design-Tools.json",
+  "category": "design-systems",
+  "type": "tooling",
+  "aliases": [
+    "Awesome-Design-Tools",
+    "goabstract/Awesome-Design-Tools",
+    "goabstract-awesome-design-tools"
+  ],
+  "stack": [
+    "JavaScript",
+    "animations",
+    "awesome",
+    "awesome-list",
+    "design",
+    "design-systems",
+    "design-tools",
+    "font-awesome",
+    "ui-design"
+  ],
+  "tags": [
+    "animations",
+    "awesome",
+    "awesome-list",
+    "design",
+    "design-systems",
+    "design-tools",
+    "font-awesome",
+    "ui-design",
+    "tooling",
+    "Awesome-Design-Tools",
+    "goabstract"
+  ],
+  "summary": "The best design tools and plugins for everything 👉",
+  "primaryUseCases": [
+    "starred repo review",
+    "candidate triage"
+  ],
+  "agentUseInstruction": "Inspect the imported starred metadata and compare it with alternatives before recommending any adoption.",
+  "acquisitionMode": "reference-only",
+  "riskLevel": "low",
+  "riskFlags": [
+    "stale maintenance"
+  ],
+  "riskNotes": "Flags: stale maintenance.",
+  "reviewRequiredBeforeUse": true,
+  "recommendedAgentAction": "compare-before-adoption",
+  "relatedRepos": [],
+  "searchText": "goabstract/Awesome-Design-Tools goabstract-awesome-design-tools goabstract Awesome-Design-Tools https://github.com/goabstract/Awesome-Design-Tools design-systems tooling JavaScript animations awesome awesome-list design design-tools font-awesome ui-design The best design tools and plugins for everything 👉 starred repo review candidate triage Inspect the imported starred metadata and compare it with alternatives before recommending any adoption.",
+  "license": {
+    "spdx": "MIT",
+    "confidence": "high",
+    "name": "MIT License",
+    "url": "https://api.github.com/licenses/mit"
+  },
+  "maintenance": {
+    "state": "slow-moving",
+    "notes": "Reviewed from metadata.",
+    "lastReviewedAt": "2026-07-01T11:37:16.338Z",
+    "pushedAt": "2024-07-28T19:57:31Z",
+    "updatedAt": "2026-07-01T06:48:41Z",
+    "createdAt": "2019-02-12T13:55:30Z"
+  },
+  "qualitySignals": {
+    "stars": 40436,
+    "forks": 2283,
+    "watchers": 573,
+    "openIssues": 160,
+    "archived": false,
+    "disabled": false,
+    "private": false,
+    "fork": false,
+    "visibility": "public",
+    "language": "JavaScript",
+    "topics": [
+      "animations",
+      "awesome",
+      "awesome-list",
+      "design",
+      "design-systems",
+      "design-tools",
+      "font-awesome",
+      "ui-design"
+    ],
+    "homepage": "",
+    "defaultBranch": "master",
+    "size": 19220,
+    "pushedAt": "2024-07-28T19:57:31Z",
+    "updatedAt": "2026-07-01T06:48:41Z",
+    "createdAt": "2019-02-12T13:55:30Z"
+  },
+  "notes": [
+    "Imported from GitHub stars.",
+    "stale maintenance"
+  ]
+}

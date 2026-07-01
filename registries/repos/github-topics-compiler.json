@@ -1,0 +1,73 @@
+{
+  "id": "github/topics/compiler",
+  "slug": "github-topics-compiler",
+  "owner": "github",
+  "repo": "topics/compiler",
+  "name": "topics/compiler",
+  "url": "https://github.com/topics/compiler",
+  "entryPath": "registries/repos/github-topics-compiler.json",
+  "category": "research-reference",
+  "type": "topic-map",
+  "aliases": [
+    "compiler topic",
+    "topics/compiler",
+    "github-topics-compiler"
+  ],
+  "stack": [
+    "GitHub"
+  ],
+  "tags": [
+    "research-reference",
+    "topic-map",
+    "topics/compiler",
+    "github"
+  ],
+  "summary": "GitHub topic page for compiler-related repositories.",
+  "primaryUseCases": [
+    "compiler research",
+    "language tooling discovery"
+  ],
+  "agentUseInstruction": "Use as a research map when compiler or language-tooling work is in scope.",
+  "acquisitionMode": "reference-map-only",
+  "riskLevel": "low",
+  "riskFlags": [],
+  "riskNotes": "No explicit risk notes.",
+  "reviewRequiredBeforeUse": false,
+  "recommendedAgentAction": "search-the-map",
+  "relatedRepos": [],
+  "searchText": "github/topics/compiler github-topics-compiler github topics/compiler https://github.com/topics/compiler research-reference topic-map compiler topic GitHub GitHub topic page for compiler-related repositories. compiler research language tooling discovery Use as a research map when compiler or language-tooling work is in scope.",
+  "license": {
+    "spdx": "NOASSERTION",
+    "confidence": "low",
+    "name": null,
+    "url": null
+  },
+  "maintenance": {
+    "state": "active",
+    "notes": "Reviewed from metadata.",
+    "lastReviewedAt": "2026-07-01T11:36:54.868Z",
+    "pushedAt": null,
+    "updatedAt": null,
+    "createdAt": null
+  },
+  "qualitySignals": {
+    "stars": 0,
+    "forks": 0,
+    "watchers": 0,
+    "openIssues": 0,
+    "archived": false,
+    "disabled": false,
+    "private": false,
+    "fork": false,
+    "visibility": "public",
+    "language": null,
+    "topics": [],
+    "homepage": null,
+    "defaultBranch": null,
+    "size": 0,
+    "pushedAt": null,
+    "updatedAt": null,
+    "createdAt": null
+  },
+  "notes": []
+}

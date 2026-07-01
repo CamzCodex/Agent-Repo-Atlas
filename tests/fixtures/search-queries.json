@@ -1,15 +1,168 @@
 [
   {
-    "query": "react component library",
-    "expectTopSlug": "awesome-react-components"
+    "query": "react component",
+    "expectTopIds": [
+      "brillout/awesome-react-components"
+    ],
+    "expectCategories": [
+      "react-source-maps"
+    ]
   },
   {
-    "query": "kubernetes dev workflow",
-    "expectTopSlug": "devspace"
+    "query": "beautiful ui",
+    "expectCategories": [
+      "design-systems"
+    ]
   },
   {
-    "query": "cluster sync devtools",
-    "expectTopSlug": "devspace"
+    "query": "design system",
+    "expectTopIds": [
+      "ant-design/ant-design"
+    ],
+    "expectCategories": [
+      "design-systems"
+    ]
+  },
+  {
+    "query": "storybook",
+    "expectTopIds": [
+      "storybookjs/storybook"
+    ]
+  },
+  {
+    "query": "data grid",
+    "expectCategories": [
+      "design-systems"
+    ]
+  },
+  {
+    "query": "charts",
+    "expectCategories": [
+      "design-systems"
+    ]
+  },
+  {
+    "query": "forms",
+    "expectCategories": [
+      "forms"
+    ]
+  },
+  {
+    "query": "code quality",
+    "expectTopIds": [
+      "collections/clean-code-linters"
+    ],
+    "expectCategories": [
+      "code-quality"
+    ]
+  },
+  {
+    "query": "linting",
+    "expectCategories": [
+      "code-quality"
+    ]
+  },
+  {
+    "query": "project management",
+    "expectTopIds": [
+      "github/topics/project-management"
+    ],
+    "expectCategories": [
+      "project-management"
+    ]
+  },
+  {
+    "query": "compiler",
+    "expectTopIds": [
+      "github/topics/compiler"
+    ],
+    "expectCategories": [
+      "research-reference"
+    ]
+  },
+  {
+    "query": "python",
+    "expectTopIds": [
+      "github/topics/python"
+    ],
+    "expectCategories": [
+      "research-reference"
+    ]
+  },
+  {
+    "query": "mcp",
+    "expectCategories": [
+      "mcp-tools"
+    ],
+    "expectHighRisk": true
+  },
+  {
+    "query": "local repo access"
+  },
+  {
+    "query": "ChatGPT Codex bridge",
+    "expectTopIds": [
+      "Waishnav/devspace",
+      "icebear0828/codex-proxy"
+    ],
+    "expectCategories": [
+      "agent-frameworks"
+    ],
+    "expectHighRisk": true
+  },
+  {
+    "query": "video generation",
+    "expectTopIds": [
+      "browser-use/video-use"
+    ],
+    "expectCategories": [
+      "video-generation"
+    ]
+  },
+  {
+    "query": "hardware camera sensor"
+  },
+  {
+    "query": "starred ui",
+    "expectTopIds": [
+      "alexpate/awesome-design-systems"
+    ],
+    "expectCategories": [
+      "design-systems",
+      "ui-components"
+    ]
+  },
+  {
+    "query": "starred agent",
+    "expectCategories": [
+      "agent-frameworks"
+    ],
+    "expectHighRisk": true
+  },
+  {
+    "query": "starred mcp",
+    "expectCategories": [
+      "mcp-tools"
+    ],
+    "expectHighRisk": true
+  },
+  {
+    "query": "starred code quality",
+    "expectTopIds": [
+      "collections/clean-code-linters"
+    ],
+    "expectCategories": [
+      "code-quality"
+    ]
+  },
+  {
+    "query": "starred video",
+    "expectTopIds": [
+      "browser-use/video-use"
+    ],
+    "expectCategories": [
+      "video-generation"
+    ]
   }
 ]
 

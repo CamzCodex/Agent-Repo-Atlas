@@ -1,40 +1,69 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Repo Entry",
+  "title": "Agent Repo Atlas Entry",
   "type": "object",
   "required": [
+    "id",
     "slug",
+    "owner",
+    "repo",
     "name",
-    "externalUrl",
+    "url",
+    "entryPath",
+    "category",
     "type",
-    "description",
-    "summary",
-    "topics",
+    "aliases",
+    "stack",
     "tags",
-    "useCases",
+    "summary",
+    "primaryUseCases",
+    "agentUseInstruction",
     "acquisitionMode",
-    "maintenance",
-    "risk",
+    "riskLevel",
+    "riskFlags",
+    "riskNotes",
+    "reviewRequiredBeforeUse",
+    "recommendedAgentAction",
+    "relatedRepos",
+    "searchText",
     "license",
-    "signals",
+    "maintenance",
+    "qualitySignals",
     "notes"
   ],
   "properties": {
-    "slug": {
+    "id": { "type": "string", "minLength": 1 },
+    "slug": { "type": "string", "minLength": 1 },
+    "owner": { "type": "string", "minLength": 1 },
+    "repo": { "type": "string", "minLength": 1 },
+    "name": { "type": "string", "minLength": 1 },
+    "url": { "type": "string", "minLength": 1 },
+    "entryPath": { "type": "string", "minLength": 1 },
+    "category": {
       "type": "string",
-      "minLength": 1,
-      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
-    },
-    "name": {
-      "type": "string",
-      "minLength": 1
-    },
-    "externalUrl": {
-      "type": "string",
-      "minLength": 1
-    },
-    "homepage": {
-      "type": "string"
+      "enum": [
+        "ui-components",
+        "design-systems",
+        "react-source-maps",
+        "agent-frameworks",
+        "mcp-tools",
+        "local-dev-infrastructure",
+        "automation-tools",
+        "data-viz",
+        "forms",
+        "tables-grids",
+        "charts",
+        "video-generation",
+        "code-quality",
+        "testing",
+        "documentation",
+        "project-management",
+        "security",
+        "research-reference",
+        "hardware-iot",
+        "developer-tools",
+        "unknown"
+      ]
     },
     "type": {
       "type": "string",
@@ -42,161 +71,115 @@
         "library",
         "framework",
         "template",
+        "design-system",
         "ui-system",
+        "tooling",
         "mcp-server",
         "agent-framework",
-        "design-reference",
-        "implementation-pattern",
-        "tooling"
+        "skill-pack",
+        "collection",
+        "topic-map",
+        "reference",
+        "implementation-pattern"
       ]
     },
-    "description": {
-      "type": "string",
-      "minLength": 1
-    },
-    "summary": {
-      "type": "string",
-      "minLength": 1
-    },
-    "topics": {
-      "type": "array",
-      "minItems": 1,
-      "uniqueItems": true,
-      "items": {
-        "type": "string",
-        "minLength": 1
-      }
-    },
-    "tags": {
-      "type": "array",
-      "minItems": 1,
-      "uniqueItems": true,
-      "items": {
-        "type": "string",
-        "minLength": 1
-      }
-    },
-    "useCases": {
-      "type": "array",
-      "minItems": 1,
-      "items": {
-        "type": "string",
-        "minLength": 1
-      }
-    },
+    "aliases": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "stack": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "tags": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "summary": { "type": "string", "minLength": 1 },
+    "primaryUseCases": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "agentUseInstruction": { "type": "string", "minLength": 1 },
     "acquisitionMode": {
       "type": "string",
       "enum": [
-        "reference",
+        "reference-only",
+        "reference-map-only",
         "dependency-candidate",
+        "template-candidate",
         "fork-candidate",
-        "sandbox-research",
-        "reject"
+        "clone-candidate",
+        "sandbox-research-only",
+        "implementation-pattern",
+        "do-not-use"
       ]
+    },
+    "riskLevel": {
+      "type": "string",
+      "enum": ["low", "moderate", "high", "critical"]
+    },
+    "riskFlags": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "riskNotes": { "type": "string", "minLength": 1 },
+    "reviewRequiredBeforeUse": { "type": "boolean" },
+    "recommendedAgentAction": { "type": "string", "minLength": 1 },
+    "relatedRepos": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "searchText": { "type": "string", "minLength": 1 },
+    "license": {
+      "type": "object",
+      "required": ["spdx", "confidence"],
+      "properties": {
+        "spdx": { "type": "string", "minLength": 1 },
+        "confidence": { "type": "string", "enum": ["high", "medium", "low"] },
+        "name": { "type": ["string", "null"] },
+        "url": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
     },
     "maintenance": {
       "type": "object",
-      "required": [
-        "state",
-        "lastReviewedAt",
-        "notes"
-      ],
+      "required": ["state", "notes", "lastReviewedAt"],
       "properties": {
-        "state": {
-          "type": "string",
-          "enum": [
-            "active",
-            "slow-moving",
-            "stale",
-            "archived"
-          ]
-        },
-        "lastReviewedAt": {
-          "type": "string",
-          "minLength": 1
-        },
-        "notes": {
-          "type": "string",
-          "minLength": 1
-        }
+        "state": { "type": "string", "enum": ["active", "slow-moving", "stale", "archived", "unknown"] },
+        "notes": { "type": "string", "minLength": 1 },
+        "lastReviewedAt": { "type": "string", "minLength": 1 },
+        "pushedAt": { "type": ["string", "null"] },
+        "updatedAt": { "type": ["string", "null"] },
+        "createdAt": { "type": ["string", "null"] }
       },
       "additionalProperties": false
     },
-    "risk": {
-      "type": "object",
-      "required": [
-        "flags",
-        "notes"
-      ],
-      "properties": {
-        "flags": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "enum": [
-              "license-unclear",
-              "unmaintained",
-              "security-sensitive",
-              "low-documentation",
-              "large-surface-area",
-              "rapidly-changing"
-            ]
-          }
-        },
-        "notes": {
-          "type": "string",
-          "minLength": 1
-        }
-      },
-      "additionalProperties": false
-    },
-    "license": {
-      "type": "object",
-      "required": [
-        "spdx",
-        "confidence"
-      ],
-      "properties": {
-        "spdx": {
-          "type": "string",
-          "minLength": 1
-        },
-        "confidence": {
-          "type": "string",
-          "enum": [
-            "high",
-            "medium",
-            "low"
-          ]
-        }
-      },
-      "additionalProperties": false
-    },
-    "signals": {
+    "qualitySignals": {
       "type": "object",
       "required": [
         "stars",
-        "updatedAt"
+        "forks",
+        "watchers",
+        "openIssues",
+        "archived",
+        "disabled",
+        "private",
+        "fork",
+        "visibility",
+        "language",
+        "topics",
+        "homepage",
+        "defaultBranch",
+        "size",
+        "pushedAt",
+        "updatedAt",
+        "createdAt"
       ],
       "properties": {
-        "stars": {
-          "type": "number",
-          "minimum": 0
-        },
-        "updatedAt": {
-          "type": "string",
-          "minLength": 1
-        }
+        "stars": { "type": "number", "minimum": 0 },
+        "forks": { "type": "number", "minimum": 0 },
+        "watchers": { "type": "number", "minimum": 0 },
+        "openIssues": { "type": "number", "minimum": 0 },
+        "archived": { "type": "boolean" },
+        "disabled": { "type": "boolean" },
+        "private": { "type": "boolean" },
+        "fork": { "type": "boolean" },
+        "visibility": { "type": "string" },
+        "language": { "type": ["string", "null"] },
+        "topics": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "homepage": { "type": ["string", "null"] },
+        "defaultBranch": { "type": ["string", "null"] },
+        "size": { "type": "number", "minimum": 0 },
+        "pushedAt": { "type": ["string", "null"] },
+        "updatedAt": { "type": ["string", "null"] },
+        "createdAt": { "type": ["string", "null"] }
       },
       "additionalProperties": false
     },
-    "notes": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "minLength": 1
-      }
-    }
+    "notes": { "type": "array", "items": { "type": "string", "minLength": 1 } }
   },
   "additionalProperties": false
 }

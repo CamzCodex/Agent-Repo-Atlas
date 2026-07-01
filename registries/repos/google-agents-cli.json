@@ -1,0 +1,100 @@
+{
+  "id": "google/agents-cli",
+  "slug": "google-agents-cli",
+  "owner": "google",
+  "repo": "agents-cli",
+  "name": "agents-cli",
+  "url": "https://github.com/google/agents-cli",
+  "entryPath": "registries/repos/google-agents-cli.json",
+  "category": "forms",
+  "type": "tooling",
+  "aliases": [
+    "agents-cli",
+    "google/agents-cli",
+    "google-agents-cli"
+  ],
+  "stack": [
+    "Python",
+    "adk",
+    "agent-development-kit",
+    "agents",
+    "coding-agent",
+    "gemini",
+    "gemini-enterprise-agent-platform",
+    "generative-ai",
+    "google-cloud"
+  ],
+  "tags": [
+    "adk",
+    "agent-development-kit",
+    "agents",
+    "coding-agent",
+    "gemini",
+    "gemini-enterprise-agent-platform",
+    "generative-ai",
+    "google-cloud",
+    "forms",
+    "tooling",
+    "agents-cli",
+    "google"
+  ],
+  "summary": "The CLI and skills that turn any coding assistant into an expert at creating, evaluating, and deploying AI agents on Google Cloud.",
+  "primaryUseCases": [
+    "starred repo review",
+    "candidate triage"
+  ],
+  "agentUseInstruction": "Inspect the imported starred metadata and compare it with alternatives before recommending any adoption.",
+  "acquisitionMode": "reference-only",
+  "riskLevel": "low",
+  "riskFlags": [],
+  "riskNotes": "No explicit risk notes.",
+  "reviewRequiredBeforeUse": true,
+  "recommendedAgentAction": "compare-before-adoption",
+  "relatedRepos": [],
+  "searchText": "google/agents-cli google-agents-cli google agents-cli https://github.com/google/agents-cli forms tooling Python adk agent-development-kit agents coding-agent gemini gemini-enterprise-agent-platform generative-ai google-cloud The CLI and skills that turn any coding assistant into an expert at creating, evaluating, and deploying AI agents on Google Cloud. starred repo review candidate triage Inspect the imported starred metadata and compare it with alternatives before recommending any adoption. https://google.github.io/agents-cli/",
+  "license": {
+    "spdx": "Apache-2.0",
+    "confidence": "high",
+    "name": "Apache License 2.0",
+    "url": "https://api.github.com/licenses/apache-2.0"
+  },
+  "maintenance": {
+    "state": "active",
+    "notes": "Reviewed from metadata.",
+    "lastReviewedAt": "2026-07-01T11:37:07.410Z",
+    "pushedAt": "2026-06-28T17:24:21Z",
+    "updatedAt": "2026-07-01T11:35:40Z",
+    "createdAt": "2026-04-08T17:09:55Z"
+  },
+  "qualitySignals": {
+    "stars": 4494,
+    "forks": 473,
+    "watchers": 25,
+    "openIssues": 24,
+    "archived": false,
+    "disabled": false,
+    "private": false,
+    "fork": false,
+    "visibility": "public",
+    "language": "Python",
+    "topics": [
+      "adk",
+      "agent-development-kit",
+      "agents",
+      "coding-agent",
+      "gemini",
+      "gemini-enterprise-agent-platform",
+      "generative-ai",
+      "google-cloud"
+    ],
+    "homepage": "https://google.github.io/agents-cli/",
+    "defaultBranch": "main",
+    "size": 10523,
+    "pushedAt": "2026-06-28T17:24:21Z",
+    "updatedAt": "2026-07-01T11:35:40Z",
+    "createdAt": "2026-04-08T17:09:55Z"
+  },
+  "notes": [
+    "Imported from GitHub stars."
+  ]
+}

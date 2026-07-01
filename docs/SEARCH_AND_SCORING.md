@@ -2,38 +2,45 @@
 
 ## Search
 
-Search is lightweight and deterministic.
+Search uses the generated index and matches against:
 
-The search pipeline:
+- `id`
+- `name`
+- `url`
+- `owner`
+- `repo`
+- `category`
+- `type`
+- `tags`
+- `aliases`
+- `stack`
+- `summary`
+- `primaryUseCases`
+- `searchText`
 
-1. Normalize the query.
-2. Compare it against the entry text, tags, topics, use cases, and notes.
-3. Reward exact phrase matches, token overlap, and category alignment.
-4. Return a ranked list with a short reason.
+## Output
+
+Search results include:
+
+- rank
+- score
+- id
+- name
+- type
+- category
+- risk level
+- acquisition mode
+- URL
+- entry path
+- short match reason
 
 ## Scoring
 
-Scores are intentionally transparent.
+The scorer is intentionally transparent.
 
-Scoring favors:
-
-- Clear task fit
-- Strong maintenance state
-- Usable license
-- Low acquisition risk
-- Good documentation
-
-Scoring penalizes:
-
-- Unclear licensing
-- Staleness
-- Large or risky surfaces
-- Weak maintenance
-
-## Interpretation
-
-- `80-100`: strong candidate
-- `60-79`: useful with review
-- `40-59`: niche or mixed fit
-- `0-39`: low priority or reject
+- Strong matches in id, name, owner/repo, category, type, aliases, and tags score highest.
+- Summary and use-case matches score next.
+- Search-text matches score lower.
+- Low-risk entries get a small boost.
+- High-risk entries stay visible, but they are labeled clearly and never treated as approved.
 

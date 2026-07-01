@@ -1,35 +1,26 @@
 # Neuro Map
 
-This document describes how an agent should think about repository discovery and acquisition.
+This is the agent mental model for repo discovery.
 
-## Mental model
+## Sequence
 
-1. **Intent**
-   - What problem is the agent trying to solve?
-2. **Shape**
-   - Is the repo a library, framework, template, MCP server, design reference, or implementation pattern?
-3. **Fit**
-   - Does the repo actually solve the task, or is it only loosely related?
-4. **Risk**
-   - Is the repo maintained, licensed, secure, and easy to inspect?
-5. **Acquisition**
-   - Should the repo be used as reference only, installed as a dependency, forked, sandboxed, or rejected?
+1. State the task in plain language.
+2. Search the atlas first.
+3. Compare the best matches by fit, risk, license, and maintenance.
+4. Choose the least risky acquisition mode that still solves the task.
+5. Only then expand to broader research if the atlas does not cover the need.
 
-## Retrieval layers
+## What agents should notice
 
-- **Layer 1: Atlas search**
-  - Search the local registry first.
-- **Layer 2: Candidate comparison**
-  - Compare top-ranked repos by scope, maintenance, and acquisition risk.
-- **Layer 3: External verification**
-  - Open the external repo only after the atlas narrows the field.
-- **Layer 4: Acquisition control**
-  - Choose the least invasive mode that is still useful.
+- `category` tells you what kind of problem the repo maps to.
+- `type` tells you what kind of artifact it is.
+- `riskLevel` tells you how careful to be.
+- `acquisitionMode` tells you how to consume it.
+- `reviewRequiredBeforeUse` tells you whether a human-style check is needed before adoption.
 
-## Agent memory cues
+## What not to do
 
-- Short descriptions should answer: “What is it?”
-- Use cases should answer: “When should I reach for it?”
-- Risk notes should answer: “What could go wrong?”
-- Acquisition mode should answer: “How should I consume it?”
+- Do not equate listing with approval.
+- Do not install a repo before checking license and maintenance.
+- Do not use a high-risk bridge, shell, filesystem, auth, or infrastructure repo as trusted by default.
 

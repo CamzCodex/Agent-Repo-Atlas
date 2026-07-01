@@ -1,53 +1,81 @@
 {
-  "slug": "awesome-react-components",
-  "name": "Awesome React Components",
-  "externalUrl": "https://github.com/brillout/awesome-react-components",
-  "homepage": "https://github.com/brillout/awesome-react-components",
-  "type": "ui-system",
-  "description": "Curated list of React components and component libraries.",
-  "summary": "Useful as a discovery layer for React UI building blocks, component libraries, and design-system references.",
-  "topics": [
-    "react",
-    "components",
-    "ui",
-    "design-system",
-    "frontend"
+  "id": "brillout/awesome-react-components",
+  "slug": "brillout-awesome-react-components",
+  "owner": "brillout",
+  "repo": "awesome-react-components",
+  "name": "awesome-react-components",
+  "url": "https://github.com/brillout/awesome-react-components",
+  "entryPath": "registries/repos/awesome-react-components.json",
+  "category": "react-source-maps",
+  "type": "collection",
+  "aliases": [
+    "awesome-react-components",
+    "brillout-awesome-react-components"
+  ],
+  "stack": [
+    "React"
   ],
   "tags": [
-    "react",
-    "component-library",
-    "ui-system",
-    "reference",
-    "frontend"
+    "react-source-maps",
+    "collection",
+    "awesome-react-components",
+    "brillout"
   ],
-  "useCases": [
-    "Find React component libraries quickly.",
-    "Compare UI building blocks before adopting one.",
-    "Use as a reference for design-system exploration."
+  "summary": "Curated catalog of React component libraries and UI building blocks.",
+  "primaryUseCases": [
+    "component library discovery",
+    "UI comparison",
+    "React pattern lookup"
   ],
-  "acquisitionMode": "reference",
+  "agentUseInstruction": "Treat as a curated discovery layer, not as a runtime dependency.",
+  "acquisitionMode": "reference-map-only",
+  "riskLevel": "low",
+  "riskFlags": [
+    "large-surface-area"
+  ],
+  "riskNotes": "Flags: large-surface-area.",
+  "reviewRequiredBeforeUse": false,
+  "recommendedAgentAction": "search-the-map",
+  "relatedRepos": [
+    "enaqx/awesome-react",
+    "mui/material-ui",
+    "mantinedev/mantine"
+  ],
+  "searchText": "brillout/awesome-react-components brillout-awesome-react-components brillout awesome-react-components https://github.com/brillout/awesome-react-components react-source-maps collection React Curated catalog of React component libraries and UI building blocks. component library discovery UI comparison React pattern lookup Treat as a curated discovery layer, not as a runtime dependency. enaqx/awesome-react mui/material-ui mantinedev/mantine",
+  "license": {
+    "spdx": "NOASSERTION",
+    "confidence": "low",
+    "name": null,
+    "url": null
+  },
   "maintenance": {
     "state": "active",
-    "lastReviewedAt": "2026-07-01T00:00:00.000Z",
-    "notes": "Best treated as a discovery surface rather than a runtime dependency."
+    "notes": "Reviewed from metadata.",
+    "lastReviewedAt": "2026-07-01T11:36:54.867Z",
+    "pushedAt": null,
+    "updatedAt": null,
+    "createdAt": null
   },
-  "risk": {
-    "flags": [
-      "large-surface-area"
-    ],
-    "notes": "The value is curation, not direct code reuse."
-  },
-  "license": {
-    "spdx": "MIT",
-    "confidence": "high"
-  },
-  "signals": {
+  "qualitySignals": {
     "stars": 0,
-    "updatedAt": "2026-07-01T00:00:00.000Z"
+    "forks": 0,
+    "watchers": 0,
+    "openIssues": 0,
+    "archived": false,
+    "disabled": false,
+    "private": false,
+    "fork": false,
+    "visibility": "public",
+    "language": null,
+    "topics": [],
+    "homepage": null,
+    "defaultBranch": null,
+    "size": 0,
+    "pushedAt": null,
+    "updatedAt": null,
+    "createdAt": null
   },
   "notes": [
-    "Useful for breadth-first UI research.",
-    "Not a dependency by default."
+    "Excellent for quickly finding component candidates."
   ]
 }
-

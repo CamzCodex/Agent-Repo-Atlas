@@ -1,0 +1,80 @@
+{
+  "id": "openai/skills",
+  "slug": "openai-skills",
+  "owner": "openai",
+  "repo": "skills",
+  "name": "skills",
+  "url": "https://github.com/openai/skills",
+  "entryPath": "registries/repos/openai-skills.json",
+  "category": "agent-frameworks",
+  "type": "tooling",
+  "aliases": [
+    "skills",
+    "openai/skills",
+    "openai-skills"
+  ],
+  "stack": [
+    "Python"
+  ],
+  "tags": [
+    "agent-frameworks",
+    "tooling",
+    "skills",
+    "openai"
+  ],
+  "summary": "Skills Catalog for Codex",
+  "primaryUseCases": [
+    "starred repo review",
+    "candidate triage"
+  ],
+  "agentUseInstruction": "Inspect the imported starred metadata and compare it with alternatives before recommending any adoption.",
+  "acquisitionMode": "sandbox-research-only",
+  "riskLevel": "high",
+  "riskFlags": [
+    "missing license",
+    "security-sensitive"
+  ],
+  "riskNotes": "Flags: missing license, security-sensitive.",
+  "reviewRequiredBeforeUse": true,
+  "recommendedAgentAction": "compare-before-adoption",
+  "relatedRepos": [],
+  "searchText": "openai/skills openai-skills openai skills https://github.com/openai/skills agent-frameworks tooling Python Skills Catalog for Codex starred repo review candidate triage Inspect the imported starred metadata and compare it with alternatives before recommending any adoption.",
+  "license": {
+    "spdx": "NOASSERTION",
+    "confidence": "low",
+    "name": null,
+    "url": null
+  },
+  "maintenance": {
+    "state": "active",
+    "notes": "Reviewed from metadata.",
+    "lastReviewedAt": "2026-07-01T11:37:02.424Z",
+    "pushedAt": "2026-06-24T02:36:15Z",
+    "updatedAt": "2026-07-01T11:20:48Z",
+    "createdAt": "2025-11-25T06:25:42Z"
+  },
+  "qualitySignals": {
+    "stars": 23096,
+    "forks": 1565,
+    "watchers": 132,
+    "openIssues": 279,
+    "archived": false,
+    "disabled": false,
+    "private": false,
+    "fork": false,
+    "visibility": "public",
+    "language": "Python",
+    "topics": [],
+    "homepage": "",
+    "defaultBranch": "main",
+    "size": 2387,
+    "pushedAt": "2026-06-24T02:36:15Z",
+    "updatedAt": "2026-07-01T11:20:48Z",
+    "createdAt": "2025-11-25T06:25:42Z"
+  },
+  "notes": [
+    "Imported from GitHub stars.",
+    "missing license",
+    "security-sensitive"
+  ]
+}

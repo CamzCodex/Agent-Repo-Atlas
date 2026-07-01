@@ -1,18 +1,15 @@
 # Codex Repo Triage Prompt
 
-Given a repository candidate, decide whether it should be classified as:
+Classify the repository candidate for Agent Repo Atlas.
 
-- reference
-- dependency-candidate
-- fork-candidate
-- sandbox-research
-- reject
+Return:
 
-Explain the decision using:
+- category
+- type
+- acquisition mode
+- risk level
+- manual review reasons
+- one-line agent use instruction
 
-- task fit
-- license
-- maintenance state
-- risk
-- expected usage pattern
+If the repo touches shell execution, filesystem access, auth, tunnels, credentials, or infrastructure, mark it high risk.
 

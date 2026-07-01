@@ -1,19 +1,13 @@
 # Review Workflow
 
-1. Capture the candidate repo metadata.
-2. Classify the repo type and acquisition mode.
-3. Check the license, maintenance state, and security surface.
-4. Score the candidate against the current task.
-5. Decide whether it is a reference, dependency candidate, fork candidate, sandbox research target, or reject.
-6. Record the rationale in the registry entry.
-7. Regenerate the index and run validation.
+1. Capture the repo or reference map in the review queue.
+2. Classify category, type, acquisition mode, and risk level.
+3. Check the license and maintenance state.
+4. Record manual review reasons.
+5. Decide whether the item should become a full atlas entry.
+6. Regenerate the index and rerun validation.
 
-## Review checklist
+## Practical rule
 
-- Does it solve the task directly?
-- Is the license usable?
-- Is the repo maintained?
-- Is the code surface manageable?
-- Is the repo better as a pattern source than a dependency?
-- Does the repo deserve a permanent atlas entry?
+If the repo touches shell execution, filesystem access, auth, tunnels, or infrastructure, treat it as high risk and avoid presenting it as an easy adoption candidate.
 

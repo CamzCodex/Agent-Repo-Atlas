@@ -1,0 +1,99 @@
+{
+  "id": "VoltAgent/awesome-codex-subagents",
+  "slug": "voltagent-awesome-codex-subagents",
+  "owner": "VoltAgent",
+  "repo": "awesome-codex-subagents",
+  "name": "awesome-codex-subagents",
+  "url": "https://github.com/VoltAgent/awesome-codex-subagents",
+  "entryPath": "registries/repos/VoltAgent-awesome-codex-subagents.json",
+  "category": "agent-frameworks",
+  "type": "tooling",
+  "aliases": [
+    "awesome-codex-subagents",
+    "VoltAgent/awesome-codex-subagents",
+    "voltagent-awesome-codex-subagents"
+  ],
+  "stack": [
+    "ai-agents",
+    "awesome-list",
+    "chatgpt",
+    "codex",
+    "codex-skills",
+    "codex-subagents",
+    "subagents"
+  ],
+  "tags": [
+    "ai-agents",
+    "awesome-list",
+    "chatgpt",
+    "codex",
+    "codex-skills",
+    "codex-subagents",
+    "subagents",
+    "agent-frameworks",
+    "tooling",
+    "awesome-codex-subagents",
+    "VoltAgent"
+  ],
+  "summary": "A collection of 130+ specialized Codex subagents covering a wide range of development use cases.",
+  "primaryUseCases": [
+    "starred repo review",
+    "candidate triage"
+  ],
+  "agentUseInstruction": "Inspect the imported starred metadata and compare it with alternatives before recommending any adoption.",
+  "acquisitionMode": "sandbox-research-only",
+  "riskLevel": "high",
+  "riskFlags": [
+    "security-sensitive"
+  ],
+  "riskNotes": "Flags: security-sensitive.",
+  "reviewRequiredBeforeUse": true,
+  "recommendedAgentAction": "compare-before-adoption",
+  "relatedRepos": [],
+  "searchText": "VoltAgent/awesome-codex-subagents voltagent-awesome-codex-subagents VoltAgent awesome-codex-subagents https://github.com/VoltAgent/awesome-codex-subagents agent-frameworks tooling ai-agents awesome-list chatgpt codex codex-skills codex-subagents subagents A collection of 130+ specialized Codex subagents covering a wide range of development use cases. starred repo review candidate triage Inspect the imported starred metadata and compare it with alternatives before recommending any adoption. https://github.com/VoltAgent/voltagent",
+  "license": {
+    "spdx": "MIT",
+    "confidence": "high",
+    "name": "MIT License",
+    "url": "https://api.github.com/licenses/mit"
+  },
+  "maintenance": {
+    "state": "active",
+    "notes": "Reviewed from metadata.",
+    "lastReviewedAt": "2026-07-01T11:37:03.852Z",
+    "pushedAt": "2026-06-24T06:45:55Z",
+    "updatedAt": "2026-07-01T08:24:11Z",
+    "createdAt": "2026-03-17T12:26:20Z"
+  },
+  "qualitySignals": {
+    "stars": 5387,
+    "forks": 603,
+    "watchers": 23,
+    "openIssues": 4,
+    "archived": false,
+    "disabled": false,
+    "private": false,
+    "fork": false,
+    "visibility": "public",
+    "language": null,
+    "topics": [
+      "ai-agents",
+      "awesome-list",
+      "chatgpt",
+      "codex",
+      "codex-skills",
+      "codex-subagents",
+      "subagents"
+    ],
+    "homepage": "https://github.com/VoltAgent/voltagent",
+    "defaultBranch": "main",
+    "size": 166,
+    "pushedAt": "2026-06-24T06:45:55Z",
+    "updatedAt": "2026-07-01T08:24:11Z",
+    "createdAt": "2026-03-17T12:26:20Z"
+  },
+  "notes": [
+    "Imported from GitHub stars.",
+    "security-sensitive"
+  ]
+}

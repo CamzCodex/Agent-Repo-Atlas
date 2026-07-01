@@ -1,32 +1,33 @@
 # Repo Atlas Search
 
-Use this skill when an agent needs to find, compare, or safely acquire external repositories from the atlas.
+Use this skill when an agent needs to find, compare, or safely classify external repositories and reference maps from Agent Repo Atlas.
 
-## Purpose
+## Core rule
 
-The atlas is the first stop for repo discovery. It reduces broad web searching and keeps acquisition decisions explicit.
+Listing means classified, not approved.
 
 ## Workflow
 
-1. Search the atlas with the user task.
-2. Compare the top candidates.
-3. Inspect the acquisition mode, maintenance, license, and risk notes.
-4. Choose the safest repo that still solves the task.
-5. If nothing fits, mark the gap and move to broader research.
+1. Search the atlas with plain task language.
+2. Compare the best matches.
+3. Read `category`, `type`, `riskLevel`, `acquisitionMode`, `license`, and `maintenance` together.
+4. Prefer the least risky mode that still solves the task.
+5. Escalate to broader web research only when the atlas does not cover the need.
 
-## Commands
+## Useful commands
 
 ```bash
-npm run search -- "query"
+npm run search -- "react component"
+npm run search -- "code quality"
 npm run score
 npm run validate
 ```
 
-## Decision rules
+## Decision cues
 
-- `reference`: inspect for ideas and patterns.
-- `dependency-candidate`: candidate for installation or integration review.
-- `fork-candidate`: close fit but should be adapted locally.
-- `sandbox-research`: useful, but isolate from production assumptions.
-- `reject`: do not recommend unless the task materially changes.
+- `reference-only`: inspect patterns, do not install by default
+- `reference-map-only`: use it to find better candidates
+- `dependency-candidate`: compare before adoption
+- `sandbox-research-only`: isolate before trust decisions
+- `do-not-use`: reject unless the task materially changes
 

@@ -1,0 +1,82 @@
+{
+  "id": "microsoft/Codex-CLI",
+  "slug": "microsoft-codex-cli",
+  "owner": "microsoft",
+  "repo": "Codex-CLI",
+  "name": "Codex-CLI",
+  "url": "https://github.com/microsoft/Codex-CLI",
+  "entryPath": "registries/repos/microsoft-Codex-CLI.json",
+  "category": "design-systems",
+  "type": "tooling",
+  "aliases": [
+    "Codex-CLI",
+    "microsoft/Codex-CLI",
+    "microsoft-codex-cli"
+  ],
+  "stack": [
+    "Python"
+  ],
+  "tags": [
+    "design-systems",
+    "tooling",
+    "Codex-CLI",
+    "microsoft"
+  ],
+  "summary": "CLI tool that uses Codex to turn natural language commands into their Bash/ZShell/PowerShell equivalents",
+  "primaryUseCases": [
+    "starred repo review",
+    "candidate triage"
+  ],
+  "agentUseInstruction": "Inspect the imported starred metadata and compare it with alternatives before recommending any adoption.",
+  "acquisitionMode": "do-not-use",
+  "riskLevel": "critical",
+  "riskFlags": [
+    "stale maintenance",
+    "security-sensitive",
+    "shell execution"
+  ],
+  "riskNotes": "Flags: stale maintenance, security-sensitive, shell execution.",
+  "reviewRequiredBeforeUse": true,
+  "recommendedAgentAction": "do-not-use",
+  "relatedRepos": [],
+  "searchText": "microsoft/Codex-CLI microsoft-codex-cli microsoft Codex-CLI https://github.com/microsoft/Codex-CLI design-systems tooling Python CLI tool that uses Codex to turn natural language commands into their Bash/ZShell/PowerShell equivalents starred repo review candidate triage Inspect the imported starred metadata and compare it with alternatives before recommending any adoption.",
+  "license": {
+    "spdx": "MIT",
+    "confidence": "high",
+    "name": "MIT License",
+    "url": "https://api.github.com/licenses/mit"
+  },
+  "maintenance": {
+    "state": "slow-moving",
+    "notes": "Reviewed from metadata.",
+    "lastReviewedAt": "2026-07-01T11:36:59.045Z",
+    "pushedAt": "2024-01-03T15:06:08Z",
+    "updatedAt": "2026-06-30T16:41:28Z",
+    "createdAt": "2022-02-14T22:03:52Z"
+  },
+  "qualitySignals": {
+    "stars": 2398,
+    "forks": 224,
+    "watchers": 42,
+    "openIssues": 28,
+    "archived": false,
+    "disabled": false,
+    "private": false,
+    "fork": false,
+    "visibility": "public",
+    "language": "Python",
+    "topics": [],
+    "homepage": "",
+    "defaultBranch": "main",
+    "size": 9956,
+    "pushedAt": "2024-01-03T15:06:08Z",
+    "updatedAt": "2026-06-30T16:41:28Z",
+    "createdAt": "2022-02-14T22:03:52Z"
+  },
+  "notes": [
+    "Imported from GitHub stars.",
+    "stale maintenance",
+    "security-sensitive",
+    "shell execution"
+  ]
+}

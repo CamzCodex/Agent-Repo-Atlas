@@ -1,0 +1,103 @@
+{
+  "id": "github/awesome-copilot",
+  "slug": "github-awesome-copilot",
+  "owner": "github",
+  "repo": "awesome-copilot",
+  "name": "awesome-copilot",
+  "url": "https://github.com/github/awesome-copilot",
+  "entryPath": "registries/repos/github-awesome-copilot.json",
+  "category": "agent-frameworks",
+  "type": "tooling",
+  "aliases": [
+    "awesome-copilot",
+    "github/awesome-copilot",
+    "github-awesome-copilot"
+  ],
+  "stack": [
+    "Python",
+    "agent-skills",
+    "agents",
+    "ai",
+    "awesome",
+    "custom-agents",
+    "github-copilot",
+    "hacktoberfest",
+    "prompt-engineering"
+  ],
+  "tags": [
+    "agent-skills",
+    "agents",
+    "ai",
+    "awesome",
+    "custom-agents",
+    "github-copilot",
+    "hacktoberfest",
+    "prompt-engineering",
+    "agent-frameworks",
+    "tooling",
+    "awesome-copilot",
+    "github"
+  ],
+  "summary": "Community-contributed instructions, agents, skills, and configurations to help you make the most of GitHub Copilot.",
+  "primaryUseCases": [
+    "starred repo review",
+    "candidate triage"
+  ],
+  "agentUseInstruction": "Inspect the imported starred metadata and compare it with alternatives before recommending any adoption.",
+  "acquisitionMode": "sandbox-research-only",
+  "riskLevel": "high",
+  "riskFlags": [
+    "security-sensitive"
+  ],
+  "riskNotes": "Flags: security-sensitive.",
+  "reviewRequiredBeforeUse": true,
+  "recommendedAgentAction": "compare-before-adoption",
+  "relatedRepos": [],
+  "searchText": "github/awesome-copilot github-awesome-copilot github awesome-copilot https://github.com/github/awesome-copilot agent-frameworks tooling Python agent-skills agents ai awesome custom-agents github-copilot hacktoberfest prompt-engineering Community-contributed instructions, agents, skills, and configurations to help you make the most of GitHub Copilot. starred repo review candidate triage Inspect the imported starred metadata and compare it with alternatives before recommending any adoption. https://awesome-copilot.github.com/",
+  "license": {
+    "spdx": "MIT",
+    "confidence": "high",
+    "name": "MIT License",
+    "url": "https://api.github.com/licenses/mit"
+  },
+  "maintenance": {
+    "state": "active",
+    "notes": "Reviewed from metadata.",
+    "lastReviewedAt": "2026-07-01T11:37:13.075Z",
+    "pushedAt": "2026-07-01T05:55:15Z",
+    "updatedAt": "2026-07-01T10:34:16Z",
+    "createdAt": "2025-06-11T16:57:39Z"
+  },
+  "qualitySignals": {
+    "stars": 36011,
+    "forks": 4453,
+    "watchers": 334,
+    "openIssues": 28,
+    "archived": false,
+    "disabled": false,
+    "private": false,
+    "fork": false,
+    "visibility": "public",
+    "language": "Python",
+    "topics": [
+      "agent-skills",
+      "agents",
+      "ai",
+      "awesome",
+      "custom-agents",
+      "github-copilot",
+      "hacktoberfest",
+      "prompt-engineering"
+    ],
+    "homepage": "https://awesome-copilot.github.com/",
+    "defaultBranch": "main",
+    "size": 82546,
+    "pushedAt": "2026-07-01T05:55:15Z",
+    "updatedAt": "2026-07-01T10:34:16Z",
+    "createdAt": "2025-06-11T16:57:39Z"
+  },
+  "notes": [
+    "Imported from GitHub stars.",
+    "security-sensitive"
+  ]
+}

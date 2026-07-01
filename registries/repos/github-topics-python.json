@@ -1,0 +1,73 @@
+{
+  "id": "github/topics/python",
+  "slug": "github-topics-python",
+  "owner": "github",
+  "repo": "topics/python",
+  "name": "topics/python",
+  "url": "https://github.com/topics/python",
+  "entryPath": "registries/repos/github-topics-python.json",
+  "category": "research-reference",
+  "type": "topic-map",
+  "aliases": [
+    "python topic",
+    "topics/python",
+    "github-topics-python"
+  ],
+  "stack": [
+    "Python"
+  ],
+  "tags": [
+    "research-reference",
+    "topic-map",
+    "topics/python",
+    "github"
+  ],
+  "summary": "GitHub topic page for Python repositories.",
+  "primaryUseCases": [
+    "Python library discovery",
+    "ecosystem mapping"
+  ],
+  "agentUseInstruction": "Use to discover Python repos, then compare maintenance and license before recommending anything.",
+  "acquisitionMode": "reference-map-only",
+  "riskLevel": "low",
+  "riskFlags": [],
+  "riskNotes": "No explicit risk notes.",
+  "reviewRequiredBeforeUse": false,
+  "recommendedAgentAction": "search-the-map",
+  "relatedRepos": [],
+  "searchText": "github/topics/python github-topics-python github topics/python https://github.com/topics/python research-reference topic-map python topic Python GitHub topic page for Python repositories. Python library discovery ecosystem mapping Use to discover Python repos, then compare maintenance and license before recommending anything.",
+  "license": {
+    "spdx": "NOASSERTION",
+    "confidence": "low",
+    "name": null,
+    "url": null
+  },
+  "maintenance": {
+    "state": "active",
+    "notes": "Reviewed from metadata.",
+    "lastReviewedAt": "2026-07-01T11:36:54.868Z",
+    "pushedAt": null,
+    "updatedAt": null,
+    "createdAt": null
+  },
+  "qualitySignals": {
+    "stars": 0,
+    "forks": 0,
+    "watchers": 0,
+    "openIssues": 0,
+    "archived": false,
+    "disabled": false,
+    "private": false,
+    "fork": false,
+    "visibility": "public",
+    "language": null,
+    "topics": [],
+    "homepage": null,
+    "defaultBranch": null,
+    "size": 0,
+    "pushedAt": null,
+    "updatedAt": null,
+    "createdAt": null
+  },
+  "notes": []
+}

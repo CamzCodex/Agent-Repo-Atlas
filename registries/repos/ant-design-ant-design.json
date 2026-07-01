@@ -1,0 +1,102 @@
+{
+  "id": "ant-design/ant-design",
+  "slug": "ant-design-ant-design",
+  "owner": "ant-design",
+  "repo": "ant-design",
+  "name": "ant-design",
+  "url": "https://github.com/ant-design/ant-design",
+  "entryPath": "registries/repos/ant-design-ant-design.json",
+  "category": "design-systems",
+  "type": "design-system",
+  "aliases": [
+    "Ant Design",
+    "antd",
+    "ant-design",
+    "ant-design-ant-design"
+  ],
+  "stack": [
+    "React",
+    "TypeScript",
+    "ant-design",
+    "antd",
+    "design-systems",
+    "react",
+    "typescript",
+    "ui-kit",
+    "ui-library"
+  ],
+  "tags": [
+    "ant-design",
+    "antd",
+    "design-systems",
+    "react",
+    "typescript",
+    "ui-kit",
+    "ui-library",
+    "design-system"
+  ],
+  "summary": "Enterprise-focused React design system with a wide surface area.",
+  "primaryUseCases": [
+    "enterprise app UI",
+    "forms",
+    "tables"
+  ],
+  "agentUseInstruction": "Use for reference or adoption after comparing bundle and API complexity.",
+  "acquisitionMode": "dependency-candidate",
+  "riskLevel": "low",
+  "riskFlags": [
+    "large-surface-area"
+  ],
+  "riskNotes": "Flags: large-surface-area.",
+  "reviewRequiredBeforeUse": true,
+  "recommendedAgentAction": "compare-before-adoption",
+  "relatedRepos": [
+    "mui/material-ui",
+    "mantinedev/mantine"
+  ],
+  "searchText": "ant-design/ant-design ant-design-ant-design ant-design https://github.com/ant-design/ant-design design-systems design-system Ant Design antd React TypeScript react typescript ui-kit ui-library Enterprise-focused React design system with a wide surface area. enterprise app UI forms tables Use for reference or adoption after comparing bundle and API complexity. mui/material-ui mantinedev/mantine https://ant.design",
+  "license": {
+    "spdx": "MIT",
+    "confidence": "high",
+    "name": "MIT License",
+    "url": "https://api.github.com/licenses/mit"
+  },
+  "maintenance": {
+    "state": "active",
+    "notes": "Reviewed from metadata.",
+    "lastReviewedAt": "2026-07-01T11:36:51.577Z",
+    "pushedAt": "2026-07-01T10:31:49Z",
+    "updatedAt": "2026-07-01T10:03:46Z",
+    "createdAt": "2015-04-24T15:37:24Z"
+  },
+  "qualitySignals": {
+    "stars": 98536,
+    "forks": 54647,
+    "watchers": 247,
+    "openIssues": 1285,
+    "archived": false,
+    "disabled": false,
+    "private": false,
+    "fork": false,
+    "visibility": "public",
+    "language": "TypeScript",
+    "topics": [
+      "ant-design",
+      "antd",
+      "design-systems",
+      "react",
+      "typescript",
+      "ui-kit",
+      "ui-library"
+    ],
+    "homepage": "https://ant.design",
+    "defaultBranch": "master",
+    "size": 274029,
+    "pushedAt": "2026-07-01T10:31:49Z",
+    "updatedAt": "2026-07-01T10:03:46Z",
+    "createdAt": "2015-04-24T15:37:24Z"
+  },
+  "notes": [
+    "Especially relevant when dense admin UIs and form-heavy flows matter."
+  ]
+}

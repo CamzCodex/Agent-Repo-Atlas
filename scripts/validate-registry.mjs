@@ -1,165 +1,138 @@
-import { readdir, readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
+import {
+  ACQUISITION_VALUES,
+  CATEGORY_VALUES,
+  MAINTENANCE_VALUES,
+  RISK_LEVELS,
+  TYPE_VALUES,
+  buildSearchText,
+  normalizeText,
+  parseGitHubUrl,
+  slugify,
+  unique
+} from "./atlas-core.mjs";
 
 const root = process.cwd();
 
 function fail(message) {
-  console.error(message);
-  process.exitCode = 1;
+  throw new Error(message);
 }
 
 function isObject(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function validateSchema(value, schema, pointer = "#") {
-  if (schema.$ref) {
-    throw new Error(`$ref is not supported at ${pointer}`);
+function validateFields(entry) {
+  const required = ["id", "slug", "owner", "repo", "name", "url", "entryPath", "category", "type", "aliases", "stack", "tags", "summary", "primaryUseCases", "agentUseInstruction", "acquisitionMode", "riskLevel", "reviewRequiredBeforeUse", "recommendedAgentAction", "relatedRepos", "searchText", "license", "maintenance", "qualitySignals", "notes"];
+  for (const key of required) {
+    if (!(key in entry)) fail(`missing required field: ${entry.id ?? entry.entryPath ?? "unknown"} -> ${key}`);
   }
-
-  if (schema.type) {
-    if (schema.type === "object" && !isObject(value)) {
-      return [`${pointer}: expected object`];
-    }
-    if (schema.type === "array" && !Array.isArray(value)) {
-      return [`${pointer}: expected array`];
-    }
-    if (schema.type === "string" && typeof value !== "string") {
-      return [`${pointer}: expected string`];
-    }
-    if (schema.type === "number" && typeof value !== "number") {
-      return [`${pointer}: expected number`];
-    }
+  if (!isObject(entry.license)) fail(`license must be object: ${entry.id}`);
+  if (!isObject(entry.maintenance)) fail(`maintenance must be object: ${entry.id}`);
+  if (!isObject(entry.qualitySignals)) fail(`qualitySignals must be object: ${entry.id}`);
+  if (!Array.isArray(entry.aliases) || !Array.isArray(entry.stack) || !Array.isArray(entry.tags) || !Array.isArray(entry.primaryUseCases) || !Array.isArray(entry.relatedRepos) || !Array.isArray(entry.notes)) {
+    fail(`array field malformed: ${entry.id}`);
   }
-
-  if (schema.type === "string") {
-    const errors = [];
-    if (schema.minLength !== undefined && value.length < schema.minLength) {
-      errors.push(`${pointer}: string shorter than ${schema.minLength}`);
-    }
-    if (schema.pattern && !(new RegExp(schema.pattern).test(value))) {
-      errors.push(`${pointer}: string does not match pattern ${schema.pattern}`);
-    }
-    if (schema.enum && !schema.enum.includes(value)) {
-      errors.push(`${pointer}: value not in enum`);
-    }
-    return errors;
-  }
-
-  if (schema.type === "number") {
-    const errors = [];
-    if (schema.minimum !== undefined && value < schema.minimum) {
-      errors.push(`${pointer}: number below minimum ${schema.minimum}`);
-    }
-    if (schema.maximum !== undefined && value > schema.maximum) {
-      errors.push(`${pointer}: number above maximum ${schema.maximum}`);
-    }
-    return errors;
-  }
-
-  if (schema.type === "array") {
-    const errors = [];
-    if (schema.minItems !== undefined && value.length < schema.minItems) {
-      errors.push(`${pointer}: array shorter than ${schema.minItems}`);
-    }
-    if (schema.maxItems !== undefined && value.length > schema.maxItems) {
-      errors.push(`${pointer}: array longer than ${schema.maxItems}`);
-    }
-    if (schema.uniqueItems) {
-      const seen = new Set();
-      for (const item of value) {
-        const key = JSON.stringify(item);
-        if (seen.has(key)) {
-          errors.push(`${pointer}: array has duplicate items`);
-          break;
-        }
-        seen.add(key);
-      }
-    }
-    if (schema.items) {
-      value.forEach((item, index) => {
-        errors.push(...validateSchema(item, schema.items, `${pointer}/${index}`));
-      });
-    }
-    return errors;
-  }
-
-  if (schema.type === "object") {
-    const errors = [];
-    const required = schema.required ?? [];
-    for (const key of required) {
-      if (!(key in value)) {
-        errors.push(`${pointer}: missing required property ${key}`);
-      }
-    }
-    const properties = schema.properties ?? {};
-    for (const [key, childSchema] of Object.entries(properties)) {
-      if (key in value) {
-        errors.push(...validateSchema(value[key], childSchema, `${pointer}/${key}`));
-      }
-    }
-    if (schema.additionalProperties === false) {
-      for (const key of Object.keys(value)) {
-        if (!(key in properties)) {
-          errors.push(`${pointer}: unexpected property ${key}`);
-        }
-      }
-    }
-    return errors;
-  }
-
-  return [];
+  if (!ACQUISITION_VALUES.includes(entry.acquisitionMode)) fail(`invalid acquisition mode: ${entry.id} -> ${entry.acquisitionMode}`);
+  if (!RISK_LEVELS.includes(entry.riskLevel)) fail(`invalid risk level: ${entry.id} -> ${entry.riskLevel}`);
+  if (!CATEGORY_VALUES.includes(entry.category)) fail(`invalid category: ${entry.id} -> ${entry.category}`);
+  if (!TYPE_VALUES.includes(entry.type)) fail(`invalid type: ${entry.id} -> ${entry.type}`);
+  if (!MAINTENANCE_VALUES.includes(entry.maintenance.state)) fail(`invalid maintenance state: ${entry.id} -> ${entry.maintenance.state}`);
+  if (typeof entry.reviewRequiredBeforeUse !== "boolean") fail(`reviewRequiredBeforeUse must be boolean: ${entry.id}`);
+  if (typeof entry.searchText !== "string" || !entry.searchText.trim()) fail(`searchText missing: ${entry.id}`);
+  if (typeof entry.url !== "string" || !entry.url.startsWith("https://github.com/")) fail(`bad github url: ${entry.id} -> ${entry.url}`);
+  if (/[A-Za-z]:\\|file:\/\//.test(entry.url) || /localhost|127\.0\.0\.1|ghp_|github_pat_|BEGIN PRIVATE KEY/i.test(entry.searchText)) fail(`obvious secret/local path detected: ${entry.id}`);
 }
 
-async function loadJson(filePath) {
-  return JSON.parse(await readFile(filePath, "utf8"));
+function validateEntryPath(entry) {
+  const expected = path.normalize(path.join(root, entry.entryPath));
+  if (!expected.startsWith(path.join(root, "registries", "repos"))) fail(`entryPath escapes registry tree: ${entry.id}`);
+  return readFile(expected, "utf8").then(() => undefined, () => fail(`broken entry path: ${entry.id} -> ${entry.entryPath}`));
 }
 
 async function main() {
-  const entrySchema = await loadJson(path.join(root, "schemas", "repo-entry.schema.json"));
-  const indexSchema = await loadJson(path.join(root, "schemas", "repo-index.schema.json"));
-  const index = await loadJson(path.join(root, "registries", "repo-index.json"));
-
+  const index = JSON.parse(await readFile(path.join(root, "registries", "repo-index.json"), "utf8"));
+  const starredImportPath = path.join(root, "registries", "starred", "starred-import.json");
+  const starredQueuePath = path.join(root, "registries", "starred", "starred-review-queue.json");
   const repoDir = path.join(root, "registries", "repos");
-  const repoFiles = (await readdir(repoDir)).filter((name) => name.endsWith(".json"));
+  const files = (await readdir(repoDir)).filter((file) => file.endsWith(".json")).sort();
+  const entries = await Promise.all(files.map(async (file) => JSON.parse(await readFile(path.join(repoDir, file), "utf8"))));
+  const starredImport = JSON.parse(await readFile(starredImportPath, "utf8"));
+  const starredQueue = JSON.parse(await readFile(starredQueuePath, "utf8"));
 
-  const indexErrors = validateSchema(index, indexSchema);
-  if (indexErrors.length) {
-    indexErrors.forEach(fail);
-  }
-
-  const listed = new Set(index.entries);
-  for (const repoFile of repoFiles) {
-    const fullPath = path.join(repoDir, repoFile);
-    const entry = await loadJson(fullPath);
-    const errors = validateSchema(entry, entrySchema);
-    if (errors.length) {
-      errors.forEach(fail);
+  const ids = new Set();
+  for (const entry of entries) {
+    validateFields(entry);
+    if (ids.has(entry.id)) fail(`duplicate id: ${entry.id}`);
+    ids.add(entry.id);
+    const parsed = parseGitHubUrl(entry.url);
+    if (!parsed) fail(`unparseable github url: ${entry.id}`);
+    if (entry.slug !== slugify(entry.id) && !entry.entryPath.endsWith(`${entry.slug}.json`)) {
+      // Allow explicit filenames for seeded entries, but the slug still needs to be stable.
+      if (entry.slug !== path.basename(entry.entryPath, ".json")) fail(`slug/path mismatch: ${entry.id}`);
     }
-    if (!listed.has(entry.slug)) {
-      fail(`registries/repo-index.json does not list ${entry.slug}`);
+    const expectedSearch = buildSearchText(entry);
+    if (!normalizeText(entry.searchText).includes(normalizeText(entry.name)) || normalizeText(expectedSearch).length < 10) {
+      fail(`search text malformed: ${entry.id}`);
+    }
+    await validateEntryPath(entry);
+  }
+
+  const generatedIndexEntries = entries
+    .map((entry) => ({
+      id: entry.id,
+      slug: entry.slug,
+      owner: entry.owner,
+      repo: entry.repo,
+      name: entry.name,
+      url: entry.url,
+      entryPath: entry.entryPath,
+      category: entry.category,
+      type: entry.type,
+      aliases: entry.aliases,
+      stack: entry.stack,
+      tags: entry.tags,
+      summary: entry.summary,
+      primaryUseCases: entry.primaryUseCases,
+      acquisitionMode: entry.acquisitionMode,
+      riskLevel: entry.riskLevel,
+      reviewRequiredBeforeUse: entry.reviewRequiredBeforeUse,
+      recommendedAgentAction: entry.recommendedAgentAction,
+      searchText: entry.searchText,
+      license: entry.license?.spdx ?? "NOASSERTION",
+      maintenanceState: entry.maintenance?.state ?? "unknown"
+    }))
+    .sort((a, b) => a.id.localeCompare(b.id));
+
+  const actualIndexEntries = [...(index.entries ?? [])].sort((a, b) => a.id.localeCompare(b.id));
+  if (JSON.stringify(generatedIndexEntries) !== JSON.stringify(actualIndexEntries)) {
+    fail("repo-index.json is out of sync with full registry entries");
+  }
+
+  if (starredImport.count !== starredImport.entries.length) {
+    fail("starred-import.json count does not match entries length");
+  }
+  if (starredQueue.count !== starredQueue.entries.length) {
+    fail("starred-review-queue.json count does not match entries length");
+  }
+  if (starredImport.count !== starredQueue.count) {
+    fail("starred import and review queue counts differ");
+  }
+  for (const item of starredQueue.entries) {
+    if (!Array.isArray(item.manualReviewReasons)) {
+      fail(`starred review item missing manualReviewReasons: ${item.fullName}`);
+    }
+    if (typeof item.relevanceScore !== "number") {
+      fail(`starred review item missing relevanceScore: ${item.fullName}`);
     }
   }
 
-  for (const slug of index.entries) {
-    const filePath = path.join(repoDir, `${slug}.json`);
-    try {
-      await readFile(filePath, "utf8");
-    } catch {
-      fail(`missing registry file for ${slug}`);
-    }
-  }
-
-  if (process.exitCode) {
-    process.exit(process.exitCode);
-  }
-
-  console.log("Registry validation passed.");
+  console.log(`Registry validation passed for ${entries.length} entries.`);
 }
 
 main().catch((error) => {
   console.error(error);
   process.exit(1);
 });
-

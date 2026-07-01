@@ -1,0 +1,79 @@
+{
+  "id": "enaqx/awesome-react",
+  "slug": "enaqx-awesome-react",
+  "owner": "enaqx",
+  "repo": "awesome-react",
+  "name": "awesome-react",
+  "url": "https://github.com/enaqx/awesome-react",
+  "entryPath": "registries/repos/enaqx-awesome-react.json",
+  "category": "react-source-maps",
+  "type": "collection",
+  "aliases": [
+    "awesome-react",
+    "enaqx-awesome-react"
+  ],
+  "stack": [
+    "React"
+  ],
+  "tags": [
+    "react-source-maps",
+    "collection",
+    "awesome-react",
+    "enaqx"
+  ],
+  "summary": "Curated React resources, libraries, and ecosystem references.",
+  "primaryUseCases": [
+    "React discovery",
+    "ecosystem mapping",
+    "research starting point"
+  ],
+  "agentUseInstruction": "Use as a navigation map for React research rather than a dependency source.",
+  "acquisitionMode": "reference-map-only",
+  "riskLevel": "low",
+  "riskFlags": [
+    "large-surface-area"
+  ],
+  "riskNotes": "Flags: large-surface-area.",
+  "reviewRequiredBeforeUse": false,
+  "recommendedAgentAction": "search-the-map",
+  "relatedRepos": [
+    "brillout/awesome-react-components"
+  ],
+  "searchText": "enaqx/awesome-react enaqx-awesome-react enaqx awesome-react https://github.com/enaqx/awesome-react react-source-maps collection React Curated React resources, libraries, and ecosystem references. React discovery ecosystem mapping research starting point Use as a navigation map for React research rather than a dependency source. brillout/awesome-react-components",
+  "license": {
+    "spdx": "NOASSERTION",
+    "confidence": "low",
+    "name": null,
+    "url": null
+  },
+  "maintenance": {
+    "state": "active",
+    "notes": "Reviewed from metadata.",
+    "lastReviewedAt": "2026-07-01T11:36:54.867Z",
+    "pushedAt": null,
+    "updatedAt": null,
+    "createdAt": null
+  },
+  "qualitySignals": {
+    "stars": 0,
+    "forks": 0,
+    "watchers": 0,
+    "openIssues": 0,
+    "archived": false,
+    "disabled": false,
+    "private": false,
+    "fork": false,
+    "visibility": "public",
+    "language": null,
+    "topics": [],
+    "homepage": null,
+    "defaultBranch": null,
+    "size": 0,
+    "pushedAt": null,
+    "updatedAt": null,
+    "createdAt": null
+  },
+  "notes": [
+    "Useful for breadth-first exploration."
+  ]
+}

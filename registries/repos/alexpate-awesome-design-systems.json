@@ -1,0 +1,92 @@
+{
+  "id": "alexpate/awesome-design-systems",
+  "slug": "alexpate-awesome-design-systems",
+  "owner": "alexpate",
+  "repo": "awesome-design-systems",
+  "name": "awesome-design-systems",
+  "url": "https://github.com/alexpate/awesome-design-systems",
+  "entryPath": "registries/repos/alexpate-awesome-design-systems.json",
+  "category": "design-systems",
+  "type": "tooling",
+  "aliases": [
+    "awesome-design-systems",
+    "alexpate/awesome-design-systems",
+    "alexpate-awesome-design-systems"
+  ],
+  "stack": [
+    "awesome",
+    "awesome-list",
+    "design-systems",
+    "hacktoberfest",
+    "pattern-library",
+    "ui-library"
+  ],
+  "tags": [
+    "awesome",
+    "awesome-list",
+    "design-systems",
+    "hacktoberfest",
+    "pattern-library",
+    "ui-library",
+    "tooling",
+    "awesome-design-systems",
+    "alexpate"
+  ],
+  "summary": "💅🏻 ⚒ A collection of awesome design systems",
+  "primaryUseCases": [
+    "starred repo review",
+    "candidate triage"
+  ],
+  "agentUseInstruction": "Inspect the imported starred metadata and compare it with alternatives before recommending any adoption.",
+  "acquisitionMode": "reference-only",
+  "riskLevel": "low",
+  "riskFlags": [],
+  "riskNotes": "No explicit risk notes.",
+  "reviewRequiredBeforeUse": true,
+  "recommendedAgentAction": "compare-before-adoption",
+  "relatedRepos": [],
+  "searchText": "alexpate/awesome-design-systems alexpate-awesome-design-systems alexpate awesome-design-systems https://github.com/alexpate/awesome-design-systems design-systems tooling awesome awesome-list hacktoberfest pattern-library ui-library 💅🏻 ⚒ A collection of awesome design systems starred repo review candidate triage Inspect the imported starred metadata and compare it with alternatives before recommending any adoption. https://git.io/design-systems",
+  "license": {
+    "spdx": "Unlicense",
+    "confidence": "high",
+    "name": "The Unlicense",
+    "url": "https://api.github.com/licenses/unlicense"
+  },
+  "maintenance": {
+    "state": "active",
+    "notes": "Reviewed from metadata.",
+    "lastReviewedAt": "2026-07-01T11:37:17.286Z",
+    "pushedAt": "2026-04-28T16:03:25Z",
+    "updatedAt": "2026-07-01T08:24:12Z",
+    "createdAt": "2017-06-06T19:56:49Z"
+  },
+  "qualitySignals": {
+    "stars": 25277,
+    "forks": 1622,
+    "watchers": 464,
+    "openIssues": 12,
+    "archived": false,
+    "disabled": false,
+    "private": false,
+    "fork": false,
+    "visibility": "public",
+    "language": null,
+    "topics": [
+      "awesome",
+      "awesome-list",
+      "design-systems",
+      "hacktoberfest",
+      "pattern-library",
+      "ui-library"
+    ],
+    "homepage": "https://git.io/design-systems",
+    "defaultBranch": "master",
+    "size": 444,
+    "pushedAt": "2026-04-28T16:03:25Z",
+    "updatedAt": "2026-07-01T08:24:12Z",
+    "createdAt": "2017-06-06T19:56:49Z"
+  },
+  "notes": [
+    "Imported from GitHub stars."
+  ]
+}

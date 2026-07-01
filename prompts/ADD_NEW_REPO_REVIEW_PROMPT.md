@@ -1,23 +1,26 @@
 # Add New Repo Review Prompt
 
-Review the candidate repository and produce a registry entry for Agent-Repo-Atlas.
+Review the candidate repo and produce a compact atlas entry.
 
 Include:
 
-- slug
-- name
-- external URL
-- repo type
-- short description
-- summary
-- topics
-- tags
-- use cases
-- acquisition mode
-- maintenance notes
-- risk flags
-- license
-- notes
+- `id`
+- `url`
+- `category`
+- `type`
+- `aliases`
+- `stack`
+- `summary`
+- `primaryUseCases`
+- `agentUseInstruction`
+- `acquisitionMode`
+- `riskLevel`
+- `riskFlags`
+- `license`
+- `maintenance`
+- `relatedRepos`
+- `reviewRequiredBeforeUse`
+- `recommendedAgentAction`
 
-Be factual, concise, and explicit about why the repo deserves atlas inclusion.
+Keep the record factual. Listing means classified, not approved.
 

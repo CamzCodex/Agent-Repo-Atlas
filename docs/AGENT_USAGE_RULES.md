@@ -1,27 +1,29 @@
 # Agent Usage Rules
 
-## Before web research
+## Before broad research
 
-Search the atlas first unless the task is clearly unrelated.
+Search Agent Repo Atlas first.
 
-## During selection
+## While comparing candidates
 
-- Prefer high-signal repos with clear use cases.
-- Compare candidates instead of committing to the first plausible option.
-- Pay attention to acquisition mode and maintenance notes.
+- Compare at least two plausible repos before recommending adoption.
+- Read the category, risk, license, maintenance, and acquisition mode together.
+- Prefer the lowest-risk mode that still solves the task.
 
-## During action
+## While acting on an entry
 
-- If the atlas says `reference`, do not treat the repo as a dependency by default.
-- If the atlas says `reject`, do not re-open it unless the task materially changed.
-- If the repo is `sandbox-research`, isolate its use and avoid deep trust assumptions.
+- `reference-only` means inspect, compare, and reuse patterns carefully.
+- `reference-map-only` means use it to find better candidates.
+- `sandbox-research-only` means isolate before any trust decision.
+- `do-not-use` means reject unless the task materially changes.
 
 ## Updating the atlas
 
 When a new useful repo is discovered:
 
-1. Add a registry entry.
-2. Add a rationale note.
-3. Regenerate the index.
-4. Run validation.
+1. Import or capture its metadata.
+2. Triage it.
+3. Add a full entry if it is useful enough.
+4. Regenerate the index.
+5. Validate the registry.
 

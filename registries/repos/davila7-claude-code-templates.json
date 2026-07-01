@@ -1,0 +1,91 @@
+{
+  "id": "davila7/claude-code-templates",
+  "slug": "davila7-claude-code-templates",
+  "owner": "davila7",
+  "repo": "claude-code-templates",
+  "name": "claude-code-templates",
+  "url": "https://github.com/davila7/claude-code-templates",
+  "entryPath": "registries/repos/davila7-claude-code-templates.json",
+  "category": "agent-frameworks",
+  "type": "tooling",
+  "aliases": [
+    "claude-code-templates",
+    "davila7/claude-code-templates",
+    "davila7-claude-code-templates"
+  ],
+  "stack": [
+    "Python",
+    "anthropic",
+    "anthropic-claude",
+    "claude",
+    "claude-code"
+  ],
+  "tags": [
+    "anthropic",
+    "anthropic-claude",
+    "claude",
+    "claude-code",
+    "agent-frameworks",
+    "tooling",
+    "claude-code-templates",
+    "davila7"
+  ],
+  "summary": "CLI tool for configuring and monitoring Claude Code",
+  "primaryUseCases": [
+    "starred repo review",
+    "candidate triage"
+  ],
+  "agentUseInstruction": "Inspect the imported starred metadata and compare it with alternatives before recommending any adoption.",
+  "acquisitionMode": "sandbox-research-only",
+  "riskLevel": "high",
+  "riskFlags": [
+    "security-sensitive"
+  ],
+  "riskNotes": "Flags: security-sensitive.",
+  "reviewRequiredBeforeUse": true,
+  "recommendedAgentAction": "compare-before-adoption",
+  "relatedRepos": [],
+  "searchText": "davila7/claude-code-templates davila7-claude-code-templates davila7 claude-code-templates https://github.com/davila7/claude-code-templates agent-frameworks tooling Python anthropic anthropic-claude claude claude-code CLI tool for configuring and monitoring Claude Code starred repo review candidate triage Inspect the imported starred metadata and compare it with alternatives before recommending any adoption. https://aitmpl.com",
+  "license": {
+    "spdx": "MIT",
+    "confidence": "high",
+    "name": "MIT License",
+    "url": "https://api.github.com/licenses/mit"
+  },
+  "maintenance": {
+    "state": "active",
+    "notes": "Reviewed from metadata.",
+    "lastReviewedAt": "2026-07-01T11:37:22.949Z",
+    "pushedAt": "2026-07-01T04:31:27Z",
+    "updatedAt": "2026-07-01T11:33:31Z",
+    "createdAt": "2025-07-04T01:26:26Z"
+  },
+  "qualitySignals": {
+    "stars": 28388,
+    "forks": 2965,
+    "watchers": 178,
+    "openIssues": 186,
+    "archived": false,
+    "disabled": false,
+    "private": false,
+    "fork": false,
+    "visibility": "public",
+    "language": "Python",
+    "topics": [
+      "anthropic",
+      "anthropic-claude",
+      "claude",
+      "claude-code"
+    ],
+    "homepage": "https://aitmpl.com",
+    "defaultBranch": "main",
+    "size": 199200,
+    "pushedAt": "2026-07-01T04:31:27Z",
+    "updatedAt": "2026-07-01T11:33:31Z",
+    "createdAt": "2025-07-04T01:26:26Z"
+  },
+  "notes": [
+    "Imported from GitHub stars.",
+    "security-sensitive"
+  ]
+}

@@ -1,0 +1,80 @@
+{
+  "id": "icebear0828/codex-proxy",
+  "slug": "icebear0828-codex-proxy",
+  "owner": "icebear0828",
+  "repo": "codex-proxy",
+  "name": "codex-proxy",
+  "url": "https://github.com/icebear0828/codex-proxy",
+  "entryPath": "registries/repos/icebear0828-codex-proxy.json",
+  "category": "agent-frameworks",
+  "type": "tooling",
+  "aliases": [
+    "codex-proxy",
+    "icebear0828/codex-proxy",
+    "icebear0828-codex-proxy"
+  ],
+  "stack": [
+    "TypeScript"
+  ],
+  "tags": [
+    "agent-frameworks",
+    "tooling",
+    "codex-proxy",
+    "icebear0828"
+  ],
+  "summary": "OpenAI-compatible proxy for ChatGPT Codex Responses API",
+  "primaryUseCases": [
+    "starred repo review",
+    "candidate triage"
+  ],
+  "agentUseInstruction": "Inspect the imported starred metadata and compare it with alternatives before recommending any adoption.",
+  "acquisitionMode": "sandbox-research-only",
+  "riskLevel": "high",
+  "riskFlags": [
+    "missing license",
+    "security-sensitive"
+  ],
+  "riskNotes": "Flags: missing license, security-sensitive.",
+  "reviewRequiredBeforeUse": true,
+  "recommendedAgentAction": "compare-before-adoption",
+  "relatedRepos": [],
+  "searchText": "icebear0828/codex-proxy icebear0828-codex-proxy icebear0828 codex-proxy https://github.com/icebear0828/codex-proxy agent-frameworks tooling TypeScript OpenAI-compatible proxy for ChatGPT Codex Responses API starred repo review candidate triage Inspect the imported starred metadata and compare it with alternatives before recommending any adoption.",
+  "license": {
+    "spdx": "NOASSERTION",
+    "confidence": "low",
+    "name": null,
+    "url": null
+  },
+  "maintenance": {
+    "state": "active",
+    "notes": "Reviewed from metadata.",
+    "lastReviewedAt": "2026-07-01T11:37:00.016Z",
+    "pushedAt": "2026-06-18T18:30:09Z",
+    "updatedAt": "2026-07-01T09:44:29Z",
+    "createdAt": "2026-02-17T15:30:15Z"
+  },
+  "qualitySignals": {
+    "stars": 1480,
+    "forks": 202,
+    "watchers": 4,
+    "openIssues": 28,
+    "archived": false,
+    "disabled": false,
+    "private": false,
+    "fork": false,
+    "visibility": "public",
+    "language": "TypeScript",
+    "topics": [],
+    "homepage": null,
+    "defaultBranch": "dev",
+    "size": 8413,
+    "pushedAt": "2026-06-18T18:30:09Z",
+    "updatedAt": "2026-07-01T09:44:29Z",
+    "createdAt": "2026-02-17T15:30:15Z"
+  },
+  "notes": [
+    "Imported from GitHub stars.",
+    "missing license",
+    "security-sensitive"
+  ]
+}

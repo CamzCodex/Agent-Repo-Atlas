@@ -1,0 +1,110 @@
+{
+  "id": "radix-ui/primitives",
+  "slug": "radix-ui-primitives",
+  "owner": "radix-ui",
+  "repo": "primitives",
+  "name": "primitives",
+  "url": "https://github.com/radix-ui/primitives",
+  "entryPath": "registries/repos/radix-ui-primitives.json",
+  "category": "ui-components",
+  "type": "library",
+  "aliases": [
+    "Radix Primitives",
+    "Radix UI",
+    "primitives",
+    "radix-ui-primitives"
+  ],
+  "stack": [
+    "React",
+    "TypeScript",
+    "accessibility",
+    "colors",
+    "component-library",
+    "design-systems",
+    "radix-ui",
+    "react",
+    "ui",
+    "ui-components",
+    "ui-kit"
+  ],
+  "tags": [
+    "accessibility",
+    "colors",
+    "component-library",
+    "design-systems",
+    "radix-ui",
+    "react",
+    "ui",
+    "ui-components",
+    "ui-kit",
+    "library",
+    "primitives"
+  ],
+  "summary": "Low-level accessible UI primitives for composing custom component systems.",
+  "primaryUseCases": [
+    "headless components",
+    "custom design systems",
+    "accessibility-first UI"
+  ],
+  "agentUseInstruction": "Prefer when the agent needs primitives rather than a fully opinionated design system.",
+  "acquisitionMode": "dependency-candidate",
+  "riskLevel": "low",
+  "riskFlags": [
+    "large-surface-area"
+  ],
+  "riskNotes": "Flags: large-surface-area.",
+  "reviewRequiredBeforeUse": true,
+  "recommendedAgentAction": "compare-before-adoption",
+  "relatedRepos": [
+    "shadcn-ui/ui",
+    "mantinedev/mantine",
+    "mui/material-ui"
+  ],
+  "searchText": "radix-ui/primitives radix-ui-primitives radix-ui primitives https://github.com/radix-ui/primitives ui-components library Radix Primitives Radix UI React TypeScript accessibility colors component-library design-systems react ui ui-kit Low-level accessible UI primitives for composing custom component systems. headless components custom design systems accessibility-first UI Prefer when the agent needs primitives rather than a fully opinionated design system. shadcn-ui/ui mantinedev/mantine mui/material-ui https://radix-ui.com/primitives",
+  "license": {
+    "spdx": "MIT",
+    "confidence": "high",
+    "name": "MIT License",
+    "url": "https://api.github.com/licenses/mit"
+  },
+  "maintenance": {
+    "state": "active",
+    "notes": "Reviewed from metadata.",
+    "lastReviewedAt": "2026-07-01T11:36:53.795Z",
+    "pushedAt": "2026-06-30T23:26:58Z",
+    "updatedAt": "2026-07-01T06:20:58Z",
+    "createdAt": "2020-06-19T13:23:22Z"
+  },
+  "qualitySignals": {
+    "stars": 19016,
+    "forks": 1198,
+    "watchers": 82,
+    "openIssues": 401,
+    "archived": false,
+    "disabled": false,
+    "private": false,
+    "fork": false,
+    "visibility": "public",
+    "language": "TypeScript",
+    "topics": [
+      "accessibility",
+      "colors",
+      "component-library",
+      "design-systems",
+      "radix-ui",
+      "react",
+      "ui",
+      "ui-components",
+      "ui-kit"
+    ],
+    "homepage": "https://radix-ui.com/primitives",
+    "defaultBranch": "main",
+    "size": 22948,
+    "pushedAt": "2026-06-30T23:26:58Z",
+    "updatedAt": "2026-07-01T06:20:58Z",
+    "createdAt": "2020-06-19T13:23:22Z"
+  },
+  "notes": [
+    "Excellent base layer for custom component stacks."
+  ]
+}

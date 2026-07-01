@@ -1,53 +1,87 @@
 {
-  "slug": "devspace",
-  "name": "DevSpace",
-  "externalUrl": "https://github.com/loft-sh/devspace",
-  "homepage": "https://devspace.sh/",
+  "id": "Waishnav/devspace",
+  "slug": "waishnav-devspace",
+  "owner": "Waishnav",
+  "repo": "devspace",
+  "name": "devspace",
+  "url": "https://github.com/Waishnav/devspace",
+  "entryPath": "registries/repos/devspace.json",
+  "category": "agent-frameworks",
   "type": "tooling",
-  "description": "Tool for Kubernetes-native development workflows.",
-  "summary": "Useful for local-to-cluster development orchestration, sync, and rapid iteration in Kubernetes environments.",
-  "topics": [
-    "kubernetes",
-    "devtools",
-    "workflow",
-    "cli",
-    "dev-experience"
+  "aliases": [
+    "devspace",
+    "turn chatgpt into codex",
+    "waishnav-devspace"
+  ],
+  "stack": [
+    "TypeScript"
   ],
   "tags": [
-    "kubernetes",
-    "developer-workflow",
+    "agent-frameworks",
     "tooling",
-    "local-dev",
-    "cli"
+    "devspace",
+    "Waishnav"
   ],
-  "useCases": [
-    "Streamline Kubernetes development workflows.",
-    "Prototype local-to-cluster sync.",
-    "Compare against other dev-in-cluster tools."
+  "summary": "ChatGPT-to-Codex bridge-style repo with local access and workflow automation implications.",
+  "primaryUseCases": [
+    "agent bridge research",
+    "workflow automation",
+    "local tooling inspection"
   ],
-  "acquisitionMode": "dependency-candidate",
+  "agentUseInstruction": "Treat as high-risk and sandbox any analysis that touches credentials, local access, or execution paths.",
+  "acquisitionMode": "sandbox-research-only",
+  "riskLevel": "critical",
+  "riskFlags": [
+    "shell-execution",
+    "filesystem-access",
+    "auth-credential-handling",
+    "network-tunnel-exposure",
+    "infrastructure-modification",
+    "security-sensitive"
+  ],
+  "riskNotes": "Flags: shell-execution, filesystem-access, auth-credential-handling, network-tunnel-exposure, infrastructure-modification, security-sensitive.",
+  "reviewRequiredBeforeUse": true,
+  "recommendedAgentAction": "do-not-use",
+  "relatedRepos": [
+    "ruvnet/RuView",
+    "icebear0828/codex-proxy",
+    "microsoft/Codex-CLI"
+  ],
+  "searchText": "Waishnav/devspace waishnav-devspace Waishnav devspace https://github.com/Waishnav/devspace agent-frameworks tooling turn chatgpt into codex TypeScript ChatGPT-to-Codex bridge-style repo with local access and workflow automation implications. agent bridge research workflow automation local tooling inspection Treat as high-risk and sandbox any analysis that touches credentials, local access, or execution paths. ruvnet/RuView icebear0828/codex-proxy microsoft/Codex-CLI",
+  "license": {
+    "spdx": "MIT",
+    "confidence": "high",
+    "name": "MIT License",
+    "url": "https://api.github.com/licenses/mit"
+  },
   "maintenance": {
     "state": "active",
-    "lastReviewedAt": "2026-07-01T00:00:00.000Z",
-    "notes": "Worth reviewing when the task involves Kubernetes development loops."
+    "notes": "Reviewed from metadata.",
+    "lastReviewedAt": "2026-07-01T11:36:56.760Z",
+    "pushedAt": "2026-07-01T11:33:51Z",
+    "updatedAt": "2026-07-01T10:50:28Z",
+    "createdAt": "2026-06-14T16:57:27Z"
   },
-  "risk": {
-    "flags": [
-      "rapidly-changing"
-    ],
-    "notes": "Operational behavior can change with Kubernetes versions and cluster policy."
-  },
-  "license": {
-    "spdx": "Apache-2.0",
-    "confidence": "high"
-  },
-  "signals": {
-    "stars": 0,
-    "updatedAt": "2026-07-01T00:00:00.000Z"
+  "qualitySignals": {
+    "stars": 2732,
+    "forks": 290,
+    "watchers": 3,
+    "openIssues": 15,
+    "archived": false,
+    "disabled": false,
+    "private": false,
+    "fork": false,
+    "visibility": "public",
+    "language": "TypeScript",
+    "topics": [],
+    "homepage": "",
+    "defaultBranch": "main",
+    "size": 1445,
+    "pushedAt": "2026-07-01T11:33:51Z",
+    "updatedAt": "2026-07-01T10:50:28Z",
+    "createdAt": "2026-06-14T16:57:27Z"
   },
   "notes": [
-    "Good candidate when containerized workflow automation is required.",
-    "Review cluster compatibility before adoption."
+    "Treat as research only; do not approve by default."
   ]
 }
-

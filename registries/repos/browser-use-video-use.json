@@ -1,0 +1,75 @@
+{
+  "id": "browser-use/video-use",
+  "slug": "browser-use-video-use",
+  "owner": "browser-use",
+  "repo": "video-use",
+  "name": "video-use",
+  "url": "https://github.com/browser-use/video-use",
+  "entryPath": "registries/repos/browser-use-video-use.json",
+  "category": "video-generation",
+  "type": "tooling",
+  "aliases": [
+    "video-use",
+    "browser-use/video-use",
+    "browser-use-video-use"
+  ],
+  "stack": [
+    "Python"
+  ],
+  "tags": [
+    "video-generation",
+    "tooling",
+    "video-use",
+    "browser-use"
+  ],
+  "summary": "Edit videos with coding agents",
+  "primaryUseCases": [
+    "starred repo review",
+    "candidate triage"
+  ],
+  "agentUseInstruction": "Inspect the imported starred metadata and compare it with alternatives before recommending any adoption.",
+  "acquisitionMode": "implementation-pattern",
+  "riskLevel": "low",
+  "riskFlags": [],
+  "riskNotes": "No explicit risk notes.",
+  "reviewRequiredBeforeUse": true,
+  "recommendedAgentAction": "compare-before-adoption",
+  "relatedRepos": [],
+  "searchText": "browser-use/video-use browser-use-video-use browser-use video-use https://github.com/browser-use/video-use video-generation tooling Python Edit videos with coding agents starred repo review candidate triage Inspect the imported starred metadata and compare it with alternatives before recommending any adoption.",
+  "license": {
+    "spdx": "MIT",
+    "confidence": "high",
+    "name": "MIT License",
+    "url": "https://api.github.com/licenses/mit"
+  },
+  "maintenance": {
+    "state": "active",
+    "notes": "Reviewed from metadata.",
+    "lastReviewedAt": "2026-07-01T11:37:08.819Z",
+    "pushedAt": "2026-07-01T00:33:52Z",
+    "updatedAt": "2026-07-01T11:36:25Z",
+    "createdAt": "2026-04-12T01:34:42Z"
+  },
+  "qualitySignals": {
+    "stars": 12963,
+    "forks": 1636,
+    "watchers": 71,
+    "openIssues": 47,
+    "archived": false,
+    "disabled": false,
+    "private": false,
+    "fork": false,
+    "visibility": "public",
+    "language": "Python",
+    "topics": [],
+    "homepage": "",
+    "defaultBranch": "main",
+    "size": 561,
+    "pushedAt": "2026-07-01T00:33:52Z",
+    "updatedAt": "2026-07-01T11:36:25Z",
+    "createdAt": "2026-04-12T01:34:42Z"
+  },
+  "notes": [
+    "Imported from GitHub stars."
+  ]
+}

@@ -6,10 +6,13 @@
   "description": "Curated, machine-readable external repository intelligence system for agents.",
   "license": "MIT",
   "scripts": {
+    "import:starred": "node scripts/import-starred.mjs",
+    "triage:starred": "node scripts/triage-starred.mjs",
+    "build:atlas": "node scripts/build-atlas.mjs",
+    "generate:index": "node scripts/generate-index.mjs",
     "validate": "node scripts/validate-registry.mjs",
     "search": "node scripts/search-atlas.mjs",
     "score": "node scripts/score-atlas.mjs",
-    "generate:index": "node scripts/generate-index.mjs",
     "test:search": "node scripts/test-search.mjs",
     "test": "npm run validate && npm run test:search"
   }
