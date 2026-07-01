@@ -1,0 +1,53 @@
+{
+  "slug": "devspace",
+  "name": "DevSpace",
+  "externalUrl": "https://github.com/loft-sh/devspace",
+  "homepage": "https://devspace.sh/",
+  "type": "tooling",
+  "description": "Tool for Kubernetes-native development workflows.",
+  "summary": "Useful for local-to-cluster development orchestration, sync, and rapid iteration in Kubernetes environments.",
+  "topics": [
+    "kubernetes",
+    "devtools",
+    "workflow",
+    "cli",
+    "dev-experience"
+  ],
+  "tags": [
+    "kubernetes",
+    "developer-workflow",
+    "tooling",
+    "local-dev",
+    "cli"
+  ],
+  "useCases": [
+    "Streamline Kubernetes development workflows.",
+    "Prototype local-to-cluster sync.",
+    "Compare against other dev-in-cluster tools."
+  ],
+  "acquisitionMode": "dependency-candidate",
+  "maintenance": {
+    "state": "active",
+    "lastReviewedAt": "2026-07-01T00:00:00.000Z",
+    "notes": "Worth reviewing when the task involves Kubernetes development loops."
+  },
+  "risk": {
+    "flags": [
+      "rapidly-changing"
+    ],
+    "notes": "Operational behavior can change with Kubernetes versions and cluster policy."
+  },
+  "license": {
+    "spdx": "Apache-2.0",
+    "confidence": "high"
+  },
+  "signals": {
+    "stars": 0,
+    "updatedAt": "2026-07-01T00:00:00.000Z"
+  },
+  "notes": [
+    "Good candidate when containerized workflow automation is required.",
+    "Review cluster compatibility before adoption."
+  ]
+}
+

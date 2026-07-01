@@ -1,0 +1,203 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Repo Entry",
+  "type": "object",
+  "required": [
+    "slug",
+    "name",
+    "externalUrl",
+    "type",
+    "description",
+    "summary",
+    "topics",
+    "tags",
+    "useCases",
+    "acquisitionMode",
+    "maintenance",
+    "risk",
+    "license",
+    "signals",
+    "notes"
+  ],
+  "properties": {
+    "slug": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "externalUrl": {
+      "type": "string",
+      "minLength": 1
+    },
+    "homepage": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "library",
+        "framework",
+        "template",
+        "ui-system",
+        "mcp-server",
+        "agent-framework",
+        "design-reference",
+        "implementation-pattern",
+        "tooling"
+      ]
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1
+    },
+    "topics": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "tags": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "useCases": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "acquisitionMode": {
+      "type": "string",
+      "enum": [
+        "reference",
+        "dependency-candidate",
+        "fork-candidate",
+        "sandbox-research",
+        "reject"
+      ]
+    },
+    "maintenance": {
+      "type": "object",
+      "required": [
+        "state",
+        "lastReviewedAt",
+        "notes"
+      ],
+      "properties": {
+        "state": {
+          "type": "string",
+          "enum": [
+            "active",
+            "slow-moving",
+            "stale",
+            "archived"
+          ]
+        },
+        "lastReviewedAt": {
+          "type": "string",
+          "minLength": 1
+        },
+        "notes": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "risk": {
+      "type": "object",
+      "required": [
+        "flags",
+        "notes"
+      ],
+      "properties": {
+        "flags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "license-unclear",
+              "unmaintained",
+              "security-sensitive",
+              "low-documentation",
+              "large-surface-area",
+              "rapidly-changing"
+            ]
+          }
+        },
+        "notes": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "license": {
+      "type": "object",
+      "required": [
+        "spdx",
+        "confidence"
+      ],
+      "properties": {
+        "spdx": {
+          "type": "string",
+          "minLength": 1
+        },
+        "confidence": {
+          "type": "string",
+          "enum": [
+            "high",
+            "medium",
+            "low"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "signals": {
+      "type": "object",
+      "required": [
+        "stars",
+        "updatedAt"
+      ],
+      "properties": {
+        "stars": {
+          "type": "number",
+          "minimum": 0
+        },
+        "updatedAt": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "notes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "additionalProperties": false
+}
+

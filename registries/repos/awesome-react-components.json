@@ -1,0 +1,53 @@
+{
+  "slug": "awesome-react-components",
+  "name": "Awesome React Components",
+  "externalUrl": "https://github.com/brillout/awesome-react-components",
+  "homepage": "https://github.com/brillout/awesome-react-components",
+  "type": "ui-system",
+  "description": "Curated list of React components and component libraries.",
+  "summary": "Useful as a discovery layer for React UI building blocks, component libraries, and design-system references.",
+  "topics": [
+    "react",
+    "components",
+    "ui",
+    "design-system",
+    "frontend"
+  ],
+  "tags": [
+    "react",
+    "component-library",
+    "ui-system",
+    "reference",
+    "frontend"
+  ],
+  "useCases": [
+    "Find React component libraries quickly.",
+    "Compare UI building blocks before adopting one.",
+    "Use as a reference for design-system exploration."
+  ],
+  "acquisitionMode": "reference",
+  "maintenance": {
+    "state": "active",
+    "lastReviewedAt": "2026-07-01T00:00:00.000Z",
+    "notes": "Best treated as a discovery surface rather than a runtime dependency."
+  },
+  "risk": {
+    "flags": [
+      "large-surface-area"
+    ],
+    "notes": "The value is curation, not direct code reuse."
+  },
+  "license": {
+    "spdx": "MIT",
+    "confidence": "high"
+  },
+  "signals": {
+    "stars": 0,
+    "updatedAt": "2026-07-01T00:00:00.000Z"
+  },
+  "notes": [
+    "Useful for breadth-first UI research.",
+    "Not a dependency by default."
+  ]
+}
+

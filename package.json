@@ -1,0 +1,16 @@
+{
+  "name": "agent-repo-atlas",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Curated, machine-readable external repository intelligence system for agents.",
+  "license": "MIT",
+  "scripts": {
+    "validate": "node scripts/validate-registry.mjs",
+    "search": "node scripts/search-atlas.mjs",
+    "score": "node scripts/score-atlas.mjs",
+    "generate:index": "node scripts/generate-index.mjs",
+    "test:search": "node scripts/test-search.mjs",
+    "test": "npm run validate && npm run test:search"
+  }
+}

@@ -1,0 +1,15 @@
+[
+  {
+    "query": "react component library",
+    "expectTopSlug": "awesome-react-components"
+  },
+  {
+    "query": "kubernetes dev workflow",
+    "expectTopSlug": "devspace"
+  },
+  {
+    "query": "cluster sync devtools",
+    "expectTopSlug": "devspace"
+  }
+]
+
