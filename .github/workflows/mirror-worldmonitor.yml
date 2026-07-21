@@ -75,51 +75,71 @@ jobs:
           echo "UPSTREAM_TREE=$(git rev-parse 'HEAD^{tree}')" >> "$GITHUB_ENV"
           echo "UPSTREAM_COMMIT_DATE=$(git show -s --format=%cI HEAD)" >> "$GITHUB_ENV"
 
-      - name: Build security-sanitised vendor tree
+      - name: Relocate upstream workflows to a disabled path
         working-directory: worldmonitor
         shell: bash
         run: |
           set -euo pipefail
-
           workflow_count=0
           if [[ -d .github/workflows ]]; then
             workflow_count=$(find .github/workflows -type f | wc -l | tr -d ' ')
             git mv .github/workflows .github/upstream-workflows-disabled
           fi
+          echo "RELOCATED_WORKFLOW_COUNT=${workflow_count}" >> "$GITHUB_ENV"
 
-          cat > .worldmonitor-upstream.json <<EOF
-          {
-            "repository": "${UPSTREAM_REPOSITORY}",
-            "ref": "${{ steps.upstream.outputs.ref }}",
-            "commit": "${UPSTREAM_SHA}",
-            "tree": "${UPSTREAM_TREE}",
-            "commitDate": "${UPSTREAM_COMMIT_DATE}",
-            "relocatedWorkflowFiles": ${workflow_count},
-            "workflowRestoreFrom": ".github/upstream-workflows-disabled",
-            "workflowRestoreTo": ".github/workflows"
+      - name: Write vendor provenance
+        working-directory: worldmonitor
+        shell: bash
+        env:
+          UPSTREAM_REF: ${{ steps.upstream.outputs.ref }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          metadata = {
+              "repository": os.environ["UPSTREAM_REPOSITORY"],
+              "ref": os.environ["UPSTREAM_REF"],
+              "commit": os.environ["UPSTREAM_SHA"],
+              "tree": os.environ["UPSTREAM_TREE"],
+              "commitDate": os.environ["UPSTREAM_COMMIT_DATE"],
+              "relocatedWorkflowFiles": int(os.environ["RELOCATED_WORKFLOW_COUNT"]),
+              "workflowRestoreFrom": ".github/upstream-workflows-disabled",
+              "workflowRestoreTo": ".github/workflows",
           }
-          EOF
+          Path(".worldmonitor-upstream.json").write_text(
+              json.dumps(metadata, indent=2) + "\n",
+              encoding="utf-8",
+          )
 
-          cat > CAMZ_VENDOR_SNAPSHOT.md <<EOF
-          # Camz vendor snapshot
+          note = f"""# Camz vendor snapshot
 
           This branch contains the World Monitor source tree from upstream commit
-          \\`${UPSTREAM_SHA}\` (tree \\`${UPSTREAM_TREE}\`).
+          `{metadata['commit']}` (tree `{metadata['tree']}`).
 
           GitHub rejected a verbatim push because the connected GitHub App does not
           have the special permission required to create files under
-          \\`.github/workflows\`. The ${workflow_count} upstream workflow files are
-          preserved byte-for-byte under \\`.github/upstream-workflows-disabled\`.
-          Runtime and application source paths are otherwise unchanged.
+          `.github/workflows`. The {metadata['relocatedWorkflowFiles']} upstream
+          workflow files are preserved byte-for-byte under
+          `.github/upstream-workflows-disabled`. Runtime and application source paths
+          are otherwise unchanged.
 
-          For local-only CI parity, copy that directory back to
-          \\`.github/workflows\` after cloning. Do not commit the restored path through
-          the connected App unless it is later granted workflow-write permission.
-          EOF
+          For local-only CI parity, copy that directory back to `.github/workflows`
+          after cloning. Do not commit the restored path through the connected App
+          unless it is later granted workflow-write permission.
+          """
+          Path("CAMZ_VENDOR_SNAPSHOT.md").write_text(note, encoding="utf-8")
+          PY
 
+      - name: Stage sanitised vendor tree
+        working-directory: worldmonitor
+        shell: bash
+        run: |
+          set -euo pipefail
           git add -A
           echo "VENDOR_TREE=$(git write-tree)" >> "$GITHUB_ENV"
-          echo "RELOCATED_WORKFLOW_COUNT=${workflow_count}" >> "$GITHUB_ENV"
 
       - name: Create deterministic parentless vendor snapshot
         working-directory: worldmonitor
@@ -128,17 +148,14 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          message=$(cat <<EOF
-          vendor(worldmonitor): mirror ${UPSTREAM_SHA}
-
-          Upstream-Repository: ${UPSTREAM_REPOSITORY}
-          Upstream-Ref: ${{ steps.upstream.outputs.ref }}
-          Upstream-SHA: ${UPSTREAM_SHA}
-          Upstream-Tree: ${UPSTREAM_TREE}
-          Vendor-Tree: ${VENDOR_TREE}
-          Relocated-Workflow-Files: ${RELOCATED_WORKFLOW_COUNT}
-          EOF
-          )
+          message=$(printf '%s\n\n%s\n%s\n%s\n%s\n%s\n' \
+            "vendor(worldmonitor): mirror ${UPSTREAM_SHA}" \
+            "Upstream-Repository: ${UPSTREAM_REPOSITORY}" \
+            "Upstream-Ref: ${{ steps.upstream.outputs.ref }}" \
+            "Upstream-SHA: ${UPSTREAM_SHA}" \
+            "Upstream-Tree: ${UPSTREAM_TREE}" \
+            "Vendor-Tree: ${VENDOR_TREE}" \
+            "Relocated-Workflow-Files: ${RELOCATED_WORKFLOW_COUNT}")
           mirror_commit=$(
             printf '%s\n' "$message" |
               GIT_AUTHOR_DATE="${UPSTREAM_COMMIT_DATE}" \
