@@ -1,0 +1,136 @@
+name: Validate World Monitor Australia desk
+
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - docs/adoptions/WORLDMONITOR_AUSTRALIA_VALIDATE_TRIGGER.md
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-worldmonitor-australia-desk
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    if: >-
+      github.event_name != 'pull_request' ||
+      (github.actor == github.repository_owner &&
+       github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - name: Check out Australia desk branch
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          ref: camz/australia-desk
+          fetch-depth: 0
+          show-progress: false
+
+      - name: Use repository Node version
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Check patch whitespace and branch ancestry
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin camz/local-foundation --depth=1
+          git merge-base --is-ancestor origin/camz/local-foundation HEAD
+          git diff --check origin/camz/local-foundation...HEAD
+
+      - name: Install locked dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts --prefer-offline --silent
+
+      - name: Run secret-safe local diagnostics
+        run: npm run camz:diagnostics -- --strict
+
+      - name: Check Australia desk files with Biome
+        run: >-
+          npx biome check
+          shared/stocks.json
+          src/shared/asx-market-hours.ts
+          src/services/australia-market-desk.ts
+          src/services/mission-presets.ts
+          tests/asx-market-hours-browser-parity.test.mts
+          tests/australia-market-desk.test.mts
+
+      - name: Run focused Australia desk tests
+        run: >-
+          npx tsx --test
+          tests/asx-market-hours.test.mjs
+          tests/asx-market-hours-browser-parity.test.mts
+          tests/finance-observation-provenance.test.mts
+          tests/australia-market-desk.test.mts
+
+      - name: Restore preserved upstream workflows for CI parity
+        run: |
+          npm run camz:restore-workflows
+          git add -A .github/workflows
+
+      - name: Build full dashboard artifacts for built-output tests
+        run: VITE_VARIANT=full ./node_modules/.bin/vite build
+
+      - name: Run upstream unit and integration suite
+        id: upstream_suite
+        shell: bash
+        run: |
+          set +e
+          log="$RUNNER_TEMP/worldmonitor-australia-test-data.log"
+          npm run test:data > "$log" 2>&1
+          status=$?
+          export SUITE_STATUS="$status"
+          export SUITE_LOG="$log"
+          python3 - <<'PY'
+          import os
+          import re
+          from pathlib import Path
+
+          ansi = re.compile(r'\x1b(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+          status = os.environ['SUITE_STATUS']
+          raw_lines = Path(os.environ['SUITE_LOG']).read_text(encoding='utf-8', errors='replace').splitlines()
+          lines = [ansi.sub('', line) for line in raw_lines]
+          failures = []
+          for line in lines:
+              match = re.match(r'^\s*not ok\s+\d+\s+-\s+(.+?)\s*$', line)
+              if match:
+                  failures.append(match.group(1))
+                  continue
+              match = re.match(r'^\s*[✖×]\s+(.+?)\s*$', line)
+              if match:
+                  failures.append(match.group(1))
+          if failures:
+              summary = ' | '.join(dict.fromkeys(failures[:3]))
+          else:
+              summary = f'exit {status}; no TAP failure name found'
+          summary = re.sub(r'\s+', ' ', summary).strip()[:220]
+          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
+              output.write(f'status={status}\n')
+              output.write(f'summary={summary}\n')
+          PY
+          exit 0
+
+      - name: "Australia suite failed — ${{ steps.upstream_suite.outputs.summary }}"
+        if: steps.upstream_suite.outputs.status != '0'
+        shell: bash
+        run: |
+          tail -n 200 "$RUNNER_TEMP/worldmonitor-australia-test-data.log"
+          exit 1
+
+      - name: Australia suite passed
+        if: steps.upstream_suite.outputs.status == '0'
+        shell: bash
+        run: tail -n 30 "$RUNNER_TEMP/worldmonitor-australia-test-data.log"
+
+      - name: Type-check the browser application
+        if: steps.upstream_suite.outputs.status == '0'
+        run: npm run typecheck
+
+      - name: Build the finance variant
+        if: steps.upstream_suite.outputs.status == '0'
+        run: npm run build:finance
