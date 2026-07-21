@@ -1,0 +1,62 @@
+name: Validate Camz World Monitor enhancement
+
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - docs/adoptions/WORLDMONITOR_VALIDATE_TRIGGER.md
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-worldmonitor-camz
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    if: >-
+      github.event_name != 'pull_request' ||
+      (github.actor == github.repository_owner &&
+       github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out the Camz enhancement branch
+        uses: actions/checkout@v4
+        with:
+          ref: camz/local-foundation
+          fetch-depth: 1
+
+      - name: Use repository Node version
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install locked dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts --prefer-offline
+
+      - name: Run secret-safe local diagnostics
+        run: npm run camz:diagnostics -- --strict
+
+      - name: Check modified files with Biome
+        run: >-
+          npx biome check
+          scripts/shared/asx-market-hours.cjs
+          scripts/camz-local-diagnostics.mjs
+          scripts/camz-restore-upstream-workflows.mjs
+          src/shared/finance-observation-provenance.ts
+          tests/asx-market-hours.test.mjs
+          tests/finance-observation-provenance.test.mts
+          tests/camz-local-diagnostics.test.mjs
+
+      - name: Run focused Camz foundation tests
+        run: npm run test:camz-foundation
+
+      - name: Type-check the browser application
+        run: npm run typecheck
+
+      - name: Build the finance variant
+        run: npm run build:finance
