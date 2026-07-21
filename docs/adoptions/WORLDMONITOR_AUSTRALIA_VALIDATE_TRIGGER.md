@@ -2,6 +2,6 @@
 
 Owner-authorised audit marker for validating `camz/australia-desk` against `camz/local-foundation`.
 
-The trusted workflow checks branch ancestry and whitespace, installs the locked dependencies, runs secret-safe diagnostics, Biome, focused ASX/provenance tests, restores the preserved upstream workflows locally, builds the full dashboard artifacts, runs the complete upstream unit/integration suite, type-checks the browser application, and builds the Finance production variant.
+The trusted workflow checks branch ancestry and whitespace, installs the locked dependencies, runs secret-safe diagnostics, Biome, each Australia contract as a separately named test step, restores the preserved upstream workflows locally, builds the full dashboard artifacts, runs the complete upstream unit/integration suite, type-checks the browser application, and builds the Finance production variant.
 
-Validation run: 11 — final analyst slice with independent equity/resource retrieval clocks, explicit stale-group tests, guaranteed clipboard fallback cleanup, typed context export, and the extended Macro Tiles China/Australia contract guard.
+Validation run: 12 — diagnostic hardening gate for independent retrieval clocks, clipboard cleanup, typed context export, and the extended Macro Tiles China/Australia contract.
