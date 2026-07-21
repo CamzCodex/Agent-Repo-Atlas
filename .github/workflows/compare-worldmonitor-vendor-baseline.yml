@@ -45,6 +45,9 @@ jobs:
           cp -a .github/upstream-workflows-disabled .github/workflows
           git add -A .github/workflows
 
+      - name: Build full dashboard artifacts for built-output tests
+        run: VITE_VARIANT=full ./node_modules/.bin/vite build
+
       - name: Run untouched upstream unit and integration suite
         id: baseline_suite
         shell: bash
