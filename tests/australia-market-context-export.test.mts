@@ -8,6 +8,7 @@ import {
   buildAustraliaMarketContextExport,
   serializeAustraliaMarketContextExport,
 } from '../src/services/australia-market-context-export.ts';
+import { markMarketDataState } from '../src/services/market-data-state.ts';
 import { FINANCE_OBSERVATION_PROVENANCE_VERSION } from '../src/shared/finance-observation-provenance.ts';
 
 function quote(symbol: string, price: number, change: number): MarketData {
@@ -22,27 +23,34 @@ function quote(symbol: string, price: number, change: number): MarketData {
 }
 
 function snapshot() {
-  return buildAustraliaMarketDeskSnapshot(
-    [
-      quote('^AXJO', 8900.25, 0.4),
-      quote('BHP.AX', 46.2, -0.2),
-      quote('CBA.AX', 178.1, 0.1),
-      quote('CSL.AX', 116.3, 1.2),
-    ],
-    [
-      quote('AUDUSD=X', 0.66, 0.2),
-      quote('HG=F', 5.1, -0.1),
-      quote('GC=F', 3100, 0.3),
-      quote('MTF=F', 124, -0.4),
-      quote('BZ=F', 74, 0.5),
-      quote('CL=F', 70, 0.4),
-      quote('NG=F', 3.3, -0.8),
-    ],
-    {
-      now: new Date('2026-07-22T00:05:00Z'),
-      fetchedAt: '2026-07-22T00:00:00Z',
-    },
-  );
+  const markets = [
+    quote('^AXJO', 8900.25, 0.4),
+    quote('BHP.AX', 46.2, -0.2),
+    quote('CBA.AX', 178.1, 0.1),
+    quote('CSL.AX', 116.3, 1.2),
+  ];
+  const resources = [
+    quote('AUDUSD=X', 0.66, 0.2),
+    quote('HG=F', 5.1, -0.1),
+    quote('GC=F', 3100, 0.3),
+    quote('MTF=F', 124, -0.4),
+    quote('BZ=F', 74, 0.5),
+    quote('CL=F', 70, 0.4),
+    quote('NG=F', 3.3, -0.8),
+  ];
+  markMarketDataState(markets, {
+    mode: 'live',
+    timestamp: Date.parse('2026-07-22T00:00:00Z'),
+    offline: false,
+  });
+  markMarketDataState(resources, {
+    mode: 'cached',
+    timestamp: Date.parse('2026-07-21T23:59:00Z'),
+    offline: false,
+  });
+  return buildAustraliaMarketDeskSnapshot(markets, resources, {
+    now: new Date('2026-07-22T00:05:00Z'),
+  });
 }
 
 describe('Australia market context export', () => {
@@ -63,23 +71,27 @@ describe('Australia market context export', () => {
     assert.equal(context.asx.evidence.observedAt, '2026-07-22T00:05:00.000Z');
     assert.equal(context.asx.evidence.fetchedAt, null);
     assert.equal(context.asx.evidence.termsUrl, null);
+    assert.equal(context.asx.evidence.confidenceMeaning, 'policy-heuristic-not-calibrated');
     assert.equal(context.observations.length, 11);
     assert.deepEqual(context.missingSymbols, []);
   });
 
-  it('classifies units and preserves fetch-clock provenance without recommendations', () => {
+  it('classifies units and preserves live/cache modes without recommendations', () => {
     const context = buildAustraliaMarketContextExport(snapshot());
     const bySymbol = new Map(context.observations.map((entry) => [entry.symbol, entry]));
 
     assert.equal(bySymbol.get('^AXJO')?.assetClass, 'index');
     assert.equal(bySymbol.get('^AXJO')?.quoteUnit, 'index-points');
     assert.equal(bySymbol.get('^AXJO')?.currency, null);
+    assert.equal(bySymbol.get('^AXJO')?.dataMode, 'live');
+    assert.equal(bySymbol.get('^AXJO')?.offline, false);
     assert.equal(bySymbol.get('BHP.AX')?.assetClass, 'equity');
     assert.equal(bySymbol.get('BHP.AX')?.quoteUnit, 'AUD-per-share');
     assert.equal(bySymbol.get('BHP.AX')?.currency, 'AUD');
     assert.equal(bySymbol.get('AUDUSD=X')?.assetClass, 'fx');
     assert.equal(bySymbol.get('AUDUSD=X')?.quoteUnit, 'USD-per-AUD');
     assert.equal(bySymbol.get('AUDUSD=X')?.currency, 'USD');
+    assert.equal(bySymbol.get('AUDUSD=X')?.dataMode, 'cached');
     assert.equal(bySymbol.get('HG=F')?.assetClass, 'commodity');
     assert.equal(bySymbol.get('HG=F')?.quoteUnit, 'provider-native');
     assert.equal(bySymbol.get('HG=F')?.currency, null);
@@ -88,6 +100,7 @@ describe('Australia market context export', () => {
     assert.equal(bySymbol.get('^AXJO')?.evidence.observedAt, null);
     assert.equal(bySymbol.get('^AXJO')?.evidence.fetchedAt, '2026-07-22T00:00:00.000Z');
     assert.equal(bySymbol.get('^AXJO')?.evidence.freshnessBasis, 'fetched-at');
+    assert.equal(bySymbol.get('^AXJO')?.evidence.confidenceMeaning, 'policy-heuristic-not-calibrated');
     assert.ok(bySymbol.get('^AXJO')?.evidence.flags.includes('missing-observed-at'));
     assert.ok(bySymbol.get('^AXJO')?.evidence.flags.includes('unverified-access-method'));
 
@@ -99,6 +112,7 @@ describe('Australia market context export', () => {
     assert.ok(context.constraints.some((constraint) => constraint.includes('No order')));
     assert.ok(context.constraints.some((constraint) => constraint.includes('not Australian market breadth')));
     assert.ok(context.constraints.some((constraint) => constraint.includes('rights review')));
+    assert.ok(context.constraints.some((constraint) => constraint.includes('not calibrated probabilities')));
   });
 
   it('preserves missing data and degraded evidence visibly', () => {
@@ -115,6 +129,7 @@ describe('Australia market context export', () => {
     const asx = context.observations.find((entry) => entry.symbol === '^AXJO');
     const bhp = context.observations.find((entry) => entry.symbol === 'BHP.AX');
 
+    assert.equal(asx?.dataMode, 'unknown');
     assert.equal(asx?.evidence.freshness, 'stale');
     assert.ok(asx?.evidence.flags.includes('stale-observation'));
     assert.equal(bhp?.quoteAvailable, false);
