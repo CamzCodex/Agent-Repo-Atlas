@@ -206,21 +206,23 @@ export function assessFinanceObservationProvenance(
   const maxAgeProvided = evidence.maxAgeMs !== undefined;
   const validMaxAge = Number.isFinite(evidence.maxAgeMs) && (evidence.maxAgeMs ?? -1) >= 0;
 
+  // Freshness policy evidence is useful even when the observation clock is
+  // absent or malformed. Flag it independently rather than hiding one missing
+  // control behind another missing field.
+  if (!maxAgeProvided) addFlag(flags, 'missing-freshness-policy');
+  else if (!validMaxAge) addFlag(flags, 'invalid-freshness-policy');
+  if (!validFutureTolerance) addFlag(flags, 'invalid-freshness-policy');
+
   let freshness: FinanceObservationFreshness;
   if (!validNow || basisMs === null) {
     freshness = observedProvided || fetchedProvided ? 'invalid' : 'unknown';
-  } else if (!validFutureTolerance) {
+  } else if (!validFutureTolerance || (maxAgeProvided && !validMaxAge)) {
     freshness = 'invalid';
-    addFlag(flags, 'invalid-freshness-policy');
   } else if (ageMs !== null && ageMs < -futureToleranceMs) {
     freshness = 'future';
     addFlag(flags, 'future-timestamp');
   } else if (!maxAgeProvided) {
     freshness = 'unknown';
-    addFlag(flags, 'missing-freshness-policy');
-  } else if (!validMaxAge) {
-    freshness = 'invalid';
-    addFlag(flags, 'invalid-freshness-policy');
   } else if (ageMs !== null && ageMs > (evidence.maxAgeMs ?? 0)) {
     freshness = 'stale';
     addFlag(flags, 'stale-observation');
