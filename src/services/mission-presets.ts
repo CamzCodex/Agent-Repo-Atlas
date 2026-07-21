@@ -37,6 +37,8 @@ export interface MissionPreset {
   timeRange: MissionTimeRange;
   panels: string[];
   layers: Array<keyof MapLayers>;
+  /** Omitted for the stable cross-variant v1 presets. */
+  variants?: readonly MapVariant[];
 }
 
 export interface AppliedMissionPreset {
@@ -52,7 +54,7 @@ export interface ResetMissionPresetState {
   mapLayers: MapLayers;
 }
 
-export const MISSION_PRESETS: readonly MissionPreset[] = [
+const ALL_MISSION_PRESETS: readonly MissionPreset[] = [
   {
     id: 'crisis-desk',
     label: 'Crisis Desk',
@@ -264,6 +266,7 @@ export const MISSION_PRESETS: readonly MissionPreset[] = [
     view: 'oceania',
     zoom: 3.2,
     timeRange: '7d',
+    variants: ['full', 'finance'],
     panels: [
       'map',
       'live-news',
@@ -271,7 +274,6 @@ export const MISSION_PRESETS: readonly MissionPreset[] = [
       'commodities',
       'forex',
       'macro-tiles',
-      'macro-signals',
       'economic-calendar',
       'centralbanks',
       'economic',
@@ -280,8 +282,6 @@ export const MISSION_PRESETS: readonly MissionPreset[] = [
       'sanctions-pressure',
       'energy-complex',
       'gold-intelligence',
-      'market-breadth',
-      'liquidity-shifts',
       'world-clock',
     ],
     layers: [
@@ -374,6 +374,36 @@ export const MISSION_PRESETS: readonly MissionPreset[] = [
   },
 ];
 
+const CORE_MISSION_IDS = new Set<MissionPresetId>([
+  'crisis-desk',
+  'supply-chain-risk',
+  'energy-security',
+  'osint-newsroom',
+  'macro-market-watch',
+  'tech-ai-watch',
+  'good-news-explorer',
+]);
+
+const isPresetAvailableForVariant = (preset: MissionPreset, variant: string): boolean =>
+  !preset.variants || preset.variants.includes(variant as MapVariant);
+
+/** Stable v1 role presets. Extensions must never mutate this ID set. */
+export const CORE_MISSION_PRESETS: readonly MissionPreset[] = ALL_MISSION_PRESETS.filter(
+  (preset) => CORE_MISSION_IDS.has(preset.id),
+);
+
+/** Optional, product-specific presets layered on top of the stable v1 registry. */
+export const MISSION_PRESET_EXTENSIONS: readonly MissionPreset[] = ALL_MISSION_PRESETS.filter(
+  (preset) => !CORE_MISSION_IDS.has(preset.id),
+);
+
+export function getAvailableMissionPresets(variant: string = SITE_VARIANT): readonly MissionPreset[] {
+  return ALL_MISSION_PRESETS.filter((preset) => isPresetAvailableForVariant(preset, variant));
+}
+
+/** Presets visible in the active build. Existing UI imports remain variant-safe. */
+export const MISSION_PRESETS: readonly MissionPreset[] = getAvailableMissionPresets();
+
 const DYNAMIC_PANEL_PREFIXES = ['cw-', 'mcp-'];
 const MIN_PRESET_PANEL_MATCHES = 2;
 
@@ -393,12 +423,13 @@ const withMapPanel = (panels: string[]): string[] => {
 
 export function getMissionPreset(id: string | null | undefined): MissionPreset | null {
   if (!id) return null;
-  return MISSION_PRESETS.find((preset) => preset.id === id) ?? null;
+  return ALL_MISSION_PRESETS.find((preset) => preset.id === id) ?? null;
 }
 
 export function loadStoredMissionPreset(): MissionPreset | null {
   try {
-    return getMissionPreset(localStorage.getItem(MISSION_PRESET_STORAGE_KEY));
+    const preset = getMissionPreset(localStorage.getItem(MISSION_PRESET_STORAGE_KEY));
+    return preset && isPresetAvailableForVariant(preset, SITE_VARIANT) ? preset : null;
   } catch {
     return null;
   }
