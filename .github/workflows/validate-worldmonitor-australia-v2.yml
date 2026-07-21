@@ -52,14 +52,17 @@ jobs:
         run: >-
           npx biome check
           shared/stocks.json
+          scripts/shared/stocks.json
           src/shared/asx-market-hours.ts
           src/services/australia-market-desk.ts
+          src/services/australia-market-context-export.ts
           src/services/mission-presets.ts
           src/components/australia-macro-context.ts
           src/components/MacroTilesPanel.ts
           tests/asx-market-hours-browser-parity.test.mts
           tests/australia-market-desk.test.mts
           tests/australia-macro-context.test.mts
+          tests/australia-market-context-export.test.mts
 
       - name: Run focused Australia desk tests
         run: >-
@@ -69,6 +72,7 @@ jobs:
           tests/finance-observation-provenance.test.mts
           tests/australia-market-desk.test.mts
           tests/australia-macro-context.test.mts
+          tests/australia-market-context-export.test.mts
 
       - name: Restore preserved upstream workflows
         run: |
