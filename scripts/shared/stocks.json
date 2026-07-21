@@ -3,6 +3,10 @@
     { "symbol": "^GSPC", "name": "S&P 500", "display": "SPX" },
     { "symbol": "^DJI", "name": "Dow Jones", "display": "DOW" },
     { "symbol": "^IXIC", "name": "NASDAQ", "display": "NDX" },
+    { "symbol": "^AXJO", "name": "S&P/ASX 200", "display": "ASX 200" },
+    { "symbol": "BHP.AX", "name": "BHP Group", "display": "BHP" },
+    { "symbol": "CBA.AX", "name": "Commonwealth Bank", "display": "CBA" },
+    { "symbol": "CSL.AX", "name": "CSL", "display": "CSL" },
     { "symbol": "AAPL", "name": "Apple", "display": "AAPL" },
     { "symbol": "MSFT", "name": "Microsoft", "display": "MSFT" },
     { "symbol": "NVDA", "name": "NVIDIA", "display": "NVDA" },
@@ -62,6 +66,7 @@
   ],
   "yahooOnly": [
     "^GSPC", "^DJI", "^IXIC",
+    "^AXJO", "BHP.AX", "CBA.AX", "CSL.AX",
     "000001.SS", "^HSI",
     "600519.SS", "601318.SS", "600900.SS", "300750.SZ", "688981.SS",
     "0700.HK", "1211.HK", "0939.HK", "0857.HK",
