@@ -2,26 +2,35 @@ import type {
   AustraliaDeskObservation,
   AustraliaMarketDeskSnapshot,
 } from '@/services/australia-market-desk';
-import type {
-  FinanceObservationProvenanceAssessment,
-  FinanceProvenanceFlag,
-  FinanceSourceClass,
-  FinanceTransformationKind,
+import {
+  FINANCE_OBSERVATION_PROVENANCE_VERSION,
+  type FinanceObservationProvenanceAssessment,
+  type FinanceProvenanceFlag,
+  type FinanceSourceClass,
+  type FinanceTransformationKind,
 } from '@/shared/finance-observation-provenance';
 
 export const AUSTRALIA_MARKET_CONTEXT_SCHEMA_VERSION = 'worldmonitor-australia-context-v1';
 
 export type AustraliaContextAssetClass = 'index' | 'equity' | 'fx' | 'commodity';
+export type AustraliaContextQuoteUnit =
+  | 'index-points'
+  | 'AUD-per-share'
+  | 'USD-per-AUD'
+  | 'provider-native';
 
 export interface AustraliaContextEvidence {
+  provenanceSchemaVersion: typeof FINANCE_OBSERVATION_PROVENANCE_VERSION;
   provider: string;
   sourceClass: FinanceSourceClass;
   sourceUrl: string | null;
   termsUrl: string | null;
   transformationKind: FinanceTransformationKind;
+  transformationDescription: string | null;
   transformationVersion: string | null;
   observedAt: string | null;
   fetchedAt: string | null;
+  freshnessBasis: FinanceObservationProvenanceAssessment['freshnessBasis'];
   ageMs: number | null;
   freshness: FinanceObservationProvenanceAssessment['freshness'];
   confidence: number | null;
@@ -33,6 +42,8 @@ export interface AustraliaContextObservation {
   symbol: string;
   label: string;
   assetClass: AustraliaContextAssetClass;
+  currency: string | null;
+  quoteUnit: AustraliaContextQuoteUnit;
   quoteAvailable: boolean;
   price: number | null;
   changePercent: number | null;
@@ -54,6 +65,7 @@ export interface AustraliaMarketContextExport {
     calendarVerified: boolean;
     earlyClose: boolean;
     holidayName: string | null;
+    sourceCheckedAt: string;
     evidence: AustraliaContextEvidence;
   };
   observations: AustraliaContextObservation[];
@@ -65,10 +77,26 @@ export interface AustraliaMarketContextExport {
 const READ_ONLY_CONSTRAINTS = Object.freeze([
   'Context only; not an investment recommendation.',
   'No order, position-size, target-price, or execution instruction is included.',
-  'Retrieval time is not a substitute for exchange observation time.',
+  'Retrieval/cache time is not a substitute for exchange observation time.',
   'Undocumented, estimated, deterministic, and AI-derived evidence must remain distinguishable.',
   'Associations in downstream research must not be presented as proven causation.',
+  'The equity basket is a compact benchmark/bellwether sample, not Australian market breadth or an investable universe.',
+  'Provider-derived values are for internal research context; redistribution or republication requires a separate rights review.',
 ]);
+
+const QUOTE_METADATA: Readonly<Record<string, { currency: string | null; quoteUnit: AustraliaContextQuoteUnit }>> = {
+  '^AXJO': { currency: null, quoteUnit: 'index-points' },
+  'BHP.AX': { currency: 'AUD', quoteUnit: 'AUD-per-share' },
+  'CBA.AX': { currency: 'AUD', quoteUnit: 'AUD-per-share' },
+  'CSL.AX': { currency: 'AUD', quoteUnit: 'AUD-per-share' },
+  'AUDUSD=X': { currency: 'USD', quoteUnit: 'USD-per-AUD' },
+  'HG=F': { currency: null, quoteUnit: 'provider-native' },
+  'GC=F': { currency: null, quoteUnit: 'provider-native' },
+  'MTF=F': { currency: null, quoteUnit: 'provider-native' },
+  'BZ=F': { currency: null, quoteUnit: 'provider-native' },
+  'CL=F': { currency: null, quoteUnit: 'provider-native' },
+  'NG=F': { currency: null, quoteUnit: 'provider-native' },
+};
 
 function timestampToIso(timestampMs: number | null): string | null {
   if (timestampMs === null || !Number.isFinite(timestampMs)) return null;
@@ -80,14 +108,17 @@ function exportEvidence(
   assessment: FinanceObservationProvenanceAssessment,
 ): AustraliaContextEvidence {
   return {
+    provenanceSchemaVersion: FINANCE_OBSERVATION_PROVENANCE_VERSION,
     provider: assessment.provider,
     sourceClass: assessment.sourceClass,
     sourceUrl: assessment.sourceUrl,
     termsUrl: assessment.termsUrl,
     transformationKind: assessment.transformationKind,
+    transformationDescription: assessment.transformationDescription,
     transformationVersion: assessment.transformationVersion,
     observedAt: timestampToIso(assessment.observedAtMs),
     fetchedAt: timestampToIso(assessment.fetchedAtMs),
+    freshnessBasis: assessment.freshnessBasis,
     ageMs: assessment.ageMs,
     freshness: assessment.freshness,
     confidence: assessment.confidence,
@@ -104,10 +135,16 @@ function classifyAsset(symbol: string): AustraliaContextAssetClass {
 }
 
 function exportObservation(observation: AustraliaDeskObservation): AustraliaContextObservation {
+  const metadata = QUOTE_METADATA[observation.symbol] ?? {
+    currency: null,
+    quoteUnit: 'provider-native' as const,
+  };
   return {
     symbol: observation.symbol,
     label: observation.label,
     assetClass: classifyAsset(observation.symbol),
+    currency: metadata.currency,
+    quoteUnit: metadata.quoteUnit,
     quoteAvailable: observation.quote !== null,
     price: observation.quote?.price ?? null,
     changePercent: observation.quote?.change ?? null,
@@ -133,6 +170,7 @@ export function buildAustraliaMarketContextExport(
       calendarVerified: snapshot.asxStatus.calendarVerified,
       earlyClose: snapshot.asxStatus.earlyClose,
       holidayName: snapshot.asxStatus.holidayName,
+      sourceCheckedAt: snapshot.asxSourceCheckedAt,
       evidence: exportEvidence(snapshot.asxStatusProvenance),
     },
     observations: [...snapshot.markets, ...snapshot.resources].map(exportObservation),
