@@ -82,7 +82,6 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
           message=$(cat <<EOF
           vendor(worldmonitor): mirror ${UPSTREAM_SHA}
 
@@ -92,7 +91,6 @@ jobs:
           Upstream-Tree: ${UPSTREAM_TREE}
           EOF
           )
-
           mirror_commit=$(
             printf '%s\n' "$message" |
               GIT_AUTHOR_DATE="${UPSTREAM_COMMIT_DATE}" \
@@ -101,20 +99,39 @@ jobs:
           )
           echo "MIRROR_COMMIT=${mirror_commit}" >> "$GITHUB_ENV"
 
-      - name: Mirror snapshot to isolated vendor branch
+      - name: Attempt isolated vendor-branch push
+        id: push
+        continue-on-error: true
         working-directory: worldmonitor
         shell: bash
         env:
           DESTINATION_TOKEN: ${{ github.token }}
         run: |
-          set -euo pipefail
+          set +e
           git remote add destination \
             "https://x-access-token:${DESTINATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          git push destination \
+          output=$(git push destination \
             "${MIRROR_COMMIT}:refs/heads/${DESTINATION_BRANCH}" \
-            --force
+            --force 2>&1)
+          status=$?
+          printf '%s\n' "$output"
+          summary=$(printf '%s' "$output" | tail -n 4 | tr '\n' ' ' | sed 's/%/%25/g; s/\r/%0D/g; s/\n/%0A/g' | cut -c1-500)
+          if [[ $status -eq 0 ]]; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+            echo "message=success" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            echo "message=$summary" >> "$GITHUB_OUTPUT"
+          fi
+          exit 0
+
+      - name: "Mirror rejected: ${{ steps.push.outputs.message }}"
+        if: steps.push.outputs.ok != 'true'
+        shell: bash
+        run: exit 1
 
       - name: Publish audit summary
+        if: steps.push.outputs.ok == 'true'
         shell: bash
         run: |
           {
