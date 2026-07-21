@@ -1,0 +1,102 @@
+name: Compare World Monitor vendor baseline
+
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - docs/adoptions/WORLDMONITOR_VALIDATE_TRIGGER.md
+
+permissions:
+  contents: read
+
+concurrency:
+  group: compare-worldmonitor-vendor-baseline
+  cancel-in-progress: true
+
+jobs:
+  baseline:
+    if: >-
+      github.event_name != 'pull_request' ||
+      (github.actor == github.repository_owner &&
+       github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Check out untouched vendor snapshot
+        uses: actions/checkout@v4
+        with:
+          ref: vendor/worldmonitor-main
+          fetch-depth: 1
+          show-progress: false
+
+      - name: Use repository Node version
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install locked dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts --prefer-offline --silent
+
+      - name: Restore preserved upstream workflows for CI parity
+        shell: bash
+        run: |
+          cp -a .github/upstream-workflows-disabled .github/workflows
+          git add -A .github/workflows
+
+      - name: Run untouched upstream unit and integration suite
+        id: baseline_suite
+        shell: bash
+        run: |
+          set +e
+          log="$RUNNER_TEMP/worldmonitor-baseline-test-data.log"
+          npm run test:data > "$log" 2>&1
+          status=$?
+          export SUITE_STATUS="$status"
+          export SUITE_LOG="$log"
+          python3 - <<'PY'
+          import os
+          import re
+          from pathlib import Path
+
+          ansi = re.compile(r'\x1b(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+          status = os.environ['SUITE_STATUS']
+          raw_lines = Path(os.environ['SUITE_LOG']).read_text(encoding='utf-8', errors='replace').splitlines()
+          lines = [ansi.sub('', line) for line in raw_lines]
+          failures = []
+          for line in lines:
+              match = re.match(r'^\s*not ok\s+\d+\s+-\s+(.+?)\s*$', line)
+              if match:
+                  failures.append(match.group(1))
+                  continue
+              match = re.match(r'^\s*[✖×]\s+(.+?)\s*$', line)
+              if match:
+                  failures.append(match.group(1))
+          if failures:
+              summary = ' | '.join(dict.fromkeys(failures[:3]))
+          else:
+              candidates = [
+                  line.strip()
+                  for line in lines
+                  if 'ERR_' in line or re.search(r'\berror\s*:', line, re.IGNORECASE)
+              ]
+              summary = candidates[-1] if candidates else f'exit {status}; no failure name found'
+          summary = re.sub(r'\s+', ' ', summary).strip()[:220]
+          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
+              output.write(f'status={status}\n')
+              output.write(f'summary={summary}\n')
+          PY
+          exit 0
+
+      - name: "Vendor baseline failed — ${{ steps.baseline_suite.outputs.summary }}"
+        if: steps.baseline_suite.outputs.status != '0'
+        shell: bash
+        run: |
+          tail -n 180 "$RUNNER_TEMP/worldmonitor-baseline-test-data.log"
+          exit 1
+
+      - name: Vendor baseline passed
+        if: steps.baseline_suite.outputs.status == '0'
+        shell: bash
+        run: tail -n 25 "$RUNNER_TEMP/worldmonitor-baseline-test-data.log"
