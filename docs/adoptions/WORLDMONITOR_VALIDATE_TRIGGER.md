@@ -4,4 +4,4 @@ Owner-authorised audit marker for validating `camz/local-foundation` with Node 2
 
 The trusted workflow checks out the fixed enhancement branch, installs the lockfile without lifecycle scripts, runs secret-safe diagnostics, Biome on modified files, focused foundation tests, TypeScript, and the finance production build.
 
-Validation run: 1.
+Validation run: 2.
