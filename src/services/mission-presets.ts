@@ -401,8 +401,13 @@ export function getAvailableMissionPresets(variant: string = SITE_VARIANT): read
   return ALL_MISSION_PRESETS.filter((preset) => isPresetAvailableForVariant(preset, variant));
 }
 
-/** Presets visible in the active build. Existing UI imports remain variant-safe. */
-export const MISSION_PRESETS: readonly MissionPreset[] = getAvailableMissionPresets();
+/**
+ * Stable core list for non-DOM configuration consumers; the browser receives
+ * the variant-filtered core-plus-extension list used by the mission picker.
+ */
+export const MISSION_PRESETS: readonly MissionPreset[] = typeof window === 'undefined'
+  ? CORE_MISSION_PRESETS
+  : getAvailableMissionPresets();
 
 const DYNAMIC_PANEL_PREFIXES = ['cw-', 'mcp-'];
 const MIN_PRESET_PANEL_MATCHES = 2;
