@@ -3,8 +3,14 @@
 Upstream: `koala73/worldmonitor`  
 Licence: `AGPL-3.0-only` for the platform; preserve all upstream notices.  
 Atlas classification: `fork-candidate`  
-Mirror branch: `vendor/worldmonitor-main`  
+Vendor branch: `vendor/worldmonitor-main`  
 Camz enhancement branches: `camz/*`
+
+## Current acquisition status
+
+The vendor branch is a security-sanitised source snapshot pinned to an audited upstream commit. Runtime and application paths are unchanged. Because the connected GitHub App cannot create files under `.github/workflows`, upstream workflow files are preserved byte-for-byte under `.github/upstream-workflows-disabled`; `.worldmonitor-upstream.json` records the original commit and tree hashes needed to audit or reconstruct the source.
+
+The first additive enhancement branch is `camz/local-foundation`. It contains ASX session/calendar support, finance-observation provenance primitives, secret-safe local diagnostics, focused tests, and local finance setup documentation. It remains separate from the vendor branch pending review and validation.
 
 ## Why we are adopting it
 
@@ -46,8 +52,9 @@ Every finance-facing record should eventually carry provider, source class, obse
 
 ### 0. Reproducible local baseline
 
-- mirror an exact upstream commit into an isolated vendor branch;
-- create all Camz changes on branches derived from that mirror;
+- pin an upstream source commit and original tree hash in an isolated vendor branch;
+- preserve blocked workflow files under a disabled, reversible path;
+- create all Camz changes on branches derived from that vendor snapshot;
 - add a local bootstrap and secret-safe diagnostics command;
 - verify install, typecheck, finance build and focused tests;
 - record optional provider gaps rather than pretending every panel is live.
@@ -56,8 +63,8 @@ Every finance-facing record should eventually carry provider, source class, obse
 
 - add an opt-in Australia-focused workspace without forking the core finance variant;
 - focus on ASX, AUD, RBA, iron ore, copper, gold, oil/LNG, China demand, shipping chokepoints and Asia-Pacific event risk;
-- use IANA zones and holiday-aware session states;
-- clearly label closed, delayed and stale values.
+- use IANA zones and verified, holiday-aware session states;
+- clearly label closed, delayed, stale and unverified-calendar values.
 
 ### 2. Provenance and confidence
 
@@ -89,19 +96,20 @@ Every finance-facing record should eventually carry provider, source class, obse
 
 ## First enhancement slice
 
-The first Camz branch will be additive and independently testable:
+The first Camz branch is additive and independently testable:
 
-1. a shared market-session utility with an ASX definition and explicit `open`, `pre`, `post`, `closed`, `holiday` and `unknown` states;
-2. a finance-observation provenance type and formatter;
-3. tests for Sydney/Adelaide daylight-saving boundaries, weekends, malformed timestamps and stale observations;
-4. a local diagnostics command that reports Node, environment and optional-provider readiness without printing secrets;
-5. local setup documentation for the finance variant.
+1. a shared ASX market-session utility with detailed phases and coarse `pre`, `regular`, `post`, `closed`, `holiday`, and `unknown` states;
+2. a finance-observation provenance type, assessor, flags, and formatter;
+3. tests for Sydney/Adelaide daylight-saving boundaries, weekends, malformed timestamps, stale observations, official 2026 closures, and conservative unknown states outside verified calendar coverage;
+4. a local diagnostics command that reports Node, environment, optional-provider, dependency, and vendor-provenance readiness without printing secrets;
+5. local finance setup and reversible workflow-restoration documentation.
 
 This establishes trust primitives needed by later UI and ingestion work without prematurely redesigning a large application.
 
 ## Branch and sync rules
 
-- `vendor/worldmonitor-main` is an exact, force-updated upstream mirror and receives no Camz edits.
+- `vendor/worldmonitor-main` is a pinned, security-sanitised vendor snapshot and receives no Camz edits.
+- `.worldmonitor-upstream.json` and the commit message retain the original upstream commit/tree identity.
 - `camz/*` branches are created from a pinned vendor commit.
 - upstream syncs are reviewed before rebasing or merging into Camz branches.
 - AGPL and copyright notices remain intact.
