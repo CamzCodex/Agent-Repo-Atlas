@@ -4,6 +4,7 @@ import type {
   EconomicServiceClient,
   GetChinaMacroSnapshotResponse,
 } from '@/generated/client/worldmonitor/economic/v1/service_client';
+import type { MarketData } from '@/types';
 import { Panel } from './Panel';
 import { t } from '@/services/i18n';
 import { escapeHtml, unsafeRawHtml } from '@/utils/sanitize';
@@ -11,6 +12,13 @@ import { getEurostatCountryData } from '@/services/economic';
 import type { GetEurostatCountryDataResponse } from '@/services/economic';
 import { getHydratedData } from '@/services/bootstrap';
 import { loadStoredMissionPreset } from '@/services/mission-presets';
+import { COMMODITIES, MARKET_SYMBOLS } from '@/config/markets';
+import { fetchCommodityQuotes, fetchMultipleStocks } from '@/services/market';
+import {
+  AUSTRALIA_DESK_MARKET_SYMBOLS,
+  AUSTRALIA_DESK_RESOURCE_SYMBOLS,
+  buildAustraliaMarketDeskSnapshot,
+} from '@/services/australia-market-desk';
 import {
   buildAustraliaMacroContextModel,
   renderAustraliaMacroContext,
@@ -250,6 +258,9 @@ export class MacroTilesPanel extends Panel {
   private _estrObs: { date: string; value: number }[] = [];
   private _china: GetChinaMacroSnapshotResponse | null = null;
   private _australiaMissionActive = false;
+  private _australiaMarkets: MarketData[] = [];
+  private _australiaResources: MarketData[] = [];
+  private _australiaFetchedAt: Date | null = null;
   private _asxClockTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor() {
@@ -306,6 +317,30 @@ export class MacroTilesPanel extends Panel {
     }
   }
 
+  private async _loadAustraliaQuotes(): Promise<void> {
+    if (!this._australiaMissionActive) return;
+
+    const marketSymbols = new Set<string>(AUSTRALIA_DESK_MARKET_SYMBOLS);
+    const resourceSymbols = new Set<string>(AUSTRALIA_DESK_RESOURCE_SYMBOLS);
+    const marketDefinitions = MARKET_SYMBOLS.filter((entry) => marketSymbols.has(entry.symbol));
+    const resourceDefinitions = COMMODITIES.filter((entry) => resourceSymbols.has(entry.symbol));
+    const [marketResult, resourceResult] = await Promise.allSettled([
+      fetchMultipleStocks(marketDefinitions),
+      fetchCommodityQuotes(resourceDefinitions),
+    ]);
+
+    let refreshed = false;
+    if (marketResult.status === 'fulfilled' && marketResult.value.data.length > 0) {
+      this._australiaMarkets = marketResult.value.data;
+      refreshed = true;
+    }
+    if (resourceResult.status === 'fulfilled' && resourceResult.value.data.length > 0) {
+      this._australiaResources = resourceResult.value.data;
+      refreshed = true;
+    }
+    if (refreshed) this._australiaFetchedAt = new Date();
+  }
+
   public override destroy(): void {
     if (this._asxClockTimer) {
       clearInterval(this._asxClockTimer);
@@ -329,6 +364,7 @@ export class MacroTilesPanel extends Panel {
         }),
         getEurostatCountryData(),
         hydratedChina ?? client.getChinaMacroSnapshot({}),
+        this._australiaMissionActive ? this._loadAustraliaQuotes() : Promise.resolve(),
       ]);
 
       const results = fredResp.status === 'fulfilled' ? (fredResp.value.results ?? {}) : {};
@@ -410,7 +446,16 @@ export class MacroTilesPanel extends Panel {
   }
 
   private _buildAustraliaBody(): string {
-    return renderAustraliaMacroContext(buildAustraliaMacroContextModel(new Date()));
+    const now = new Date();
+    const snapshot = buildAustraliaMarketDeskSnapshot(
+      this._australiaMarkets,
+      this._australiaResources,
+      {
+        now,
+        fetchedAt: this._australiaFetchedAt ?? undefined,
+      },
+    );
+    return renderAustraliaMacroContext(buildAustraliaMacroContextModel(now, snapshot), snapshot);
   }
 
   private _buildChinaBody(): string {
