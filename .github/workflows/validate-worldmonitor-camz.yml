@@ -55,6 +55,11 @@ jobs:
       - name: Run focused Camz foundation tests
         run: npm run test:camz-foundation
 
+      - name: Restore preserved upstream workflows for CI parity
+        run: |
+          npm run camz:restore-workflows
+          git add -A .github/workflows
+
       - name: Run upstream unit and integration suite
         run: npm run test:data
 
