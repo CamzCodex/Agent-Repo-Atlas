@@ -51,7 +51,7 @@ jobs:
           fi
           echo "ref=$requested" >> "$GITHUB_OUTPUT"
 
-      - name: Fetch exact upstream tree
+      - name: Fetch upstream source tree
         shell: bash
         run: |
           set -euo pipefail
@@ -75,6 +75,52 @@ jobs:
           echo "UPSTREAM_TREE=$(git rev-parse 'HEAD^{tree}')" >> "$GITHUB_ENV"
           echo "UPSTREAM_COMMIT_DATE=$(git show -s --format=%cI HEAD)" >> "$GITHUB_ENV"
 
+      - name: Build security-sanitised vendor tree
+        working-directory: worldmonitor
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          workflow_count=0
+          if [[ -d .github/workflows ]]; then
+            workflow_count=$(find .github/workflows -type f | wc -l | tr -d ' ')
+            git mv .github/workflows .github/upstream-workflows-disabled
+          fi
+
+          cat > .worldmonitor-upstream.json <<EOF
+          {
+            "repository": "${UPSTREAM_REPOSITORY}",
+            "ref": "${{ steps.upstream.outputs.ref }}",
+            "commit": "${UPSTREAM_SHA}",
+            "tree": "${UPSTREAM_TREE}",
+            "commitDate": "${UPSTREAM_COMMIT_DATE}",
+            "relocatedWorkflowFiles": ${workflow_count},
+            "workflowRestoreFrom": ".github/upstream-workflows-disabled",
+            "workflowRestoreTo": ".github/workflows"
+          }
+          EOF
+
+          cat > CAMZ_VENDOR_SNAPSHOT.md <<EOF
+          # Camz vendor snapshot
+
+          This branch contains the World Monitor source tree from upstream commit
+          \\`${UPSTREAM_SHA}\` (tree \\`${UPSTREAM_TREE}\`).
+
+          GitHub rejected a verbatim push because the connected GitHub App does not
+          have the special permission required to create files under
+          \\`.github/workflows\`. The ${workflow_count} upstream workflow files are
+          preserved byte-for-byte under \\`.github/upstream-workflows-disabled\`.
+          Runtime and application source paths are otherwise unchanged.
+
+          For local-only CI parity, copy that directory back to
+          \\`.github/workflows\` after cloning. Do not commit the restored path through
+          the connected App unless it is later granted workflow-write permission.
+          EOF
+
+          git add -A
+          echo "VENDOR_TREE=$(git write-tree)" >> "$GITHUB_ENV"
+          echo "RELOCATED_WORKFLOW_COUNT=${workflow_count}" >> "$GITHUB_ENV"
+
       - name: Create deterministic parentless vendor snapshot
         working-directory: worldmonitor
         shell: bash
@@ -89,58 +135,43 @@ jobs:
           Upstream-Ref: ${{ steps.upstream.outputs.ref }}
           Upstream-SHA: ${UPSTREAM_SHA}
           Upstream-Tree: ${UPSTREAM_TREE}
+          Vendor-Tree: ${VENDOR_TREE}
+          Relocated-Workflow-Files: ${RELOCATED_WORKFLOW_COUNT}
           EOF
           )
           mirror_commit=$(
             printf '%s\n' "$message" |
               GIT_AUTHOR_DATE="${UPSTREAM_COMMIT_DATE}" \
               GIT_COMMITTER_DATE="${UPSTREAM_COMMIT_DATE}" \
-              git commit-tree "${UPSTREAM_TREE}"
+              git commit-tree "${VENDOR_TREE}"
           )
           echo "MIRROR_COMMIT=${mirror_commit}" >> "$GITHUB_ENV"
 
-      - name: Attempt isolated vendor-branch push
-        id: push
-        continue-on-error: true
+      - name: Push isolated vendor branch
         working-directory: worldmonitor
         shell: bash
         env:
           DESTINATION_TOKEN: ${{ github.token }}
         run: |
-          set +e
+          set -euo pipefail
           git remote add destination \
             "https://x-access-token:${DESTINATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          output=$(git push destination \
+          git push destination \
             "${MIRROR_COMMIT}:refs/heads/${DESTINATION_BRANCH}" \
-            --force 2>&1)
-          status=$?
-          printf '%s\n' "$output"
-          summary=$(printf '%s' "$output" | tail -n 4 | tr '\n' ' ' | sed 's/%/%25/g; s/\r/%0D/g; s/\n/%0A/g' | cut -c1-500)
-          if [[ $status -eq 0 ]]; then
-            echo "ok=true" >> "$GITHUB_OUTPUT"
-            echo "message=success" >> "$GITHUB_OUTPUT"
-          else
-            echo "ok=false" >> "$GITHUB_OUTPUT"
-            echo "message=$summary" >> "$GITHUB_OUTPUT"
-          fi
-          exit 0
-
-      - name: "Mirror rejected: ${{ steps.push.outputs.message }}"
-        if: steps.push.outputs.ok != 'true'
-        shell: bash
-        run: exit 1
+            --force
 
       - name: Publish audit summary
-        if: steps.push.outputs.ok == 'true'
         shell: bash
         run: |
           {
-            echo "### World Monitor mirror updated"
+            echo "### World Monitor vendor snapshot updated"
             echo
             echo "- Upstream: \`${UPSTREAM_REPOSITORY}\`"
             echo "- Requested ref: \`${{ steps.upstream.outputs.ref }}\`"
             echo "- Upstream commit: \`${UPSTREAM_SHA}\`"
-            echo "- Exact upstream tree: \`${UPSTREAM_TREE}\`"
+            echo "- Original upstream tree: \`${UPSTREAM_TREE}\`"
+            echo "- Sanitised vendor tree: \`${VENDOR_TREE}\`"
+            echo "- Relocated workflow files: \`${RELOCATED_WORKFLOW_COUNT}\`"
             echo "- Vendor snapshot commit: \`${MIRROR_COMMIT}\`"
             echo "- Destination: \`${GITHUB_REPOSITORY}:${DESTINATION_BRANCH}\`"
             echo "- Protected scope: this workflow never modifies \`main\` or \`camz/*\`."
