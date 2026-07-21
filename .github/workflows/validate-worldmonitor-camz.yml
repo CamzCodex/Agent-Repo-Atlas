@@ -21,7 +21,7 @@ jobs:
       (github.actor == github.repository_owner &&
        github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - name: Check out the Camz enhancement branch
         uses: actions/checkout@v4
@@ -54,6 +54,9 @@ jobs:
 
       - name: Run focused Camz foundation tests
         run: npm run test:camz-foundation
+
+      - name: Run upstream unit and integration suite
+        run: npm run test:data
 
       - name: Type-check the browser application
         run: npm run typecheck
