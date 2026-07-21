@@ -4,4 +4,4 @@ Owner-authorised audit marker for validating `camz/australia-desk` against `camz
 
 The trusted workflow checks branch ancestry and whitespace, installs the locked dependencies, runs secret-safe diagnostics, Biome, focused ASX/provenance tests, restores the preserved upstream workflows locally, builds the full dashboard artifacts, runs the complete upstream unit/integration suite, type-checks the browser application, and builds the Finance production variant.
 
-Validation run: 3 — includes the mission-scoped Australia evidence tab and the corrected missing-timestamp evidence assertion.
+Validation run: 4 — includes mission-scoped ASX status, live seeded equity/resource cards, and visible provenance/freshness warnings.
