@@ -51,7 +51,7 @@ jobs:
           fi
           echo "ref=$requested" >> "$GITHUB_OUTPUT"
 
-      - name: Fetch exact upstream commit
+      - name: Fetch exact upstream tree
         shell: bash
         run: |
           set -euo pipefail
@@ -72,8 +72,36 @@ jobs:
           grep -q "GNU AFFERO GENERAL PUBLIC LICENSE" LICENSE
           test -z "$(git status --porcelain=v1 --untracked-files=no)"
           echo "UPSTREAM_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          echo "UPSTREAM_TREE=$(git rev-parse 'HEAD^{tree}')" >> "$GITHUB_ENV"
+          echo "UPSTREAM_COMMIT_DATE=$(git show -s --format=%cI HEAD)" >> "$GITHUB_ENV"
 
-      - name: Mirror to isolated vendor branch
+      - name: Create deterministic parentless vendor snapshot
+        working-directory: worldmonitor
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          message=$(cat <<EOF
+          vendor(worldmonitor): mirror ${UPSTREAM_SHA}
+
+          Upstream-Repository: ${UPSTREAM_REPOSITORY}
+          Upstream-Ref: ${{ steps.upstream.outputs.ref }}
+          Upstream-SHA: ${UPSTREAM_SHA}
+          Upstream-Tree: ${UPSTREAM_TREE}
+          EOF
+          )
+
+          mirror_commit=$(
+            printf '%s\n' "$message" |
+              GIT_AUTHOR_DATE="${UPSTREAM_COMMIT_DATE}" \
+              GIT_COMMITTER_DATE="${UPSTREAM_COMMIT_DATE}" \
+              git commit-tree "${UPSTREAM_TREE}"
+          )
+          echo "MIRROR_COMMIT=${mirror_commit}" >> "$GITHUB_ENV"
+
+      - name: Mirror snapshot to isolated vendor branch
         working-directory: worldmonitor
         shell: bash
         env:
@@ -83,7 +111,7 @@ jobs:
           git remote add destination \
             "https://x-access-token:${DESTINATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git push destination \
-            "HEAD:refs/heads/${DESTINATION_BRANCH}" \
+            "${MIRROR_COMMIT}:refs/heads/${DESTINATION_BRANCH}" \
             --force
 
       - name: Publish audit summary
@@ -94,7 +122,9 @@ jobs:
             echo
             echo "- Upstream: \`${UPSTREAM_REPOSITORY}\`"
             echo "- Requested ref: \`${{ steps.upstream.outputs.ref }}\`"
-            echo "- Exact commit: \`${UPSTREAM_SHA}\`"
+            echo "- Upstream commit: \`${UPSTREAM_SHA}\`"
+            echo "- Exact upstream tree: \`${UPSTREAM_TREE}\`"
+            echo "- Vendor snapshot commit: \`${MIRROR_COMMIT}\`"
             echo "- Destination: \`${GITHUB_REPOSITORY}:${DESTINATION_BRANCH}\`"
             echo "- Protected scope: this workflow never modifies \`main\` or \`camz/*\`."
           } >> "$GITHUB_STEP_SUMMARY"
