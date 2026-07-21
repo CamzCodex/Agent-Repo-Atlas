@@ -2,6 +2,6 @@
 
 Owner-authorised audit marker for validating `camz/local-foundation` with Node 24.
 
-The trusted workflow checks out the fixed enhancement branch, installs the lockfile without lifecycle scripts, runs secret-safe diagnostics, Biome on modified files, focused foundation tests, restores preserved upstream workflows locally for CI parity, runs the full upstream unit/integration suite with explicit failing-test reporting, TypeScript, and the finance production build.
+The trusted workflows now run the untouched vendor snapshot and the enhancement branch in parallel. Both restore the preserved upstream workflows locally, run the full upstream suite with normalized failure reporting, and the enhancement path additionally runs secret-safe diagnostics, Biome, focused tests, TypeScript, and the finance production build when the full suite is green.
 
-Validation run: 5.
+Validation run: 6.
