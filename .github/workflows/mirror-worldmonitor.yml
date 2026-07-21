@@ -1,0 +1,92 @@
+name: Mirror World Monitor upstream
+
+on:
+  workflow_dispatch:
+    inputs:
+      upstream_ref:
+        description: Upstream branch, tag, or reachable commit
+        required: false
+        default: main
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/mirror-worldmonitor.yml
+      - registries/repos/worldmonitor.json
+  schedule:
+    - cron: "17 3 * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mirror-worldmonitor-upstream
+  cancel-in-progress: false
+
+env:
+  UPSTREAM_REPOSITORY: koala73/worldmonitor
+  DESTINATION_BRANCH: vendor/worldmonitor-main
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Resolve requested ref
+        id: upstream
+        shell: bash
+        run: |
+          set -euo pipefail
+          requested="${{ github.event.inputs.upstream_ref || 'main' }}"
+          if [[ ! "$requested" =~ ^[A-Za-z0-9._/-]+$ ]]; then
+            echo "Unsafe upstream ref: $requested" >&2
+            exit 1
+          fi
+          echo "ref=$requested" >> "$GITHUB_OUTPUT"
+
+      - name: Fetch exact upstream commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          git init worldmonitor
+          cd worldmonitor
+          git remote add upstream "https://github.com/${UPSTREAM_REPOSITORY}.git"
+          git fetch --depth 1 upstream "${{ steps.upstream.outputs.ref }}"
+          git checkout --detach FETCH_HEAD
+
+      - name: Verify identity, licence and clean tree
+        working-directory: worldmonitor
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f README.md
+          test -f LICENSE
+          grep -q "World Monitor" README.md
+          grep -q "GNU AFFERO GENERAL PUBLIC LICENSE" LICENSE
+          test -z "$(git status --porcelain=v1 --untracked-files=no)"
+          echo "UPSTREAM_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - name: Mirror to isolated vendor branch
+        working-directory: worldmonitor
+        shell: bash
+        env:
+          DESTINATION_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git remote add destination \
+            "https://x-access-token:${DESTINATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push destination \
+            "HEAD:refs/heads/${DESTINATION_BRANCH}" \
+            --force
+
+      - name: Publish audit summary
+        shell: bash
+        run: |
+          {
+            echo "### World Monitor mirror updated"
+            echo
+            echo "- Upstream: \`${UPSTREAM_REPOSITORY}\`"
+            echo "- Requested ref: \`${{ steps.upstream.outputs.ref }}\`"
+            echo "- Exact commit: \`${UPSTREAM_SHA}\`"
+            echo "- Destination: \`${GITHUB_REPOSITORY}:${DESTINATION_BRANCH}\`"
+            echo "- Protected scope: this workflow never modifies \`main\` or \`camz/*\`."
+          } >> "$GITHUB_STEP_SUMMARY"
