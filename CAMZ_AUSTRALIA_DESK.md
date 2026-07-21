@@ -28,6 +28,23 @@ The workspace is deliberately cross-domain. It is intended to answer questions s
 - Are shipping routes, sanctions, infrastructure outages or Asia-Pacific events relevant?
 - Is the ASX actually trading, in auction, post-close, on holiday or outside verified calendar coverage?
 
+### Mission-scoped Australia tab
+
+When the Australia mission is active, **Macro Indicators** gains an Australia tab and selects it automatically. Other missions retain the existing US, Euro Area and China tabs without additional Australia surface area.
+
+The Australia tab renders:
+
+- the current Sydney-local ASX phase and verified-calendar state;
+- live seeded ASX 200, BHP, CBA and CSL cards;
+- AUD/USD, copper, gold, Newcastle coal, Brent, WTI and natural-gas cards;
+- positive/negative change cues;
+- compact freshness/source-state badges;
+- explicit undocumented-access and missing-observation-time flags;
+- session and quote evidence summaries;
+- warnings that the data is seeded context rather than exchange-grade real-time data.
+
+The tab refreshes the Sydney session clock every 30 seconds while active. Quote freshness is recomputed from the last successful retrieval time; the panel does not pretend that retrieval time is the exchange observation timestamp.
+
 ## Seeded Australian market universe
 
 The stock/index basket now contains:
@@ -76,7 +93,7 @@ The official 2026 ASX Trade calendar is transcribed. A weekday outside a verifie
 
 ## Evidence model
 
-`src/services/australia-market-desk.ts` builds a deterministic Australia desk snapshot from market and commodity quotes.
+`src/services/australia-market-desk.ts` builds a deterministic Australia desk snapshot from market and commodity quotes. `src/components/australia-macro-context.ts` turns that snapshot into a sanitized, evidence-labelled workstation view.
 
 The snapshot keeps these evidence classes separate:
 
@@ -106,17 +123,22 @@ nvm use
 npm ci
 
 npx biome check \
+  shared/stocks.json \
   src/shared/asx-market-hours.ts \
   src/services/australia-market-desk.ts \
   src/services/mission-presets.ts \
+  src/components/australia-macro-context.ts \
+  src/components/MacroTilesPanel.ts \
   tests/asx-market-hours-browser-parity.test.mts \
-  tests/australia-market-desk.test.mts
+  tests/australia-market-desk.test.mts \
+  tests/australia-macro-context.test.mts
 
 npx tsx --test \
   tests/asx-market-hours.test.mjs \
   tests/asx-market-hours-browser-parity.test.mts \
   tests/finance-observation-provenance.test.mts \
-  tests/australia-market-desk.test.mts
+  tests/australia-market-desk.test.mts \
+  tests/australia-macro-context.test.mts
 
 npm run typecheck
 npm run build:finance
@@ -141,11 +163,11 @@ npm run test:data
 
 ## Next implementation slice
 
-The next step is a first-class Australia context panel that consumes `buildAustraliaMarketDeskSnapshot()` and renders:
+The next step is a read-only Australia context export for `Stock-Market-Agent-Runtime` that preserves:
 
-- current Sydney/ASX phase;
-- ASX 200 and bellwether cards;
-- AUD and resource transmission cards;
-- compact provider/freshness badges;
-- explicit missing-observation and delayed-data warnings;
-- read-only context export for `Stock-Market-Agent-Runtime`.
+- symbol and current normalized quote;
+- ASX session evidence;
+- retrieval age and missing observation-time flags;
+- provider/source class and transformation metadata;
+- missing-symbol and degraded-provider warnings;
+- geopolitical, commodity, shipping and China-sensitive context without implying causation.
