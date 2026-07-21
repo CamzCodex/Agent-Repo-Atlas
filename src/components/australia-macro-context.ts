@@ -69,13 +69,17 @@ function genericQuoteEvidence(nowMs: number, group: string): FinanceObservationP
   }, nowMs);
 }
 
+function representativeObservation(
+  observations: readonly AustraliaDeskObservation[] | undefined,
+): AustraliaDeskObservation | null {
+  return observations?.find((entry) => entry.quote) ?? observations?.[0] ?? null;
+}
+
 function representativeEvidence(
   observations: readonly AustraliaDeskObservation[] | undefined,
   fallback: FinanceObservationProvenanceAssessment,
 ): FinanceObservationProvenanceAssessment {
-  return observations?.find((entry) => entry.quote)?.provenance
-    ?? observations?.[0]?.provenance
-    ?? fallback;
+  return representativeObservation(observations)?.provenance ?? fallback;
 }
 
 function buildFallbackSessionEvidence(
@@ -127,6 +131,7 @@ export function buildAustraliaMacroContextModel(
     ...(snapshot?.warnings ?? []),
     'Prices are delayed/seeded context, not exchange-grade real-time data.',
     'Retrieval/cache time must not be presented as exchange observation time.',
+    'Confidence values are policy heuristics, not calibrated probabilities.',
   ]));
   if (!status.calendarVerified && !warnings.includes('ASX calendar year is unverified.')) {
     warnings.unshift('ASX calendar year is unverified.');
@@ -166,7 +171,8 @@ function formatPrice(value: number | null): string {
 
 function observationTone(observation: AustraliaDeskObservation): string {
   if (observation.quote === null) return '#e74c3c';
-  if (observation.provenance.freshness === 'stale') return '#f39c12';
+  if (observation.dataMode === 'cached' || observation.provenance.freshness === 'stale') return '#f39c12';
+  if (observation.dataMode === 'unavailable' || observation.offline) return '#e67e22';
   if (observation.provenance.freshness === 'future' || observation.provenance.freshness === 'invalid') return '#e74c3c';
   return observation.quote.change !== null && observation.quote.change >= 0 ? '#27ae60' : '#e74c3c';
 }
@@ -177,6 +183,19 @@ function freshnessBasisLabel(evidence: FinanceObservationProvenanceAssessment): 
   return 'no clock';
 }
 
+function dataModeLabel(observation: AustraliaDeskObservation | null): string {
+  if (!observation) return 'Unknown mode';
+  const mode = humanize(observation.dataMode);
+  return observation.offline ? `${mode} · Offline` : mode;
+}
+
+function groupEvidenceLabel(
+  observations: readonly AustraliaDeskObservation[] | undefined,
+  provenanceLabel: string,
+): string {
+  return `${dataModeLabel(representativeObservation(observations))} · ${provenanceLabel}`;
+}
+
 function observationCard(observation: AustraliaDeskObservation): string {
   const tone = observationTone(observation);
   const price = formatPrice(observation.quote?.price ?? null);
@@ -184,7 +203,7 @@ function observationCard(observation: AustraliaDeskObservation): string {
   const changeLabel = change === null || change === undefined || !Number.isFinite(change)
     ? 'Change unavailable'
     : `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`;
-  const sourceState = `${humanize(observation.provenance.freshness)} · ${freshnessBasisLabel(observation.provenance)} · ${humanize(observation.provenance.sourceClass)}`;
+  const sourceState = `${dataModeLabel(observation)} · ${humanize(observation.provenance.freshness)} · ${freshnessBasisLabel(observation.provenance)} · ${humanize(observation.provenance.sourceClass)}`;
   const flags = observation.provenance.flags
     .filter((flag) => [
       'unverified-access-method',
@@ -253,6 +272,12 @@ export function renderAustraliaMacroContext(
   const exportButton = snapshot
     ? '<button type="button" data-australia-context-export style="border:1px solid var(--border);background:rgba(255,255,255,0.04);color:var(--text);border-radius:5px;padding:6px 8px;font-size:9px;font-weight:600;cursor:pointer;white-space:nowrap">Copy context JSON</button>'
     : '';
+  const marketEvidenceLabel = snapshot
+    ? groupEvidenceLabel(snapshot.markets, model.marketEvidenceLabel)
+    : model.marketEvidenceLabel;
+  const resourceEvidenceLabel = snapshot
+    ? groupEvidenceLabel(snapshot.resources, model.resourceEvidenceLabel)
+    : model.resourceEvidenceLabel;
 
   return `<div style="display:flex;flex-direction:column;gap:10px">
     <div style="border:1px solid var(--border);border-radius:8px;padding:12px;background:linear-gradient(135deg,rgba(39,174,96,0.09),rgba(52,152,219,0.04))">
@@ -273,8 +298,8 @@ export function renderAustraliaMacroContext(
 
     <div>
       ${evidenceRow('Session', model.sessionEvidenceLabel, '#27ae60')}
-      ${evidenceRow('ASX basket', model.marketEvidenceLabel, '#f39c12')}
-      ${evidenceRow('AUD/resources', model.resourceEvidenceLabel, '#f39c12')}
+      ${evidenceRow('ASX basket', marketEvidenceLabel, '#f39c12')}
+      ${evidenceRow('AUD/resources', resourceEvidenceLabel, '#f39c12')}
     </div>
 
     <div style="border:1px solid rgba(243,156,18,0.45);background:rgba(243,156,18,0.08);border-radius:6px;padding:9px 10px">
