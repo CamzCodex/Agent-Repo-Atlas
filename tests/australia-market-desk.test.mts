@@ -166,6 +166,24 @@ describe('Australia market desk evidence model', () => {
     assert.ok(snapshot.markets.every((entry) => entry.provenance.freshness === 'stale'));
     assert.ok(snapshot.resources.every((entry) => entry.provenance.freshness === 'stale'));
     assert.ok(snapshot.warnings.some((warning) => warning.includes('symbols are unavailable')));
+    assert.ok(snapshot.warnings.includes('Australian equity observations are stale.'));
+    assert.ok(snapshot.warnings.includes('AUD/resource observations are stale.'));
+  });
+
+  it('keeps equity and resource freshness independent after a partial refresh', () => {
+    const snapshot = buildAustraliaMarketDeskSnapshot(marketQuotes, commodityQuotes, {
+      now: new Date('2026-07-22T00:20:00Z'),
+      marketFetchedAt: '2026-07-22T00:19:00Z',
+      resourceFetchedAt: '2026-07-21T23:30:00Z',
+      quoteMaxAgeMs: 15 * 60 * 1000,
+    });
+
+    assert.ok(snapshot.markets.every((entry) => entry.provenance.freshness === 'fresh'));
+    assert.ok(snapshot.resources.every((entry) => entry.provenance.freshness === 'stale'));
+    assert.equal(snapshot.markets[0]?.provenance.fetchedAtMs, Date.parse('2026-07-22T00:19:00Z'));
+    assert.equal(snapshot.resources[0]?.provenance.fetchedAtMs, Date.parse('2026-07-21T23:30:00Z'));
+    assert.equal(snapshot.warnings.includes('Australian equity observations are stale.'), false);
+    assert.ok(snapshot.warnings.includes('AUD/resource observations are stale.'));
   });
 
   it('returns unknown rather than inventing an unverified future ASX calendar', () => {
