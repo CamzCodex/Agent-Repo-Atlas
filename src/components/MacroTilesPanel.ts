@@ -18,7 +18,12 @@ import {
   AUSTRALIA_DESK_MARKET_SYMBOLS,
   AUSTRALIA_DESK_RESOURCE_SYMBOLS,
   buildAustraliaMarketDeskSnapshot,
+  type AustraliaMarketDeskSnapshot,
 } from '@/services/australia-market-desk';
+import {
+  buildAustraliaMarketContextExport,
+  serializeAustraliaMarketContextExport,
+} from '@/services/australia-market-context-export';
 import {
   buildAustraliaMacroContextModel,
   renderAustraliaMacroContext,
@@ -262,13 +267,22 @@ export class MacroTilesPanel extends Panel {
   private _australiaResources: MarketData[] = [];
   private _australiaFetchedAt: Date | null = null;
   private _asxClockTimer: ReturnType<typeof setInterval> | null = null;
+  private _copyFeedbackTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
     super({ id: 'macro-tiles', title: 'Macro Indicators', showCount: false, infoTooltip: t('components.macroTiles.infoTooltip') });
     this._syncAustraliaMission();
 
     this.content.addEventListener('click', (e) => {
-      const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-tab]');
+      const target = e.target as HTMLElement;
+      const exportButton = target.closest<HTMLButtonElement>('[data-australia-context-export]');
+      if (exportButton) {
+        e.preventDefault();
+        void this._copyAustraliaContext(exportButton);
+        return;
+      }
+
+      const btn = target.closest<HTMLElement>('[data-tab]');
       if (btn?.dataset.tab === 'au' || btn?.dataset.tab === 'us' || btn?.dataset.tab === 'eu' || btn?.dataset.tab === 'cn') {
         this._tab = btn.dataset.tab as Tab;
         this._render();
@@ -341,10 +355,61 @@ export class MacroTilesPanel extends Panel {
     if (refreshed) this._australiaFetchedAt = new Date();
   }
 
+  private _buildAustraliaSnapshot(now: Date): AustraliaMarketDeskSnapshot {
+    return buildAustraliaMarketDeskSnapshot(
+      this._australiaMarkets,
+      this._australiaResources,
+      {
+        now,
+        fetchedAt: this._australiaFetchedAt ?? undefined,
+      },
+    );
+  }
+
+  private async _copyAustraliaContext(button: HTMLButtonElement): Promise<void> {
+    const now = new Date();
+    const context = buildAustraliaMarketContextExport(this._buildAustraliaSnapshot(now));
+    const text = serializeAustraliaMarketContextExport(context);
+    let copied = false;
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        copied = true;
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.readOnly = true;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        copied = document.execCommand('copy');
+        textarea.remove();
+      }
+    } catch {
+      copied = false;
+    }
+
+    button.textContent = copied ? 'Copied' : 'Copy failed';
+    button.disabled = true;
+    if (this._copyFeedbackTimer) clearTimeout(this._copyFeedbackTimer);
+    this._copyFeedbackTimer = setTimeout(() => {
+      this._copyFeedbackTimer = null;
+      if (!button.isConnected) return;
+      button.textContent = 'Copy context JSON';
+      button.disabled = false;
+    }, 1_500);
+  }
+
   public override destroy(): void {
     if (this._asxClockTimer) {
       clearInterval(this._asxClockTimer);
       this._asxClockTimer = null;
+    }
+    if (this._copyFeedbackTimer) {
+      clearTimeout(this._copyFeedbackTimer);
+      this._copyFeedbackTimer = null;
     }
     super.destroy();
   }
@@ -447,14 +512,7 @@ export class MacroTilesPanel extends Panel {
 
   private _buildAustraliaBody(): string {
     const now = new Date();
-    const snapshot = buildAustraliaMarketDeskSnapshot(
-      this._australiaMarkets,
-      this._australiaResources,
-      {
-        now,
-        fetchedAt: this._australiaFetchedAt ?? undefined,
-      },
-    );
+    const snapshot = this._buildAustraliaSnapshot(now);
     return renderAustraliaMacroContext(buildAustraliaMacroContextModel(now, snapshot), snapshot);
   }
 
