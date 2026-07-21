@@ -19,6 +19,7 @@ export type MissionPresetId =
   | 'energy-security'
   | 'osint-newsroom'
   | 'macro-market-watch'
+  | 'australia-market-watch'
   | 'tech-ai-watch'
   | 'good-news-explorer';
 
@@ -252,6 +253,52 @@ export const MISSION_PRESETS: readonly MissionPreset[] = [
       'outages',
       'weather',
       'natural',
+    ],
+  },
+  {
+    id: 'australia-market-watch',
+    label: 'Australia / ASX Desk',
+    shortLabel: 'Australia',
+    description: 'ASX, AUD, resources, China-sensitive macro, and Asia-Pacific disruption risk.',
+    icon: 'AU',
+    view: 'oceania',
+    zoom: 3.2,
+    timeRange: '7d',
+    panels: [
+      'map',
+      'live-news',
+      'markets',
+      'commodities',
+      'forex',
+      'macro-tiles',
+      'macro-signals',
+      'economic-calendar',
+      'centralbanks',
+      'economic',
+      'supply-chain',
+      'trade-policy',
+      'sanctions-pressure',
+      'energy-complex',
+      'gold-intelligence',
+      'market-breadth',
+      'liquidity-shifts',
+      'world-clock',
+    ],
+    layers: [
+      'stockExchanges',
+      'financialCenters',
+      'centralBanks',
+      'commodityHubs',
+      'tradeRoutes',
+      'waterways',
+      'ais',
+      'pipelines',
+      'economic',
+      'sanctions',
+      'weather',
+      'outages',
+      'natural',
+      'minerals',
     ],
   },
   {
