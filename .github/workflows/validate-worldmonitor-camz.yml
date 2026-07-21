@@ -61,10 +61,59 @@ jobs:
           git add -A .github/workflows
 
       - name: Run upstream unit and integration suite
-        run: npm run test:data
+        id: upstream_suite
+        shell: bash
+        run: |
+          set +e
+          log="$RUNNER_TEMP/worldmonitor-test-data.log"
+          npm run test:data > "$log" 2>&1
+          status=$?
+          export SUITE_STATUS="$status"
+          export SUITE_LOG="$log"
+          python3 - <<'PY'
+          import os
+          import re
+          from pathlib import Path
+
+          status = os.environ['SUITE_STATUS']
+          lines = Path(os.environ['SUITE_LOG']).read_text(encoding='utf-8', errors='replace').splitlines()
+          failures = []
+          for line in lines:
+              match = re.match(r'^\s*not ok\s+\d+\s+-\s+(.+?)\s*$', line)
+              if match:
+                  failures.append(match.group(1))
+          if failures:
+              summary = ' | '.join(failures[:3])
+          else:
+              candidates = [
+                  line.strip()
+                  for line in lines
+                  if 'ERR_' in line or re.search(r'\berror\s*:', line, re.IGNORECASE)
+              ]
+              summary = candidates[-1] if candidates else f'exit {status}; no TAP failure name found'
+          summary = re.sub(r'\s+', ' ', summary).strip()[:220]
+          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
+              output.write(f'status={status}\n')
+              output.write(f'summary={summary}\n')
+          PY
+          exit 0
+
+      - name: "Upstream suite failed — ${{ steps.upstream_suite.outputs.summary }}"
+        if: steps.upstream_suite.outputs.status != '0'
+        shell: bash
+        run: |
+          tail -n 180 "$RUNNER_TEMP/worldmonitor-test-data.log"
+          exit 1
+
+      - name: Upstream suite passed
+        if: steps.upstream_suite.outputs.status == '0'
+        shell: bash
+        run: tail -n 25 "$RUNNER_TEMP/worldmonitor-test-data.log"
 
       - name: Type-check the browser application
+        if: steps.upstream_suite.outputs.status == '0'
         run: npm run typecheck
 
       - name: Build the finance variant
+        if: steps.upstream_suite.outputs.status == '0'
         run: npm run build:finance
