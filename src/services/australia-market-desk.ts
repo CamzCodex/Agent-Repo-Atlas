@@ -51,7 +51,10 @@ export interface AustraliaMarketDeskSnapshot {
 
 export interface AustraliaMarketDeskOptions {
   now?: Date;
+  /** Compatibility fallback for callers whose quote groups share one retrieval clock. */
   fetchedAt?: string | number | Date;
+  marketFetchedAt?: string | number | Date;
+  resourceFetchedAt?: string | number | Date;
   quoteMaxAgeMs?: number;
 }
 
@@ -142,6 +145,8 @@ export function buildAustraliaMarketDeskSnapshot(
   const quoteMaxAgeMs = Number.isFinite(options.quoteMaxAgeMs)
     ? Math.max(0, options.quoteMaxAgeMs ?? DEFAULT_QUOTE_MAX_AGE_MS)
     : DEFAULT_QUOTE_MAX_AGE_MS;
+  const marketFetchedAt = options.marketFetchedAt ?? options.fetchedAt;
+  const resourceFetchedAt = options.resourceFetchedAt ?? options.fetchedAt;
 
   const asxStatusProvenance = assessFinanceObservationProvenance({
     provider: 'ASX',
@@ -168,9 +173,9 @@ export function buildAustraliaMarketDeskSnapshot(
   const marketsMap = quoteMap(marketQuotes);
   const resourcesMap = quoteMap(commodityQuotes);
   const markets = AUSTRALIA_DESK_MARKET_SYMBOLS.map((symbol) =>
-    buildQuoteObservation(symbol, marketsMap, options.fetchedAt, nowMs, quoteMaxAgeMs));
+    buildQuoteObservation(symbol, marketsMap, marketFetchedAt, nowMs, quoteMaxAgeMs));
   const resources = AUSTRALIA_DESK_RESOURCE_SYMBOLS.map((symbol) =>
-    buildQuoteObservation(symbol, resourcesMap, options.fetchedAt, nowMs, quoteMaxAgeMs));
+    buildQuoteObservation(symbol, resourcesMap, resourceFetchedAt, nowMs, quoteMaxAgeMs));
   const missingSymbols = [...markets, ...resources]
     .filter((observation) => observation.quote === null)
     .map((observation) => observation.symbol);
@@ -185,6 +190,12 @@ export function buildAustraliaMarketDeskSnapshot(
   if ([...markets, ...resources].some((observation) =>
     observation.provenance.flags.includes('missing-observed-at'))) {
     warnings.push('Quote observation time is unavailable; retrieval time is not exchange time.');
+  }
+  if (markets.some((observation) => observation.provenance.freshness === 'stale')) {
+    warnings.push('Australian equity observations are stale.');
+  }
+  if (resources.some((observation) => observation.provenance.freshness === 'stale')) {
+    warnings.push('AUD/resource observations are stale.');
   }
 
   return {
