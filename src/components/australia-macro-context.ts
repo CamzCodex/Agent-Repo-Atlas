@@ -11,6 +11,8 @@ import {
 import {
   AUSTRALIA_DESK_MARKET_SYMBOLS,
   AUSTRALIA_DESK_RESOURCE_SYMBOLS,
+  type AustraliaDeskObservation,
+  type AustraliaMarketDeskSnapshot,
 } from '@/services/australia-market-desk';
 import { escapeHtml } from '@/utils/sanitize';
 
@@ -43,7 +45,28 @@ function statusTone(status: AsxCashEquityStatus): string {
   return 'var(--text-dim)';
 }
 
-export function buildAustraliaMacroContextModel(now: Date = new Date()): AustraliaMacroContextModel {
+function genericQuoteEvidence(nowMs: number): FinanceObservationProvenanceAssessment {
+  return assessFinanceObservationProvenance({
+    provider: 'World Monitor market seed (Yahoo Finance path)',
+    sourceClass: 'undocumented',
+    sourceUrl: 'https://finance.yahoo.com/',
+    transformation: {
+      kind: 'normalized',
+      description: 'Seeded quote normalized to World Monitor market fields',
+      version: 'australia-market-desk-v1',
+    },
+    confidence: 0.55,
+    notes: [
+      'Prices render in the Markets and Commodities panels.',
+      'The current market API does not expose the upstream observation timestamp.',
+    ],
+  }, nowMs);
+}
+
+export function buildAustraliaMacroContextModel(
+  now: Date = new Date(),
+  snapshot: AustraliaMarketDeskSnapshot | null = null,
+): AustraliaMacroContextModel {
   const nowMs = now.getTime();
   const status = getAsxCashEquityStatus(now);
   const sessionEvidence = assessFinanceObservationProvenance({
@@ -68,27 +91,21 @@ export function buildAustraliaMacroContextModel(now: Date = new Date()): Austral
     ],
   }, nowMs);
 
-  const quoteEvidence = assessFinanceObservationProvenance({
-    provider: 'World Monitor market seed (Yahoo Finance path)',
-    sourceClass: 'undocumented',
-    sourceUrl: 'https://finance.yahoo.com/',
-    transformation: {
-      kind: 'normalized',
-      description: 'Seeded quote normalized to World Monitor market fields',
-      version: 'australia-market-desk-v1',
-    },
-    confidence: 0.55,
-    notes: [
-      'Prices render in the Markets and Commodities panels.',
-      'The current market API does not expose the upstream observation timestamp.',
-    ],
-  }, nowMs);
+  const quoteEvidence = snapshot
+    ? [...snapshot.markets, ...snapshot.resources].find((entry) => entry.quote)?.provenance
+      ?? snapshot.markets[0]?.provenance
+      ?? snapshot.resources[0]?.provenance
+      ?? genericQuoteEvidence(nowMs)
+    : genericQuoteEvidence(nowMs);
 
-  const warnings = [
+  const warnings = Array.from(new Set([
+    ...(snapshot?.warnings ?? []),
     'Prices are delayed/seeded context, not exchange-grade real-time data.',
     'Retrieval time must not be presented as exchange observation time.',
-  ];
-  if (!status.calendarVerified) warnings.unshift('ASX calendar year is not verified.');
+  ]));
+  if (!status.calendarVerified && !warnings.includes('ASX calendar year is unverified.')) {
+    warnings.unshift('ASX calendar year is unverified.');
+  }
 
   return {
     status,
@@ -111,15 +128,86 @@ function evidenceRow(label: string, value: string, tone: string): string {
   </div>`;
 }
 
-export function renderAustraliaMacroContext(model: AustraliaMacroContextModel): string {
+function formatPrice(value: number | null): string {
+  if (value === null || !Number.isFinite(value)) return 'N/A';
+  if (Math.abs(value) < 1) return value.toFixed(4);
+  if (Math.abs(value) < 100) return value.toFixed(2);
+  return value.toLocaleString(undefined, { maximumFractionDigits: 2 });
+}
+
+function observationTone(observation: AustraliaDeskObservation): string {
+  if (observation.quote === null) return '#e74c3c';
+  if (observation.provenance.freshness === 'stale') return '#f39c12';
+  if (observation.provenance.freshness === 'future' || observation.provenance.freshness === 'invalid') return '#e74c3c';
+  return observation.quote.change !== null && observation.quote.change >= 0 ? '#27ae60' : '#e74c3c';
+}
+
+function observationCard(observation: AustraliaDeskObservation): string {
+  const tone = observationTone(observation);
+  const price = formatPrice(observation.quote?.price ?? null);
+  const change = observation.quote?.change;
+  const changeLabel = change === null || change === undefined || !Number.isFinite(change)
+    ? 'Change unavailable'
+    : `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`;
+  const sourceState = `${humanize(observation.provenance.freshness)} · ${humanize(observation.provenance.sourceClass)}`;
+  const flags = observation.provenance.flags
+    .filter((flag) => ['unverified-access-method', 'stale-observation', 'missing-observed-at'].includes(flag))
+    .map(humanize)
+    .join(' · ');
+
+  return `<div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:6px;padding:10px;min-width:0">
+    <div style="display:flex;justify-content:space-between;gap:7px;align-items:flex-start">
+      <div style="min-width:0">
+        <div style="font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.06em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(observation.label)}</div>
+        <div style="font-size:9px;color:var(--text-dim);margin-top:1px">${escapeHtml(observation.symbol)}</div>
+      </div>
+      <span style="font-size:8px;color:${tone};font-weight:700;text-transform:uppercase;white-space:nowrap">${escapeHtml(sourceState)}</span>
+    </div>
+    <div style="font-size:21px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;margin-top:6px">${escapeHtml(price)}</div>
+    <div style="font-size:10px;color:${tone};font-weight:600;margin-top:2px">${escapeHtml(changeLabel)}</div>
+    ${flags ? `<div style="font-size:8px;color:var(--text-dim);line-height:1.3;margin-top:5px">${escapeHtml(flags)}</div>` : ''}
+  </div>`;
+}
+
+function observationSection(title: string, observations: readonly AustraliaDeskObservation[]): string {
+  return `<div>
+    <div style="font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px">${escapeHtml(title)}</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:8px">${observations.map(observationCard).join('')}</div>
+  </div>`;
+}
+
+function symbolSummary(model: AustraliaMacroContextModel): string {
+  const marketLabels = model.marketSymbols.join(' · ');
+  const resourceLabels = model.resourceSymbols.join(' · ');
+  return `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px">
+    <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:6px;padding:10px">
+      <div style="font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.06em">AU equities</div>
+      <div style="font-size:11px;color:var(--text);margin-top:5px;line-height:1.45">${escapeHtml(marketLabels)}</div>
+    </div>
+    <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:6px;padding:10px">
+      <div style="font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.06em">Transmission channels</div>
+      <div style="font-size:11px;color:var(--text);margin-top:5px;line-height:1.45">${escapeHtml(resourceLabels)}</div>
+    </div>
+    <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:6px;padding:10px">
+      <div style="font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.06em">Context lenses</div>
+      <div style="font-size:11px;color:var(--text);margin-top:5px;line-height:1.45">China demand · shipping · energy · sanctions · RBA/macro</div>
+    </div>
+  </div>`;
+}
+
+export function renderAustraliaMacroContext(
+  model: AustraliaMacroContextModel,
+  snapshot: AustraliaMarketDeskSnapshot | null = null,
+): string {
   const localClock = model.status.localDate && model.status.localTime
     ? `${model.status.localDate} · ${model.status.localTime} Sydney`
     : 'Sydney time unavailable';
   const statusDetail = model.status.holidayName
     ? `${model.statusLabel} · ${model.status.holidayName}`
     : `${model.statusLabel} · ${humanize(model.status.reason)}`;
-  const marketLabels = model.marketSymbols.join(' · ');
-  const resourceLabels = model.resourceSymbols.join(' · ');
+  const observations = snapshot
+    ? `${observationSection('Australian equities', snapshot.markets)}${observationSection('AUD and resource transmission', snapshot.resources)}`
+    : symbolSummary(model);
 
   return `<div style="display:flex;flex-direction:column;gap:10px">
     <div style="border:1px solid var(--border);border-radius:8px;padding:12px;background:linear-gradient(135deg,rgba(39,174,96,0.09),rgba(52,152,219,0.04))">
@@ -133,20 +221,7 @@ export function renderAustraliaMacroContext(model: AustraliaMacroContextModel): 
       </div>
     </div>
 
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px">
-      <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:6px;padding:10px">
-        <div style="font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.06em">AU equities</div>
-        <div style="font-size:11px;color:var(--text);margin-top:5px;line-height:1.45">${escapeHtml(marketLabels)}</div>
-      </div>
-      <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:6px;padding:10px">
-        <div style="font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.06em">Transmission channels</div>
-        <div style="font-size:11px;color:var(--text);margin-top:5px;line-height:1.45">${escapeHtml(resourceLabels)}</div>
-      </div>
-      <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:6px;padding:10px">
-        <div style="font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.06em">Context lenses</div>
-        <div style="font-size:11px;color:var(--text);margin-top:5px;line-height:1.45">China demand · shipping · energy · sanctions · RBA/macro</div>
-      </div>
-    </div>
+    ${observations}
 
     <div>
       ${evidenceRow('Session', model.sessionEvidenceLabel, '#27ae60')}
