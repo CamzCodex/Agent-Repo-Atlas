@@ -1,4 +1,5 @@
 import type {
+  AustraliaDeskDataMode,
   AustraliaDeskObservation,
   AustraliaMarketDeskSnapshot,
 } from '@/services/australia-market-desk';
@@ -34,6 +35,7 @@ export interface AustraliaContextEvidence {
   ageMs: number | null;
   freshness: FinanceObservationProvenanceAssessment['freshness'];
   confidence: number | null;
+  confidenceMeaning: 'policy-heuristic-not-calibrated';
   flags: FinanceProvenanceFlag[];
   notes: string[];
 }
@@ -47,6 +49,8 @@ export interface AustraliaContextObservation {
   quoteAvailable: boolean;
   price: number | null;
   changePercent: number | null;
+  dataMode: AustraliaDeskDataMode;
+  offline: boolean;
   evidence: AustraliaContextEvidence;
 }
 
@@ -82,6 +86,7 @@ const READ_ONLY_CONSTRAINTS = Object.freeze([
   'Associations in downstream research must not be presented as proven causation.',
   'The equity basket is a compact benchmark/bellwether sample, not Australian market breadth or an investable universe.',
   'Provider-derived values are for internal research context; redistribution or republication requires a separate rights review.',
+  'Confidence values are policy heuristics, not calibrated probabilities.',
 ]);
 
 const QUOTE_METADATA: Readonly<Record<string, { currency: string | null; quoteUnit: AustraliaContextQuoteUnit }>> = {
@@ -122,6 +127,7 @@ function exportEvidence(
     ageMs: assessment.ageMs,
     freshness: assessment.freshness,
     confidence: assessment.confidence,
+    confidenceMeaning: 'policy-heuristic-not-calibrated',
     flags: [...assessment.flags],
     notes: [...assessment.notes],
   };
@@ -148,6 +154,8 @@ function exportObservation(observation: AustraliaDeskObservation): AustraliaCont
     quoteAvailable: observation.quote !== null,
     price: observation.quote?.price ?? null,
     changePercent: observation.quote?.change ?? null,
+    dataMode: observation.dataMode,
+    offline: observation.offline,
     evidence: exportEvidence(observation.provenance),
   };
 }
