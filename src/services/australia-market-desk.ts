@@ -27,6 +27,9 @@ export const AUSTRALIA_DESK_RESOURCE_SYMBOLS = [
   'NG=F',
 ] as const;
 
+export const AUSTRALIA_DESK_BASKET_LIMITATION =
+  'Australian equities are a compact benchmark/bellwether basket, not ASX market breadth or an investable universe.';
+
 export type AustraliaDeskMarketSymbol = typeof AUSTRALIA_DESK_MARKET_SYMBOLS[number];
 export type AustraliaDeskResourceSymbol = typeof AUSTRALIA_DESK_RESOURCE_SYMBOLS[number];
 
@@ -40,6 +43,7 @@ export interface AustraliaDeskObservation {
 
 export interface AustraliaMarketDeskSnapshot {
   generatedAt: string;
+  asxSourceCheckedAt: string;
   asxStatus: AsxCashEquityStatus;
   asxStatusProvenance: FinanceObservationProvenanceAssessment;
   asxStatusProvenanceLabel: string;
@@ -59,6 +63,7 @@ export interface AustraliaMarketDeskOptions {
 }
 
 const DEFAULT_QUOTE_MAX_AGE_MS = 15 * 60 * 1000;
+const ASX_SOURCE_REVIEW_MAX_AGE_MS = 90 * 24 * 60 * 60 * 1000;
 
 const LABELS: Readonly<Record<AustraliaDeskMarketSymbol | AustraliaDeskResourceSymbol, string>> = {
   '^AXJO': 'S&P/ASX 200',
@@ -78,14 +83,15 @@ function normalizeQuote(quote: MarketData | undefined): MarketData | null {
   if (!quote) return null;
   const price = quote.price;
   const change = quote.change;
+  if (typeof price !== 'number' || !Number.isFinite(price) || price <= 0) return null;
   return {
     symbol: quote.symbol,
     name: quote.name,
     display: quote.display,
-    price: typeof price === 'number' && Number.isFinite(price) ? price : null,
+    price,
     change: typeof change === 'number' && Number.isFinite(change) ? change : null,
     ...(Array.isArray(quote.sparkline)
-      ? { sparkline: quote.sparkline.filter((value) => Number.isFinite(value)) }
+      ? { sparkline: quote.sparkline.filter((value) => Number.isFinite(value) && value > 0) }
       : {}),
   };
 }
@@ -111,8 +117,11 @@ function buildQuoteObservation(
     },
     confidence: quote ? 0.65 : 0.2,
     notes: quote
-      ? ['Current market API does not expose the upstream observation timestamp.']
-      : ['Symbol is absent from the current seeded cache.'],
+      ? [
+          'Current market API does not expose the upstream observation timestamp.',
+          'When present, freshness is based on the retrieval/cache clock rather than exchange time.',
+        ]
+      : ['Symbol is absent or carries a non-positive/invalid price in the current seeded cache.'],
   }, nowMs);
 
   return {
@@ -131,6 +140,12 @@ function quoteMap(quotes: readonly MarketData[]): Map<string, MarketData> {
     if (!result.has(quote.symbol)) result.set(quote.symbol, quote);
   }
   return result;
+}
+
+function sourceCheckAgeMs(nowMs: number): number | null {
+  const checkedAtMs = Date.parse(`${ASX_MARKET_HOURS_METADATA.sourceCheckedAt}T00:00:00Z`);
+  if (!Number.isFinite(nowMs) || !Number.isFinite(checkedAtMs)) return null;
+  return nowMs - checkedAtMs;
 }
 
 export function buildAustraliaMarketDeskSnapshot(
@@ -152,9 +167,7 @@ export function buildAustraliaMarketDeskSnapshot(
     provider: 'ASX',
     sourceClass: 'official',
     sourceUrl: ASX_MARKET_HOURS_METADATA.hoursSourceUrl,
-    termsUrl: ASX_MARKET_HOURS_METADATA.calendarSourceUrl,
     observedAt: now,
-    fetchedAt: now,
     maxAgeMs: 60_000,
     transformation: {
       kind: 'deterministic-model',
@@ -163,7 +176,9 @@ export function buildAustraliaMarketDeskSnapshot(
     },
     confidence: asxStatus.calendarVerified ? 1 : 0.35,
     notes: [
-      `Calendar source checked ${ASX_MARKET_HOURS_METADATA.sourceCheckedAt}.`,
+      `Trading-hours and calendar sources last checked ${ASX_MARKET_HOURS_METADATA.sourceCheckedAt}.`,
+      `Calendar source: ${ASX_MARKET_HOURS_METADATA.calendarSourceUrl}`,
+      'The model evaluation time is not a live ASX schedule retrieval time.',
       asxStatus.calendarVerified
         ? 'The local calendar year is verified.'
         : 'The local weekday calendar year is not verified; status is intentionally unknown.',
@@ -180,9 +195,16 @@ export function buildAustraliaMarketDeskSnapshot(
     .filter((observation) => observation.quote === null)
     .map((observation) => observation.symbol);
 
-  const warnings: string[] = [];
+  const warnings: string[] = [AUSTRALIA_DESK_BASKET_LIMITATION];
   if (!asxStatus.calendarVerified) warnings.push('ASX calendar year is unverified.');
-  if (missingSymbols.length > 0) warnings.push(`${missingSymbols.length} Australia-desk symbols are unavailable.`);
+  const reviewAgeMs = sourceCheckAgeMs(nowMs);
+  if (reviewAgeMs !== null && reviewAgeMs > ASX_SOURCE_REVIEW_MAX_AGE_MS) {
+    warnings.push('ASX trading-hours/calendar sources are past the 90-day review interval.');
+  }
+  if (reviewAgeMs !== null && reviewAgeMs < -5 * 60 * 1000) {
+    warnings.push('ASX source-check date is future-dated relative to the model clock.');
+  }
+  if (missingSymbols.length > 0) warnings.push(`${missingSymbols.length} Australia-desk symbols are unavailable or invalid.`);
   if ([...markets, ...resources].some((observation) =>
     observation.provenance.flags.includes('unverified-access-method'))) {
     warnings.push('Market observations use an undocumented upstream access path.');
@@ -200,6 +222,7 @@ export function buildAustraliaMarketDeskSnapshot(
 
   return {
     generatedAt,
+    asxSourceCheckedAt: ASX_MARKET_HOURS_METADATA.sourceCheckedAt,
     asxStatus,
     asxStatusProvenance,
     asxStatusProvenanceLabel: formatFinanceObservationProvenance(asxStatusProvenance),
