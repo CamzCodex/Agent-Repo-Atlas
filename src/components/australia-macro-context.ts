@@ -208,6 +208,9 @@ export function renderAustraliaMacroContext(
   const observations = snapshot
     ? `${observationSection('Australian equities', snapshot.markets)}${observationSection('AUD and resource transmission', snapshot.resources)}`
     : symbolSummary(model);
+  const exportButton = snapshot
+    ? '<button type="button" data-australia-context-export style="border:1px solid var(--border);background:rgba(255,255,255,0.04);color:var(--text);border-radius:5px;padding:6px 8px;font-size:9px;font-weight:600;cursor:pointer;white-space:nowrap">Copy context JSON</button>'
+    : '';
 
   return `<div style="display:flex;flex-direction:column;gap:10px">
     <div style="border:1px solid var(--border);border-radius:8px;padding:12px;background:linear-gradient(135deg,rgba(39,174,96,0.09),rgba(52,152,219,0.04))">
@@ -217,7 +220,10 @@ export function renderAustraliaMacroContext(
           <div style="font-size:18px;font-weight:700;color:var(--text);margin-top:3px">${escapeHtml(statusDetail)}</div>
           <div style="font-size:10px;color:var(--text-dim);margin-top:3px">${escapeHtml(localClock)}</div>
         </div>
-        <span style="font-size:10px;font-weight:700;color:${model.statusTone};border:1px solid ${model.statusTone};border-radius:999px;padding:4px 7px;text-transform:uppercase;white-space:nowrap">${escapeHtml(model.status.session)}</span>
+        <div style="display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap">
+          ${exportButton}
+          <span style="font-size:10px;font-weight:700;color:${model.statusTone};border:1px solid ${model.statusTone};border-radius:999px;padding:4px 7px;text-transform:uppercase;white-space:nowrap">${escapeHtml(model.status.session)}</span>
+        </div>
       </div>
     </div>
 
