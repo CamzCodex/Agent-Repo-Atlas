@@ -23,6 +23,7 @@ import type { MarketData, CryptoData, TokenData } from '@/types';
 import { createCircuitBreaker, type BreakerDataState } from '@/utils/circuit-breaker';
 import { getHydratedData } from '@/services/bootstrap';
 import { MarketServiceClient } from '@/services/generated-rpc-clients';
+import { markMarketDataState } from '@/services/market-data-state';
 
 const client = new MarketServiceClient(getRpcBaseUrl(), { fetch: (...args: Parameters<typeof fetch>) => globalThis.fetch(...args) });
 const MARKET_QUOTES_CACHE_TTL_MS = 5 * 60 * 1000;
@@ -71,7 +72,6 @@ export interface MarketFetchResult {
   skipped?: boolean;
   reason?: string;
   rateLimited?: boolean;
-  /** State for this exact breaker return path, not the breaker's mutable last state. */
   dataState?: BreakerDataState;
 }
 
@@ -143,6 +143,7 @@ export async function fetchMultipleStocks(
       offline: dataState.offline,
     };
   }
+  markMarketDataState(data, dataState);
 
   return {
     data,
@@ -202,6 +203,7 @@ export async function fetchCommodityQuotes(
   });
 
   if (results.length > 0) options.onBatch?.(results);
+  markMarketDataState(results, dataState);
   return { data: results, dataState: { ...dataState } };
 }
 
