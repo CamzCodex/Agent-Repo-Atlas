@@ -65,16 +65,26 @@ jobs:
           tests/australia-market-context-export.test.mts
           tests/macro-tiles-china-ui.test.mts
 
-      - name: Run focused Australia desk tests
+      - name: Test ASX session and browser parity
         run: >-
           npx tsx --test
           tests/asx-market-hours.test.mjs
           tests/asx-market-hours-browser-parity.test.mts
-          tests/finance-observation-provenance.test.mts
-          tests/australia-market-desk.test.mts
-          tests/australia-macro-context.test.mts
-          tests/australia-market-context-export.test.mts
-          tests/macro-tiles-china-ui.test.mts
+
+      - name: Test finance observation provenance
+        run: npx tsx --test tests/finance-observation-provenance.test.mts
+
+      - name: Test Australia desk model and retrieval clocks
+        run: npx tsx --test tests/australia-market-desk.test.mts
+
+      - name: Test Australia Macro Tiles rendering and copy wiring
+        run: npx tsx --test tests/australia-macro-context.test.mts
+
+      - name: Test read-only Australia context export
+        run: npx tsx --test tests/australia-market-context-export.test.mts
+
+      - name: Test China and Australia Macro Tiles launch contract
+        run: npx tsx --test tests/macro-tiles-china-ui.test.mts
 
       - name: Restore preserved upstream workflows
         run: |
