@@ -105,7 +105,7 @@ describe('Australia macro context model', () => {
 
     assert.equal(model.status.session, 'unknown');
     assert.equal(model.status.calendarVerified, false);
-    assert.ok(model.warnings.includes('ASX calendar year is not verified.'));
+    assert.ok(model.warnings.includes('ASX calendar year is unverified.'));
     assert.ok(model.sessionEvidence.flags.includes('low-confidence'));
   });
 });
