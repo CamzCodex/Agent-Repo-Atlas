@@ -63,6 +63,7 @@ jobs:
           tests/australia-market-desk.test.mts
           tests/australia-macro-context.test.mts
           tests/australia-market-context-export.test.mts
+          tests/macro-tiles-china-ui.test.mts
 
       - name: Run focused Australia desk tests
         run: >-
@@ -73,6 +74,7 @@ jobs:
           tests/australia-market-desk.test.mts
           tests/australia-macro-context.test.mts
           tests/australia-market-context-export.test.mts
+          tests/macro-tiles-china-ui.test.mts
 
       - name: Restore preserved upstream workflows
         run: |
