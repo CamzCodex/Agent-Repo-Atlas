@@ -1,0 +1,88 @@
+name: Validate World Monitor Australia desk v2
+
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - docs/adoptions/WORLDMONITOR_AUSTRALIA_VALIDATE_TRIGGER.md
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-worldmonitor-australia-desk-v2
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    if: >-
+      github.event_name != 'pull_request' ||
+      (github.actor == github.repository_owner &&
+       github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - name: Check out Australia desk branch
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          ref: camz/australia-desk
+          fetch-depth: 0
+          show-progress: false
+
+      - name: Use repository Node version
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Verify branch ancestry and whitespace
+        run: |
+          git fetch origin camz/local-foundation --depth=1
+          git merge-base --is-ancestor origin/camz/local-foundation HEAD
+          git diff --check origin/camz/local-foundation...HEAD
+
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts --prefer-offline --silent
+
+      - name: Run secret-safe diagnostics
+        run: npm run camz:diagnostics -- --strict
+
+      - name: Check Australia desk files
+        run: >-
+          npx biome check
+          shared/stocks.json
+          src/shared/asx-market-hours.ts
+          src/services/australia-market-desk.ts
+          src/services/mission-presets.ts
+          src/components/australia-macro-context.ts
+          src/components/MacroTilesPanel.ts
+          tests/asx-market-hours-browser-parity.test.mts
+          tests/australia-market-desk.test.mts
+          tests/australia-macro-context.test.mts
+
+      - name: Run focused Australia desk tests
+        run: >-
+          npx tsx --test
+          tests/asx-market-hours.test.mjs
+          tests/asx-market-hours-browser-parity.test.mts
+          tests/finance-observation-provenance.test.mts
+          tests/australia-market-desk.test.mts
+          tests/australia-macro-context.test.mts
+
+      - name: Restore preserved upstream workflows
+        run: |
+          npm run camz:restore-workflows
+          git add -A .github/workflows
+
+      - name: Build full dashboard artifacts
+        run: VITE_VARIANT=full ./node_modules/.bin/vite build
+
+      - name: Run complete upstream test suite
+        run: npm run test:data
+
+      - name: Type-check browser application
+        run: npm run typecheck
+
+      - name: Build Finance production variant
+        run: npm run build:finance
