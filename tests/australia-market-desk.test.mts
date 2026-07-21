@@ -12,6 +12,7 @@ import {
   getMissionPreset,
 } from '../src/services/mission-presets.ts';
 import {
+  AUSTRALIA_DESK_BASKET_LIMITATION,
   AUSTRALIA_DESK_MARKET_SYMBOLS,
   AUSTRALIA_DESK_RESOURCE_SYMBOLS,
   buildAustraliaMarketDeskSnapshot,
@@ -124,17 +125,22 @@ describe('Australia market desk evidence model', () => {
     quote('NG=F', 3.3, -0.8),
   ];
 
-  it('separates official session evidence from undocumented quote access', () => {
+  it('separates model evaluation from ASX source verification and quote access', () => {
     const snapshot = buildAustraliaMarketDeskSnapshot(marketQuotes, commodityQuotes, {
       now: new Date('2026-07-22T00:05:00Z'),
       fetchedAt: '2026-07-22T00:00:00Z',
     });
 
+    assert.equal(snapshot.asxSourceCheckedAt, '2026-07-22');
     assert.equal(snapshot.asxStatus.phase, 'regular');
     assert.equal(snapshot.asxStatus.calendarVerified, true);
     assert.equal(snapshot.asxStatusProvenance.sourceClass, 'official');
     assert.equal(snapshot.asxStatusProvenance.transformationKind, 'deterministic-model');
     assert.equal(snapshot.asxStatusProvenance.freshness, 'fresh');
+    assert.equal(snapshot.asxStatusProvenance.freshnessBasis, 'observed-at');
+    assert.equal(snapshot.asxStatusProvenance.observedAtMs, Date.parse('2026-07-22T00:05:00Z'));
+    assert.equal(snapshot.asxStatusProvenance.fetchedAtMs, null);
+    assert.equal(snapshot.asxStatusProvenance.termsUrl, null);
 
     assert.equal(snapshot.markets.length, AUSTRALIA_DESK_MARKET_SYMBOLS.length);
     assert.equal(snapshot.resources.length, AUSTRALIA_DESK_RESOURCE_SYMBOLS.length);
@@ -144,8 +150,10 @@ describe('Australia market desk evidence model', () => {
     assert.equal(asxQuote?.symbol, '^AXJO');
     assert.equal(asxQuote?.provenance.sourceClass, 'undocumented');
     assert.equal(asxQuote?.provenance.freshness, 'fresh');
+    assert.equal(asxQuote?.provenance.freshnessBasis, 'fetched-at');
     assert.ok(asxQuote?.provenance.flags.includes('unverified-access-method'));
     assert.ok(asxQuote?.provenance.flags.includes('missing-observed-at'));
+    assert.ok(snapshot.warnings.includes(AUSTRALIA_DESK_BASKET_LIMITATION));
     assert.ok(snapshot.warnings.includes('Market observations use an undocumented upstream access path.'));
     assert.ok(snapshot.warnings.includes('Quote observation time is unavailable; retrieval time is not exchange time.'));
   });
@@ -165,7 +173,7 @@ describe('Australia market desk evidence model', () => {
     assert.equal(snapshot.markets.find((entry) => entry.symbol === 'CSL.AX')?.quote, null);
     assert.ok(snapshot.markets.every((entry) => entry.provenance.freshness === 'stale'));
     assert.ok(snapshot.resources.every((entry) => entry.provenance.freshness === 'stale'));
-    assert.ok(snapshot.warnings.some((warning) => warning.includes('symbols are unavailable')));
+    assert.ok(snapshot.warnings.some((warning) => warning.includes('unavailable or invalid')));
     assert.ok(snapshot.warnings.includes('Australian equity observations are stale.'));
     assert.ok(snapshot.warnings.includes('AUD/resource observations are stale.'));
   });
@@ -186,6 +194,29 @@ describe('Australia market desk evidence model', () => {
     assert.ok(snapshot.warnings.includes('AUD/resource observations are stale.'));
   });
 
+  it('rejects zero, negative, and invalid prices instead of exposing false availability', () => {
+    const snapshot = buildAustraliaMarketDeskSnapshot(
+      [
+        quote('^AXJO', 0, 0),
+        quote('BHP.AX', -1, 1),
+        { ...quote('CBA.AX', 178.1, 0.1), price: Number.NaN },
+        quote('CSL.AX', 116.3, 1.2),
+      ],
+      commodityQuotes,
+      {
+        now: new Date('2026-07-22T00:05:00Z'),
+        marketFetchedAt: '2026-07-22T00:00:00Z',
+        resourceFetchedAt: '2026-07-22T00:00:00Z',
+      },
+    );
+
+    assert.deepEqual(snapshot.missingSymbols.slice(0, 3), ['^AXJO', 'BHP.AX', 'CBA.AX']);
+    assert.equal(snapshot.markets[0]?.quote, null);
+    assert.equal(snapshot.markets[1]?.quote, null);
+    assert.equal(snapshot.markets[2]?.quote, null);
+    assert.ok(snapshot.warnings.some((warning) => warning.includes('unavailable or invalid')));
+  });
+
   it('returns unknown rather than inventing an unverified future ASX calendar', () => {
     const snapshot = buildAustraliaMarketDeskSnapshot([], [], {
       now: new Date('2027-07-22T00:05:00Z'),
@@ -195,6 +226,7 @@ describe('Australia market desk evidence model', () => {
     assert.equal(snapshot.asxStatus.session, 'unknown');
     assert.equal(snapshot.asxStatus.calendarVerified, false);
     assert.ok(snapshot.warnings.includes('ASX calendar year is unverified.'));
+    assert.ok(snapshot.warnings.includes('ASX trading-hours/calendar sources are past the 90-day review interval.'));
     assert.ok(snapshot.asxStatusProvenance.flags.includes('low-confidence'));
   });
 });
