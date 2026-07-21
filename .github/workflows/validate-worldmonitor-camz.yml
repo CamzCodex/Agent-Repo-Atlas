@@ -61,6 +61,9 @@ jobs:
           npm run camz:restore-workflows
           git add -A .github/workflows
 
+      - name: Build full dashboard artifacts for built-output tests
+        run: VITE_VARIANT=full ./node_modules/.bin/vite build
+
       - name: Run upstream unit and integration suite
         id: upstream_suite
         shell: bash
