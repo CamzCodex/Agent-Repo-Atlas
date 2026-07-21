@@ -22,6 +22,11 @@ export interface AustraliaMacroContextModel {
   statusTone: string;
   sessionEvidence: FinanceObservationProvenanceAssessment;
   sessionEvidenceLabel: string;
+  marketEvidence: FinanceObservationProvenanceAssessment;
+  marketEvidenceLabel: string;
+  resourceEvidence: FinanceObservationProvenanceAssessment;
+  resourceEvidenceLabel: string;
+  /** Compatibility alias for callers that previously consumed one combined quote evidence row. */
   quoteEvidence: FinanceObservationProvenanceAssessment;
   quoteEvidenceLabel: string;
   marketSymbols: readonly string[];
@@ -45,20 +50,58 @@ function statusTone(status: AsxCashEquityStatus): string {
   return 'var(--text-dim)';
 }
 
-function genericQuoteEvidence(nowMs: number): FinanceObservationProvenanceAssessment {
+function genericQuoteEvidence(nowMs: number, group: string): FinanceObservationProvenanceAssessment {
   return assessFinanceObservationProvenance({
     provider: 'World Monitor market seed (Yahoo Finance path)',
     sourceClass: 'undocumented',
     sourceUrl: 'https://finance.yahoo.com/',
+    maxAgeMs: 15 * 60 * 1000,
     transformation: {
       kind: 'normalized',
       description: 'Seeded quote normalized to World Monitor market fields',
       version: 'australia-market-desk-v1',
     },
-    confidence: 0.55,
+    confidence: 0.35,
     notes: [
-      'Prices render in the Markets and Commodities panels.',
+      `${group} quotes have not produced a usable retrieval clock in this panel session.`,
       'The current market API does not expose the upstream observation timestamp.',
+    ],
+  }, nowMs);
+}
+
+function representativeEvidence(
+  observations: readonly AustraliaDeskObservation[] | undefined,
+  fallback: FinanceObservationProvenanceAssessment,
+): FinanceObservationProvenanceAssessment {
+  return observations?.find((entry) => entry.quote)?.provenance
+    ?? observations?.[0]?.provenance
+    ?? fallback;
+}
+
+function buildFallbackSessionEvidence(
+  now: Date,
+  nowMs: number,
+  status: AsxCashEquityStatus,
+): FinanceObservationProvenanceAssessment {
+  return assessFinanceObservationProvenance({
+    provider: 'ASX',
+    sourceClass: 'official',
+    sourceUrl: ASX_MARKET_HOURS_METADATA.hoursSourceUrl,
+    observedAt: now,
+    maxAgeMs: 60_000,
+    transformation: {
+      kind: 'deterministic-model',
+      description: 'ASX cash-market phase derived in Australia/Sydney from the verified calendar',
+      version: 'asx-market-hours-v1',
+    },
+    confidence: status.calendarVerified ? 1 : 0.35,
+    notes: [
+      `Trading-hours and calendar sources last checked ${ASX_MARKET_HOURS_METADATA.sourceCheckedAt}.`,
+      `Calendar source: ${ASX_MARKET_HOURS_METADATA.calendarSourceUrl}`,
+      'The model evaluation time is not a live ASX schedule retrieval time.',
+      status.calendarVerified
+        ? 'The local ASX calendar year is verified.'
+        : 'The local weekday calendar year is unverified; session state is intentionally unknown.',
     ],
   }, nowMs);
 }
@@ -68,40 +111,22 @@ export function buildAustraliaMacroContextModel(
   snapshot: AustraliaMarketDeskSnapshot | null = null,
 ): AustraliaMacroContextModel {
   const nowMs = now.getTime();
-  const status = getAsxCashEquityStatus(now);
-  const sessionEvidence = assessFinanceObservationProvenance({
-    provider: 'ASX',
-    sourceClass: 'official',
-    sourceUrl: ASX_MARKET_HOURS_METADATA.hoursSourceUrl,
-    termsUrl: ASX_MARKET_HOURS_METADATA.calendarSourceUrl,
-    observedAt: now,
-    fetchedAt: now,
-    maxAgeMs: 60_000,
-    transformation: {
-      kind: 'deterministic-model',
-      description: 'ASX cash-market phase derived in Australia/Sydney from the verified calendar',
-      version: 'asx-market-hours-v1',
-    },
-    confidence: status.calendarVerified ? 1 : 0.35,
-    notes: [
-      `Calendar source checked ${ASX_MARKET_HOURS_METADATA.sourceCheckedAt}.`,
-      status.calendarVerified
-        ? 'The local ASX calendar year is verified.'
-        : 'The local weekday calendar year is unverified; session state is intentionally unknown.',
-    ],
-  }, nowMs);
-
-  const quoteEvidence = snapshot
-    ? [...snapshot.markets, ...snapshot.resources].find((entry) => entry.quote)?.provenance
-      ?? snapshot.markets[0]?.provenance
-      ?? snapshot.resources[0]?.provenance
-      ?? genericQuoteEvidence(nowMs)
-    : genericQuoteEvidence(nowMs);
+  const status = snapshot?.asxStatus ?? getAsxCashEquityStatus(now);
+  const sessionEvidence = snapshot?.asxStatusProvenance
+    ?? buildFallbackSessionEvidence(now, nowMs, status);
+  const marketEvidence = representativeEvidence(
+    snapshot?.markets,
+    genericQuoteEvidence(nowMs, 'ASX benchmark/bellwether'),
+  );
+  const resourceEvidence = representativeEvidence(
+    snapshot?.resources,
+    genericQuoteEvidence(nowMs, 'AUD/resource'),
+  );
 
   const warnings = Array.from(new Set([
     ...(snapshot?.warnings ?? []),
     'Prices are delayed/seeded context, not exchange-grade real-time data.',
-    'Retrieval time must not be presented as exchange observation time.',
+    'Retrieval/cache time must not be presented as exchange observation time.',
   ]));
   if (!status.calendarVerified && !warnings.includes('ASX calendar year is unverified.')) {
     warnings.unshift('ASX calendar year is unverified.');
@@ -113,8 +138,12 @@ export function buildAustraliaMacroContextModel(
     statusTone: statusTone(status),
     sessionEvidence,
     sessionEvidenceLabel: formatFinanceObservationProvenance(sessionEvidence),
-    quoteEvidence,
-    quoteEvidenceLabel: formatFinanceObservationProvenance(quoteEvidence),
+    marketEvidence,
+    marketEvidenceLabel: formatFinanceObservationProvenance(marketEvidence),
+    resourceEvidence,
+    resourceEvidenceLabel: formatFinanceObservationProvenance(resourceEvidence),
+    quoteEvidence: marketEvidence,
+    quoteEvidenceLabel: formatFinanceObservationProvenance(marketEvidence),
     marketSymbols: AUSTRALIA_DESK_MARKET_SYMBOLS,
     resourceSymbols: AUSTRALIA_DESK_RESOURCE_SYMBOLS,
     warnings,
@@ -142,6 +171,12 @@ function observationTone(observation: AustraliaDeskObservation): string {
   return observation.quote.change !== null && observation.quote.change >= 0 ? '#27ae60' : '#e74c3c';
 }
 
+function freshnessBasisLabel(evidence: FinanceObservationProvenanceAssessment): string {
+  if (evidence.freshnessBasis === 'observed-at') return 'observation clock';
+  if (evidence.freshnessBasis === 'fetched-at') return 'fetch/cache clock';
+  return 'no clock';
+}
+
 function observationCard(observation: AustraliaDeskObservation): string {
   const tone = observationTone(observation);
   const price = formatPrice(observation.quote?.price ?? null);
@@ -149,9 +184,16 @@ function observationCard(observation: AustraliaDeskObservation): string {
   const changeLabel = change === null || change === undefined || !Number.isFinite(change)
     ? 'Change unavailable'
     : `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`;
-  const sourceState = `${humanize(observation.provenance.freshness)} · ${humanize(observation.provenance.sourceClass)}`;
+  const sourceState = `${humanize(observation.provenance.freshness)} · ${freshnessBasisLabel(observation.provenance)} · ${humanize(observation.provenance.sourceClass)}`;
   const flags = observation.provenance.flags
-    .filter((flag) => ['unverified-access-method', 'stale-observation', 'missing-observed-at'].includes(flag))
+    .filter((flag) => [
+      'unverified-access-method',
+      'stale-observation',
+      'missing-observed-at',
+      'future-timestamp',
+      'invalid-observed-at',
+      'invalid-fetched-at',
+    ].includes(flag))
     .map(humanize)
     .join(' · ');
 
@@ -181,7 +223,7 @@ function symbolSummary(model: AustraliaMacroContextModel): string {
   const resourceLabels = model.resourceSymbols.join(' · ');
   return `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px">
     <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:6px;padding:10px">
-      <div style="font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.06em">AU equities</div>
+      <div style="font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.06em">ASX benchmark & bellwethers</div>
       <div style="font-size:11px;color:var(--text);margin-top:5px;line-height:1.45">${escapeHtml(marketLabels)}</div>
     </div>
     <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:6px;padding:10px">
@@ -206,7 +248,7 @@ export function renderAustraliaMacroContext(
     ? `${model.statusLabel} · ${model.status.holidayName}`
     : `${model.statusLabel} · ${humanize(model.status.reason)}`;
   const observations = snapshot
-    ? `${observationSection('Australian equities', snapshot.markets)}${observationSection('AUD and resource transmission', snapshot.resources)}`
+    ? `${observationSection('ASX benchmark & bellwethers', snapshot.markets)}${observationSection('AUD and resource transmission', snapshot.resources)}`
     : symbolSummary(model);
   const exportButton = snapshot
     ? '<button type="button" data-australia-context-export style="border:1px solid var(--border);background:rgba(255,255,255,0.04);color:var(--text);border-radius:5px;padding:6px 8px;font-size:9px;font-weight:600;cursor:pointer;white-space:nowrap">Copy context JSON</button>'
@@ -231,7 +273,8 @@ export function renderAustraliaMacroContext(
 
     <div>
       ${evidenceRow('Session', model.sessionEvidenceLabel, '#27ae60')}
-      ${evidenceRow('Quotes', model.quoteEvidenceLabel, '#f39c12')}
+      ${evidenceRow('ASX basket', model.marketEvidenceLabel, '#f39c12')}
+      ${evidenceRow('AUD/resources', model.resourceEvidenceLabel, '#f39c12')}
     </div>
 
     <div style="border:1px solid rgba(243,156,18,0.45);background:rgba(243,156,18,0.08);border-radius:6px;padding:9px 10px">
