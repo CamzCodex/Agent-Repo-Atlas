@@ -10,7 +10,9 @@ Camz enhancement branches: `camz/*`
 
 The vendor branch is a security-sanitised source snapshot pinned to an audited upstream commit. Runtime and application paths are unchanged. Because the connected GitHub App cannot create files under `.github/workflows`, upstream workflow files are preserved byte-for-byte under `.github/upstream-workflows-disabled`; `.worldmonitor-upstream.json` records the original commit and tree hashes needed to audit or reconstruct the source.
 
-The first additive enhancement branch is `camz/local-foundation`. It contains ASX session/calendar support, finance-observation provenance primitives, secret-safe local diagnostics, focused tests, and local finance setup documentation. It remains separate from the vendor branch pending review and validation.
+The first additive enhancement branch is `camz/local-foundation`. It contains ASX session/calendar support, finance-observation provenance primitives, secret-safe local diagnostics, focused tests, and local finance setup documentation. It remains separate from the vendor branch in draft PR #4 pending human review; no enhancement has been merged.
+
+Validation completed on GitHub-hosted Ubuntu with Node 24. The untouched vendor control and enhancement branch both restored the preserved upstream workflows, built the full dashboard artifacts, and passed the complete upstream unit/integration suite. The enhancement branch additionally passed strict diagnostics, Biome on every modified source/test file, focused Camz tests, TypeScript, and the Finance production build.
 
 ## Why we are adopting it
 
