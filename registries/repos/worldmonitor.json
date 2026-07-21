@@ -1,0 +1,64 @@
+{
+  "slug": "worldmonitor",
+  "name": "World Monitor",
+  "externalUrl": "https://github.com/koala73/worldmonitor",
+  "homepage": "https://www.worldmonitor.app",
+  "type": "tooling",
+  "description": "Real-time global situational-awareness platform spanning OSINT, geopolitics, infrastructure, energy, shipping, aviation, cyber and financial markets.",
+  "summary": "High-value fork candidate for a local-first geopolitical and macro-finance cockpit. Preserve its map, panel, data-freshness, local-AI and programmatic-access foundations while strengthening market provenance, session awareness, structural news-to-ticker joins and durable history.",
+  "topics": [
+    "osint",
+    "geopolitics",
+    "finance",
+    "situational-awareness",
+    "mapping",
+    "market-intelligence",
+    "mcp",
+    "local-ai"
+  ],
+  "tags": [
+    "fork-candidate",
+    "world-monitoring",
+    "macro-finance",
+    "geospatial",
+    "typescript",
+    "tauri",
+    "openapi",
+    "agent-integration"
+  ],
+  "useCases": [
+    "Run a unified geopolitical, macro, commodity and infrastructure intelligence cockpit.",
+    "Feed read-only event-risk context into the Stock Market Agent Runtime.",
+    "Build an Australia and ASX-focused analyst workspace without replacing the approved App Shell.",
+    "Use its REST, OpenAPI, MCP, CLI and SDK surfaces in agent workflows.",
+    "Study production patterns for freshness monitoring, cache coalescing, multi-variant dashboards and desktop sidecars."
+  ],
+  "acquisitionMode": "fork-candidate",
+  "maintenance": {
+    "state": "active",
+    "lastReviewedAt": "2026-07-22T00:00:00.000Z",
+    "notes": "Rapidly developed and extensively documented, with a large active issue and pull-request surface. Pin known-good upstream commits and revalidate before each sync."
+  },
+  "risk": {
+    "flags": [
+      "security-sensitive",
+      "large-surface-area",
+      "rapidly-changing"
+    ],
+    "notes": "AGPL obligations apply to the platform. Upstream-data terms, undocumented market endpoints, current authentication debt and non-exchange-grade finance data require separate review. Do not use as an execution or authoritative market-data terminal."
+  },
+  "license": {
+    "spdx": "AGPL-3.0-only",
+    "confidence": "high"
+  },
+  "signals": {
+    "stars": 64200,
+    "updatedAt": "2026-07-22T00:00:00.000Z"
+  },
+  "notes": [
+    "Primary value is cross-domain finance-in-context rather than deep company fundamentals or exchange-grade pricing.",
+    "Preserve upstream copyright and licence notices in every mirror and enhancement branch.",
+    "Prefer authorised providers and explicit provenance for production finance use.",
+    "Initial enhancement target: market-session semantics, observation provenance, local diagnostics and an opt-in Australia/ASX workspace."
+  ]
+}
