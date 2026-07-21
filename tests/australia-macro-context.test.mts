@@ -84,6 +84,8 @@ describe('Australia macro context model', () => {
     assert.match(html, /Missing Observed At/);
     assert.match(html, /not exchange-grade real-time data/);
     assert.match(html, /Retrieval time must not be presented as exchange observation time/);
+    assert.match(html, /data-australia-context-export/);
+    assert.match(html, /Copy context JSON/);
   });
 
   it('renders official holiday context even before quote data arrives', () => {
@@ -95,6 +97,7 @@ describe('Australia macro context model', () => {
     assert.match(html, /Christmas Day/);
     assert.match(html, /\^AXJO/);
     assert.match(html, /AUDUSD=X/);
+    assert.doesNotMatch(html, /data-australia-context-export/);
   });
 
   it('warns rather than inventing a future calendar state', () => {
@@ -123,9 +126,18 @@ describe('Macro Tiles Australia mission wiring', () => {
     assert.match(macroPanelSource, /this\._australiaFetchedAt = new Date\(\)/);
   });
 
-  it('bounds the Australia clock refresh and tears it down', () => {
+  it('copies a typed read-only context envelope rather than scraping panel HTML', () => {
+    assert.match(macroPanelSource, /buildAustraliaMarketContextExport\(this\._buildAustraliaSnapshot\(now\)\)/);
+    assert.match(macroPanelSource, /serializeAustraliaMarketContextExport\(context\)/);
+    assert.match(macroPanelSource, /navigator\.clipboard\?\.writeText\(text\)/);
+    assert.match(macroPanelSource, /data-australia-context-export/);
+  });
+
+  it('bounds timers and tears them down', () => {
     assert.match(macroPanelSource, /30_000/);
+    assert.match(macroPanelSource, /1_500/);
     assert.match(macroPanelSource, /clearInterval\(this\._asxClockTimer\)/);
+    assert.match(macroPanelSource, /clearTimeout\(this\._copyFeedbackTimer\)/);
     assert.match(macroPanelSource, /super\.destroy\(\)/);
   });
 });
