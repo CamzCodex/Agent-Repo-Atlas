@@ -265,7 +265,8 @@ export class MacroTilesPanel extends Panel {
   private _australiaMissionActive = false;
   private _australiaMarkets: MarketData[] = [];
   private _australiaResources: MarketData[] = [];
-  private _australiaFetchedAt: Date | null = null;
+  private _australiaMarketFetchedAt: Date | null = null;
+  private _australiaResourceFetchedAt: Date | null = null;
   private _asxClockTimer: ReturnType<typeof setInterval> | null = null;
   private _copyFeedbackTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -342,17 +343,16 @@ export class MacroTilesPanel extends Panel {
       fetchMultipleStocks(marketDefinitions),
       fetchCommodityQuotes(resourceDefinitions),
     ]);
+    const fetchedAt = new Date();
 
-    let refreshed = false;
     if (marketResult.status === 'fulfilled' && marketResult.value.data.length > 0) {
       this._australiaMarkets = marketResult.value.data;
-      refreshed = true;
+      this._australiaMarketFetchedAt = fetchedAt;
     }
     if (resourceResult.status === 'fulfilled' && resourceResult.value.data.length > 0) {
       this._australiaResources = resourceResult.value.data;
-      refreshed = true;
+      this._australiaResourceFetchedAt = fetchedAt;
     }
-    if (refreshed) this._australiaFetchedAt = new Date();
   }
 
   private _buildAustraliaSnapshot(now: Date): AustraliaMarketDeskSnapshot {
@@ -361,7 +361,8 @@ export class MacroTilesPanel extends Panel {
       this._australiaResources,
       {
         now,
-        fetchedAt: this._australiaFetchedAt ?? undefined,
+        marketFetchedAt: this._australiaMarketFetchedAt ?? undefined,
+        resourceFetchedAt: this._australiaResourceFetchedAt ?? undefined,
       },
     );
   }
@@ -383,9 +384,12 @@ export class MacroTilesPanel extends Panel {
         textarea.style.position = 'fixed';
         textarea.style.opacity = '0';
         document.body.appendChild(textarea);
-        textarea.select();
-        copied = document.execCommand('copy');
-        textarea.remove();
+        try {
+          textarea.select();
+          copied = document.execCommand('copy');
+        } finally {
+          textarea.remove();
+        }
       }
     } catch {
       copied = false;
