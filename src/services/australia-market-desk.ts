@@ -1,4 +1,5 @@
 import type { MarketData } from '@/types';
+import type { BreakerDataMode, BreakerDataState } from '@/utils/circuit-breaker';
 import {
   ASX_MARKET_HOURS_METADATA,
   getAsxCashEquityStatus,
@@ -9,6 +10,7 @@ import {
   formatFinanceObservationProvenance,
   type FinanceObservationProvenanceAssessment,
 } from '@/shared/finance-observation-provenance';
+import { getMarketDataState } from '@/services/market-data-state';
 
 export const AUSTRALIA_DESK_MARKET_SYMBOLS = [
   '^AXJO',
@@ -32,11 +34,14 @@ export const AUSTRALIA_DESK_BASKET_LIMITATION =
 
 export type AustraliaDeskMarketSymbol = typeof AUSTRALIA_DESK_MARKET_SYMBOLS[number];
 export type AustraliaDeskResourceSymbol = typeof AUSTRALIA_DESK_RESOURCE_SYMBOLS[number];
+export type AustraliaDeskDataMode = BreakerDataMode | 'unknown';
 
 export interface AustraliaDeskObservation {
   symbol: string;
   label: string;
   quote: MarketData | null;
+  dataMode: AustraliaDeskDataMode;
+  offline: boolean;
   provenance: FinanceObservationProvenanceAssessment;
   provenanceLabel: string;
 }
@@ -55,7 +60,7 @@ export interface AustraliaMarketDeskSnapshot {
 
 export interface AustraliaMarketDeskOptions {
   now?: Date;
-  /** Compatibility fallback for callers whose quote groups share one retrieval clock. */
+  /** Compatibility fallback for quote arrays not produced by the market service. */
   fetchedAt?: string | number | Date;
   marketFetchedAt?: string | number | Date;
   resourceFetchedAt?: string | number | Date;
@@ -100,10 +105,13 @@ function buildQuoteObservation(
   symbol: AustraliaDeskMarketSymbol | AustraliaDeskResourceSymbol,
   quoteMap: ReadonlyMap<string, MarketData>,
   fetchedAt: string | number | Date | undefined,
+  dataState: BreakerDataState | null,
   nowMs: number,
   quoteMaxAgeMs: number,
 ): AustraliaDeskObservation {
   const quote = normalizeQuote(quoteMap.get(symbol));
+  const dataMode: AustraliaDeskDataMode = dataState?.mode ?? 'unknown';
+  const offline = dataState?.offline ?? false;
   const provenance = assessFinanceObservationProvenance({
     provider: 'World Monitor market seed (Yahoo Finance path)',
     sourceClass: 'undocumented',
@@ -119,7 +127,8 @@ function buildQuoteObservation(
     notes: quote
       ? [
           'Current market API does not expose the upstream observation timestamp.',
-          'When present, freshness is based on the retrieval/cache clock rather than exchange time.',
+          `Breaker return mode: ${dataMode}${offline ? ' (offline)' : ''}.`,
+          'When present, freshness is based on the breaker retrieval/cache timestamp rather than exchange time.',
         ]
       : ['Symbol is absent or carries a non-positive/invalid price in the current seeded cache.'],
   }, nowMs);
@@ -128,6 +137,8 @@ function buildQuoteObservation(
     symbol,
     label: LABELS[symbol],
     quote,
+    dataMode,
+    offline,
     provenance,
     provenanceLabel: formatFinanceObservationProvenance(provenance),
   };
@@ -148,6 +159,14 @@ function sourceCheckAgeMs(nowMs: number): number | null {
   return nowMs - checkedAtMs;
 }
 
+function timestampFromState(
+  state: BreakerDataState | null,
+  compatibilityTimestamp: string | number | Date | undefined,
+): string | number | Date | undefined {
+  if (!state) return compatibilityTimestamp;
+  return state.timestamp ?? undefined;
+}
+
 export function buildAustraliaMarketDeskSnapshot(
   marketQuotes: readonly MarketData[],
   commodityQuotes: readonly MarketData[],
@@ -160,8 +179,16 @@ export function buildAustraliaMarketDeskSnapshot(
   const quoteMaxAgeMs = Number.isFinite(options.quoteMaxAgeMs)
     ? Math.max(0, options.quoteMaxAgeMs ?? DEFAULT_QUOTE_MAX_AGE_MS)
     : DEFAULT_QUOTE_MAX_AGE_MS;
-  const marketFetchedAt = options.marketFetchedAt ?? options.fetchedAt;
-  const resourceFetchedAt = options.resourceFetchedAt ?? options.fetchedAt;
+  const marketState = getMarketDataState(marketQuotes);
+  const resourceState = getMarketDataState(commodityQuotes);
+  const marketFetchedAt = timestampFromState(
+    marketState,
+    options.marketFetchedAt ?? options.fetchedAt,
+  );
+  const resourceFetchedAt = timestampFromState(
+    resourceState,
+    options.resourceFetchedAt ?? options.fetchedAt,
+  );
 
   const asxStatusProvenance = assessFinanceObservationProvenance({
     provider: 'ASX',
@@ -188,9 +215,9 @@ export function buildAustraliaMarketDeskSnapshot(
   const marketsMap = quoteMap(marketQuotes);
   const resourcesMap = quoteMap(commodityQuotes);
   const markets = AUSTRALIA_DESK_MARKET_SYMBOLS.map((symbol) =>
-    buildQuoteObservation(symbol, marketsMap, marketFetchedAt, nowMs, quoteMaxAgeMs));
+    buildQuoteObservation(symbol, marketsMap, marketFetchedAt, marketState, nowMs, quoteMaxAgeMs));
   const resources = AUSTRALIA_DESK_RESOURCE_SYMBOLS.map((symbol) =>
-    buildQuoteObservation(symbol, resourcesMap, resourceFetchedAt, nowMs, quoteMaxAgeMs));
+    buildQuoteObservation(symbol, resourcesMap, resourceFetchedAt, resourceState, nowMs, quoteMaxAgeMs));
   const missingSymbols = [...markets, ...resources]
     .filter((observation) => observation.quote === null)
     .map((observation) => observation.symbol);
@@ -213,6 +240,9 @@ export function buildAustraliaMarketDeskSnapshot(
     observation.provenance.flags.includes('missing-observed-at'))) {
     warnings.push('Quote observation time is unavailable; retrieval time is not exchange time.');
   }
+  if (marketState?.mode === 'cached') warnings.push('Australian equity observations are being served from cache.');
+  if (resourceState?.mode === 'cached') warnings.push('AUD/resource observations are being served from cache.');
+  if (marketState?.offline || resourceState?.offline) warnings.push('One or more market groups are using offline-mode data.');
   if (markets.some((observation) => observation.provenance.freshness === 'stale')) {
     warnings.push('Australian equity observations are stale.');
   }
