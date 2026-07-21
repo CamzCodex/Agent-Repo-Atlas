@@ -105,7 +105,7 @@ describe('Australia macro context model', () => {
 
     assert.equal(model.status.session, 'unknown');
     assert.equal(model.status.calendarVerified, false);
-    assert.ok(model.warnings.includes('ASX calendar year is unverified.'));
+    assert.ok(model.warnings.includes('ASX calendar year is not verified.'));
     assert.ok(model.sessionEvidence.flags.includes('low-confidence'));
   });
 });
@@ -122,8 +122,10 @@ describe('Macro Tiles Australia mission wiring', () => {
   it('loads stock and commodity cards through the existing circuit-breaker services', () => {
     assert.match(macroPanelSource, /fetchMultipleStocks\(marketDefinitions\)/);
     assert.match(macroPanelSource, /fetchCommodityQuotes\(resourceDefinitions\)/);
-    assert.match(macroPanelSource, /buildAustraliaMarketDeskSnapshot/);
-    assert.match(macroPanelSource, /this\._australiaFetchedAt = new Date\(\)/);
+    assert.match(macroPanelSource, /this\._australiaMarketFetchedAt = fetchedAt/);
+    assert.match(macroPanelSource, /this\._australiaResourceFetchedAt = fetchedAt/);
+    assert.match(macroPanelSource, /marketFetchedAt: this\._australiaMarketFetchedAt/);
+    assert.match(macroPanelSource, /resourceFetchedAt: this\._australiaResourceFetchedAt/);
   });
 
   it('copies a typed read-only context envelope rather than scraping panel HTML', () => {
@@ -131,6 +133,7 @@ describe('Macro Tiles Australia mission wiring', () => {
     assert.match(macroPanelSource, /serializeAustraliaMarketContextExport\(context\)/);
     assert.match(macroPanelSource, /navigator\.clipboard\?\.writeText/);
     assert.match(macroPanelSource, /navigator\.clipboard\.writeText\(text\)/);
+    assert.match(macroPanelSource, /finally \{\s*textarea\.remove\(\)/);
     assert.match(macroPanelSource, /data-australia-context-export/);
   });
 
