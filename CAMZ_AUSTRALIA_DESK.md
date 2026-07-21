@@ -47,7 +47,7 @@ The tab refreshes the Sydney session clock every 30 seconds while active. Quote 
 
 ## Seeded Australian market universe
 
-The stock/index basket now contains:
+The browser and Railway stock mirrors now both contain:
 
 | Symbol | Display | Role |
 | --- | --- | --- |
@@ -114,6 +114,21 @@ The snapshot keeps these evidence classes separate:
 
 The desk deliberately does not collapse those facts into a universal trust score.
 
+## Read-only context export
+
+`src/services/australia-market-context-export.ts` defines `worldmonitor-australia-context-v1`, a stable JSON envelope for downstream research systems.
+
+The **Copy context JSON** control in the Australia tab exports the typed snapshot rather than scraping rendered HTML. The envelope contains:
+
+- schema version, generation time, region and intended use;
+- ASX phase, session, local clock, calendar verification and official evidence;
+- each index/equity/FX/commodity observation with price, percentage change and asset class;
+- provider, access class, transformation, source URL, observed/fetched clocks, age, freshness, confidence, flags and notes;
+- missing symbols and degraded-provider warnings;
+- explicit constraints excluding recommendations, position sizing, target prices, orders and execution instructions.
+
+The export is intentionally read-only. Downstream systems may use it as evidence, but must not silently turn associations into causation or trading instructions.
+
 ## Validation commands
 
 From the branch root:
@@ -124,21 +139,25 @@ npm ci
 
 npx biome check \
   shared/stocks.json \
+  scripts/shared/stocks.json \
   src/shared/asx-market-hours.ts \
   src/services/australia-market-desk.ts \
+  src/services/australia-market-context-export.ts \
   src/services/mission-presets.ts \
   src/components/australia-macro-context.ts \
   src/components/MacroTilesPanel.ts \
   tests/asx-market-hours-browser-parity.test.mts \
   tests/australia-market-desk.test.mts \
-  tests/australia-macro-context.test.mts
+  tests/australia-macro-context.test.mts \
+  tests/australia-market-context-export.test.mts
 
 npx tsx --test \
   tests/asx-market-hours.test.mjs \
   tests/asx-market-hours-browser-parity.test.mts \
   tests/finance-observation-provenance.test.mts \
   tests/australia-market-desk.test.mts \
-  tests/australia-macro-context.test.mts
+  tests/australia-macro-context.test.mts \
+  tests/australia-market-context-export.test.mts
 
 npm run typecheck
 npm run build:finance
@@ -163,11 +182,12 @@ npm run test:data
 
 ## Next implementation slice
 
-The next step is a read-only Australia context export for `Stock-Market-Agent-Runtime` that preserves:
+The next step is a read-only provider in `Stock-Market-Agent-Runtime` that validates `worldmonitor-australia-context-v1` and adds it to the evidence-weighted research bag.
 
-- symbol and current normalized quote;
-- ASX session evidence;
-- retrieval age and missing observation-time flags;
-- provider/source class and transformation metadata;
-- missing-symbol and degraded-provider warnings;
-- geopolitical, commodity, shipping and China-sensitive context without implying causation.
+That adapter should:
+
+- fail closed on schema mismatch or malformed provenance;
+- preserve missing-symbol, stale-data and unavailable-observation-time flags;
+- keep geopolitical, commodity, shipping and China-sensitive context separate from price observations;
+- expose source URLs and transformation metadata to talkback/reporting;
+- contribute context and dissent, never order routing or automatic trading.
