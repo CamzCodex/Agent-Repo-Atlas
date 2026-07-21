@@ -7,6 +7,10 @@ on:
         description: Upstream branch, tag, or reachable commit
         required: false
         default: main
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - docs/adoptions/WORLDMONITOR_MIRROR_TRIGGER.md
   push:
     branches: [main]
     paths:
@@ -28,6 +32,10 @@ env:
 
 jobs:
   mirror:
+    if: >-
+      github.event_name != 'pull_request' ||
+      (github.actor == github.repository_owner &&
+       github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
