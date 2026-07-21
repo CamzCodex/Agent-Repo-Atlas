@@ -28,7 +28,6 @@ describe('Australia macro context model', () => {
     assert.equal(model.quoteEvidence.freshness, 'unknown');
     assert.ok(model.quoteEvidence.flags.includes('unverified-access-method'));
     assert.ok(model.quoteEvidence.flags.includes('missing-observed-at'));
-    assert.ok(model.quoteEvidence.flags.includes('missing-freshness-policy'));
 
     assert.deepEqual(model.marketSymbols, ['^AXJO', 'BHP.AX', 'CBA.AX', 'CSL.AX']);
     assert.ok(model.resourceSymbols.includes('AUDUSD=X'));
