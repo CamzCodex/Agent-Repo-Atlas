@@ -2,6 +2,7 @@ import type {
   AustraliaDeskDataMode,
   AustraliaDeskObservation,
   AustraliaMarketDeskSnapshot,
+  AustraliaQuoteGroupStatus,
 } from '@/services/australia-market-desk';
 import {
   FINANCE_OBSERVATION_PROVENANCE_VERSION,
@@ -11,7 +12,7 @@ import {
   type FinanceTransformationKind,
 } from '@/shared/finance-observation-provenance';
 
-export const AUSTRALIA_MARKET_CONTEXT_SCHEMA_VERSION = 'worldmonitor-australia-context-v1';
+export const AUSTRALIA_MARKET_CONTEXT_SCHEMA_VERSION = 'worldmonitor-australia-context-v2';
 
 export type AustraliaContextAssetClass = 'index' | 'equity' | 'fx' | 'commodity';
 export type AustraliaContextQuoteUnit =
@@ -54,6 +55,18 @@ export interface AustraliaContextObservation {
   evidence: AustraliaContextEvidence;
 }
 
+export interface AustraliaContextControls {
+  readOnly: true;
+  investmentRecommendationIncluded: false;
+  targetPriceIncluded: false;
+  positionSizingIncluded: false;
+  orderInstructionIncluded: false;
+  executionInstructionIncluded: false;
+  causationEstablished: false;
+  providerRightsStatus: 'internal-research-only';
+  redistributionRightsReviewed: false;
+}
+
 export interface AustraliaMarketContextExport {
   schemaVersion: typeof AUSTRALIA_MARKET_CONTEXT_SCHEMA_VERSION;
   generatedAt: string;
@@ -70,11 +83,18 @@ export interface AustraliaMarketContextExport {
     earlyClose: boolean;
     holidayName: string | null;
     sourceCheckedAt: string;
+    sourceReviewAgeMs: number | null;
+    sourceReviewStatus: AustraliaMarketDeskSnapshot['asxSourceReviewStatus'];
     evidence: AustraliaContextEvidence;
+  };
+  groups: {
+    australianEquities: AustraliaQuoteGroupStatus;
+    audAndResources: AustraliaQuoteGroupStatus;
   };
   observations: AustraliaContextObservation[];
   missingSymbols: string[];
   warnings: string[];
+  controls: AustraliaContextControls;
   constraints: string[];
 }
 
@@ -82,12 +102,25 @@ const READ_ONLY_CONSTRAINTS = Object.freeze([
   'Context only; not an investment recommendation.',
   'No order, position-size, target-price, or execution instruction is included.',
   'Retrieval/cache time is not a substitute for exchange observation time.',
+  'Displayed-data state and latest refresh-attempt state must remain separate.',
   'Undocumented, estimated, deterministic, and AI-derived evidence must remain distinguishable.',
   'Associations in downstream research must not be presented as proven causation.',
   'The equity basket is a compact benchmark/bellwether sample, not Australian market breadth or an investable universe.',
   'Provider-derived values are for internal research context; redistribution or republication requires a separate rights review.',
   'Confidence values are policy heuristics, not calibrated probabilities.',
 ]);
+
+const CONTROLS: AustraliaContextControls = Object.freeze({
+  readOnly: true,
+  investmentRecommendationIncluded: false,
+  targetPriceIncluded: false,
+  positionSizingIncluded: false,
+  orderInstructionIncluded: false,
+  executionInstructionIncluded: false,
+  causationEstablished: false,
+  providerRightsStatus: 'internal-research-only',
+  redistributionRightsReviewed: false,
+});
 
 const QUOTE_METADATA: Readonly<Record<string, { currency: string | null; quoteUnit: AustraliaContextQuoteUnit }>> = {
   '^AXJO': { currency: null, quoteUnit: 'index-points' },
@@ -179,11 +212,18 @@ export function buildAustraliaMarketContextExport(
       earlyClose: snapshot.asxStatus.earlyClose,
       holidayName: snapshot.asxStatus.holidayName,
       sourceCheckedAt: snapshot.asxSourceCheckedAt,
+      sourceReviewAgeMs: snapshot.asxSourceReviewAgeMs,
+      sourceReviewStatus: snapshot.asxSourceReviewStatus,
       evidence: exportEvidence(snapshot.asxStatusProvenance),
+    },
+    groups: {
+      australianEquities: { ...snapshot.marketGroupStatus },
+      audAndResources: { ...snapshot.resourceGroupStatus },
     },
     observations: [...snapshot.markets, ...snapshot.resources].map(exportObservation),
     missingSymbols: [...snapshot.missingSymbols],
     warnings: [...snapshot.warnings],
+    controls: { ...CONTROLS },
     constraints: [...READ_ONLY_CONSTRAINTS],
   };
 }
