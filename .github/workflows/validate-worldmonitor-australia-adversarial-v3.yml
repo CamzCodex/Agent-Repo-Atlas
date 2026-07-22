@@ -1,0 +1,90 @@
+name: Validate World Monitor Australia adversarial v3
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-worldmonitor-australia-adversarial-v3-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'camz/australia-adversarial-v3'
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - name: Check out exact PR head
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          show-progress: false
+
+      - name: Use repository Node version
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Verify exact head, ancestry, and whitespace
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
+          git fetch origin camz/australia-desk --depth=1
+          git merge-base --is-ancestor origin/camz/australia-desk HEAD
+          git diff --check origin/camz/australia-desk...HEAD
+
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts --prefer-offline --silent
+
+      - name: Run secret-safe diagnostics
+        run: npm run camz:diagnostics -- --strict
+
+      - name: Check adversarial source and tests
+        run: >-
+          npx biome check
+          src/services/australia-market-desk.ts
+          src/services/australia-market-context-export.ts
+          src/components/australia-macro-context.ts
+          src/components/MacroTilesPanel.ts
+          tests/market-data-state.test.mts
+          tests/australia-macro-context.test.mts
+          tests/australia-market-context-export.test.mts
+
+      - name: Run focused Australia adversarial contracts
+        run: >-
+          npx tsx --test
+          tests/asx-market-hours.test.mjs
+          tests/asx-market-hours-browser-parity.test.mts
+          tests/finance-observation-provenance.test.mts
+          tests/circuit-breaker.test.mts
+          tests/market-data-state.test.mts
+          tests/australia-market-desk.test.mts
+          tests/australia-macro-context.test.mts
+          tests/australia-market-context-export.test.mts
+          tests/australia-mission-extension.test.mts
+          tests/macro-tiles-china-ui.test.mts
+
+      - name: Restore preserved upstream workflows
+        run: |
+          npm run camz:restore-workflows
+          git add -A .github/workflows
+
+      - name: Build full dashboard artifacts
+        run: VITE_VARIANT=full ./node_modules/.bin/vite build
+
+      - name: Run complete upstream test suite
+        run: npm run test:data
+
+      - name: Type-check browser application
+        run: npm run typecheck
+
+      - name: Build Finance production variant
+        run: npm run build:finance
