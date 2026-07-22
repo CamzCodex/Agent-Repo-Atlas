@@ -482,6 +482,9 @@ export function applyMissionPresetToState(
 ): AppliedMissionPreset {
   const preset = getMissionPreset(presetId);
   if (!preset) throw new Error(`Unknown mission preset: ${presetId}`);
+  if (!isPresetAvailableForVariant(preset, variant)) {
+    throw new Error(`Mission preset "${preset.id}" is not available for variant "${variant}"`);
+  }
 
   const variantPanels = getVariantDefaultPanels(variant);
   const variantPanelSet = new Set(variantPanels);
