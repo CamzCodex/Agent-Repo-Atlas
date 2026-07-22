@@ -21,14 +21,15 @@ Last reviewed: 2026-07-22
 
 ## Immediate sequence
 
-1. Run exact-head hosted validation for draft PR #12; do not substitute an earlier workflow.
-2. Correct failures without widening the trust-fix scope.
-3. Merge the fix PR only after every gate is green and explicit operator authorization; this roadmap does not grant it.
-4. Revalidate PR #10 on its new exact head and correct its body.
-5. Transfer/merge the validated hardening into `camz/australia-desk` only after a clean compare.
-6. Revalidate PR #6; keep it draft while any gate is red/pending.
-7. Approve or reject dedicated-repository migration.
-8. Approve neutral spec ownership and licence before runtime implementation.
+1. Review and explicitly approve draft CI PR #13; it generalizes the trusted marker gate without advancing a product branch.
+2. Use that gate to validate the exact final head of draft PR #12; do not substitute an earlier workflow.
+3. Correct failures without widening the trust-fix scope.
+4. Merge the fix PR only after every gate is green and explicit operator authorization; this roadmap does not grant it.
+5. Revalidate PR #10 on its new exact head and correct its body.
+6. Transfer/merge the validated hardening into `camz/australia-desk` only after a clean compare.
+7. Revalidate PR #6; keep it draft while any gate is red/pending.
+8. Approve or reject dedicated-repository migration.
+9. Approve neutral spec ownership and licence before runtime implementation.
 
 ## Dedicated repository migration plan
 

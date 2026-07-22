@@ -40,6 +40,7 @@ The stock runtime is a separate MIT-licensed backend with immutable archives, ty
 | #10 adversarial v4 | Open draft; head `b9568b8` | Body says four commits but branch is seven ahead; current head has no workflow run | Keep draft; update only after fixes land and exact-head gate runs |
 | #11 v4 validation marker | Closed without merge; head `63c7caf` | Workflow run `29881947809` succeeded, but validated target `1897f82`, not current PR #10 or #12 | Prior target claim corrected from `0295244` using the job log |
 | #12 trust defects and baseline | Open draft; implementation baseline `1510c32` | Four bounded fixes and the required architecture/governance baseline; no Actions run | Keep draft until complete exact-head gate is green |
+| #13 reusable exact-head gate | Open draft; head `0f73263` on the `main` lineage | Removes the hard-coded v4 target while retaining owner-only, same-repo and read-only controls | Review and explicitly approve before merge; then validate #12 |
 
 ## Existing strengths confirmed
 
@@ -79,4 +80,4 @@ The stock runtime is a separate MIT-licensed backend with immutable archives, ty
 
 ## Current acceptance status
 
-The trust-defect branch is published, but it is **not green**. Focused tests, TypeScript, Markdown/JSON validation and both production variants passed locally. The fallback-loader full suite ran 16,128 tests: 16,107 passed, 15 failed and 6 were skipped. Two failures were generator subprocesses blocked from creating a `tsx` IPC socket; thirteen were missing dynamic-module exports in `redis-caching.test.mjs` under the nonstandard loader. These failures are not waived. GitHub reports no Actions run on the published branch. No PR is merge-ready. Stock Runtime integration is not operational.
+The trust-defect branch is published, but it is **not green**. Focused tests, TypeScript, Markdown/JSON validation and both production variants passed locally. The fallback-loader full suite ran 16,128 tests: 16,107 passed, 15 failed and 6 were skipped. Two failures were generator subprocesses blocked from creating a `tsx` IPC socket; thirteen were missing dynamic-module exports in `redis-caching.test.mjs` under the nonstandard loader. These failures are not waived. GitHub reports no Actions run on the published branch. Draft PR #13 provides a reusable exact-head gate but cannot be used until explicitly reviewed and merged into `main`. No PR is merge-ready. Stock Runtime integration is not operational.
