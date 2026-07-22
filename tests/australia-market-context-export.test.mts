@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { describe, it } from 'node:test';
+import { beforeEach, describe, it } from 'node:test';
 
 import type { MarketData } from '../src/types/index.ts';
 import { buildAustraliaMarketDeskSnapshot } from '../src/services/australia-market-desk.ts';
@@ -8,7 +8,10 @@ import {
   buildAustraliaMarketContextExport,
   serializeAustraliaMarketContextExport,
 } from '../src/services/australia-market-context-export.ts';
-import { markMarketDataState } from '../src/services/market-data-state.ts';
+import {
+  markMarketDataState,
+  resetMarketDataStateForTests,
+} from '../src/services/market-data-state.ts';
 import { FINANCE_OBSERVATION_PROVENANCE_VERSION } from '../src/shared/finance-observation-provenance.ts';
 
 function quote(symbol: string, price: number, change: number): MarketData {
@@ -42,21 +45,38 @@ function snapshot() {
     mode: 'live',
     timestamp: Date.parse('2026-07-22T00:00:00Z'),
     offline: false,
+  }, {
+    latestAttemptState: {
+      mode: 'unavailable',
+      timestamp: null,
+      offline: false,
+    },
+    requestSymbols: markets.map((entry) => entry.symbol),
   });
   markMarketDataState(resources, {
     mode: 'cached',
     timestamp: Date.parse('2026-07-21T23:59:00Z'),
     offline: false,
+  }, {
+    latestAttemptState: {
+      mode: 'live',
+      timestamp: Date.parse('2026-07-22T00:04:00Z'),
+      offline: false,
+    },
+    requestSymbols: resources.map((entry) => entry.symbol),
   });
   return buildAustraliaMarketDeskSnapshot(markets, resources, {
     now: new Date('2026-07-22T00:05:00Z'),
   });
 }
 
-describe('Australia market context export', () => {
-  it('builds a stable read-only context envelope with honest ASX source clocks', () => {
+describe('Australia market context export v2', () => {
+  beforeEach(() => resetMarketDataStateForTests());
+
+  it('builds a versioned read-only envelope with honest ASX source clocks', () => {
     const context = buildAustraliaMarketContextExport(snapshot());
 
+    assert.equal(AUSTRALIA_MARKET_CONTEXT_SCHEMA_VERSION, 'worldmonitor-australia-context-v2');
     assert.equal(context.schemaVersion, AUSTRALIA_MARKET_CONTEXT_SCHEMA_VERSION);
     assert.equal(context.generatedAt, '2026-07-22T00:05:00.000Z');
     assert.equal(context.region, 'AU');
@@ -64,6 +84,8 @@ describe('Australia market context export', () => {
     assert.equal(context.asx.phase, 'regular');
     assert.equal(context.asx.calendarVerified, true);
     assert.equal(context.asx.sourceCheckedAt, '2026-07-22');
+    assert.equal(context.asx.sourceReviewStatus, 'current');
+    assert.equal(context.asx.sourceReviewAgeMs, 0);
     assert.equal(context.asx.evidence.provenanceSchemaVersion, FINANCE_OBSERVATION_PROVENANCE_VERSION);
     assert.equal(context.asx.evidence.sourceClass, 'official');
     assert.equal(context.asx.evidence.transformationKind, 'deterministic-model');
@@ -76,7 +98,25 @@ describe('Australia market context export', () => {
     assert.deepEqual(context.missingSymbols, []);
   });
 
-  it('classifies units and preserves live/cache modes without recommendations', () => {
+  it('preserves displayed state separately from the latest refresh attempt', () => {
+    const context = buildAustraliaMarketContextExport(snapshot());
+
+    assert.deepEqual(context.groups.australianEquities, {
+      dataMode: 'live',
+      dataOffline: false,
+      latestAttemptMode: 'unavailable',
+      latestAttemptOffline: false,
+    });
+    assert.deepEqual(context.groups.audAndResources, {
+      dataMode: 'cached',
+      dataOffline: false,
+      latestAttemptMode: 'live',
+      latestAttemptOffline: false,
+    });
+    assert.ok(context.warnings.some((warning) => warning.includes('Latest Australian equity refresh is unavailable')));
+  });
+
+  it('classifies units and preserves delivery modes without trading authority', () => {
     const context = buildAustraliaMarketContextExport(snapshot());
     const bySymbol = new Map(context.observations.map((entry) => [entry.symbol, entry]));
 
@@ -104,9 +144,19 @@ describe('Australia market context export', () => {
     assert.ok(bySymbol.get('^AXJO')?.evidence.flags.includes('missing-observed-at'));
     assert.ok(bySymbol.get('^AXJO')?.evidence.flags.includes('unverified-access-method'));
 
-    const serialized = serializeAustraliaMarketContextExport(context);
-    for (const forbidden of ['targetPrice', 'positionSize', 'orderInstruction', 'tradeRecommendation']) {
-      assert.equal(serialized.includes(forbidden), false, `${forbidden} must not enter the context contract`);
+    assert.deepEqual(context.controls, {
+      readOnly: true,
+      investmentRecommendationIncluded: false,
+      targetPriceIncluded: false,
+      positionSizingIncluded: false,
+      orderInstructionIncluded: false,
+      executionInstructionIncluded: false,
+      causationEstablished: false,
+      providerRightsStatus: 'internal-research-only',
+      redistributionRightsReviewed: false,
+    });
+    for (const forbiddenKey of ['targetPrice', 'positionSize', 'orderInstruction', 'tradeRecommendation']) {
+      assert.equal(Object.hasOwn(context, forbiddenKey), false, `${forbiddenKey} must not be a top-level action field`);
     }
     assert.ok(context.constraints.some((constraint) => constraint.includes('not an investment recommendation')));
     assert.ok(context.constraints.some((constraint) => constraint.includes('No order')));
