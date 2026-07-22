@@ -91,7 +91,7 @@ describe('Australia macro context model', () => {
     assert.match(html, /0\.6600/);
     assert.match(html, /ASX · official · model-derived/);
     assert.match(html, /Yahoo Finance path/);
-    assert.match(html, /Fetch\/cache clock/);
+    assert.match(html, /fetch\/cache clock/);
     assert.match(html, /Missing Observed At/);
     assert.match(html, /ASX basket/);
     assert.match(html, /AUD\/resources/);
