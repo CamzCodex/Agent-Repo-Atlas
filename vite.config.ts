@@ -1282,6 +1282,14 @@ export default defineConfig(({ mode }) => {
       hmr: isE2E ? false : undefined,
       watch: {
         ignored: [
+          '**/.github/**',
+          '**/blog-site/**',
+          '**/consumer-prices-core/**',
+          '**/docs/**',
+          '**/e2e/**',
+          '**/pro-test/**',
+          '**/sdk/**',
+          '**/tests/**',
           '**/test-results/**',
           '**/playwright-report/**',
           '**/.playwright-mcp/**',
