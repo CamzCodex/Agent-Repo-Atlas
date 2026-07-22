@@ -60,13 +60,18 @@ function completeQuotes(change: number | null = 0.4): {
   };
 }
 
-function markedSnapshot(change: number | null = 0.4) {
+function markedSnapshot(
+  change: number | null = 0.4,
+  marketLatestUnavailable = true,
+) {
   const { markets, resources } = completeQuotes(change);
   markMarketDataState(
     markets,
     { mode: 'live', timestamp: Date.parse('2026-07-22T00:04:00Z'), offline: false },
     {
-      latestAttemptState: { mode: 'unavailable', timestamp: null, offline: false },
+      latestAttemptState: marketLatestUnavailable
+        ? { mode: 'unavailable', timestamp: null, offline: false }
+        : { mode: 'live', timestamp: Date.parse('2026-07-22T00:04:00Z'), offline: false },
       requestSymbols: AUSTRALIA_DESK_MARKET_SYMBOLS,
     },
   );
@@ -155,7 +160,7 @@ describe('Australia adversarial v4 visual honesty', () => {
   beforeEach(() => resetMarketDataStateForTests());
 
   it('renders missing or flat change neutrally rather than as a loss', () => {
-    const snapshot = markedSnapshot(null);
+    const snapshot = markedSnapshot(null, false);
     const html = renderAustraliaMacroContext(
       buildAustraliaMacroContextModel(new Date('2026-07-22T00:05:00Z'), snapshot),
       snapshot,
