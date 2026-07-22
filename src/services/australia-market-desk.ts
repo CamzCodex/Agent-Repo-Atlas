@@ -10,7 +10,10 @@ import {
   formatFinanceObservationProvenance,
   type FinanceObservationProvenanceAssessment,
 } from '@/shared/finance-observation-provenance';
-import { getMarketDataState } from '@/services/market-data-state';
+import {
+  getLatestMarketRequestState,
+  getMarketDataDeliveryState,
+} from '@/services/market-data-state';
 
 export const AUSTRALIA_DESK_MARKET_SYMBOLS = [
   '^AXJO',
@@ -78,7 +81,7 @@ export interface AustraliaMarketDeskOptions {
   fetchedAt?: string | number | Date;
   marketFetchedAt?: string | number | Date;
   resourceFetchedAt?: string | number | Date;
-  /** Explicit state wins over WeakMap compatibility metadata. */
+  /** Explicit state wins over compatibility metadata associated with an array. */
   marketDataState?: BreakerDataState | null;
   resourceDataState?: BreakerDataState | null;
   marketLatestAttemptState?: BreakerDataState | null;
@@ -231,10 +234,18 @@ export function buildAustraliaMarketDeskSnapshot(
   const quoteMaxAgeMs = Number.isFinite(options.quoteMaxAgeMs)
     ? Math.max(0, options.quoteMaxAgeMs ?? DEFAULT_QUOTE_MAX_AGE_MS)
     : DEFAULT_QUOTE_MAX_AGE_MS;
-  const marketState = options.marketDataState ?? getMarketDataState(marketQuotes);
-  const resourceState = options.resourceDataState ?? getMarketDataState(commodityQuotes);
-  const marketAttemptState = options.marketLatestAttemptState ?? marketState;
-  const resourceAttemptState = options.resourceLatestAttemptState ?? resourceState;
+  const marketDelivery = getMarketDataDeliveryState(marketQuotes);
+  const resourceDelivery = getMarketDataDeliveryState(commodityQuotes);
+  const marketState = options.marketDataState ?? marketDelivery?.dataState ?? null;
+  const resourceState = options.resourceDataState ?? resourceDelivery?.dataState ?? null;
+  const marketAttemptState = options.marketLatestAttemptState
+    ?? marketDelivery?.latestAttemptState
+    ?? getLatestMarketRequestState(AUSTRALIA_DESK_MARKET_SYMBOLS)
+    ?? marketState;
+  const resourceAttemptState = options.resourceLatestAttemptState
+    ?? resourceDelivery?.latestAttemptState
+    ?? getLatestMarketRequestState(AUSTRALIA_DESK_RESOURCE_SYMBOLS)
+    ?? resourceState;
   const marketGroupStatus = groupStatus(marketState, marketAttemptState);
   const resourceGroupStatus = groupStatus(resourceState, resourceAttemptState);
   const marketFetchedAt = timestampFromState(
