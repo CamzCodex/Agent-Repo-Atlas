@@ -133,7 +133,7 @@ describe('Australia market desk evidence model', () => {
     });
 
     assert.equal(snapshot.asxSourceCheckedAt, '2026-07-22');
-    assert.equal(snapshot.asxSourceReviewAgeMs, 5 * 60 * 1000);
+    assert.equal(snapshot.asxSourceReviewAgeMs, 0);
     assert.equal(snapshot.asxSourceReviewStatus, 'current');
     assert.equal(snapshot.asxStatus.phase, 'regular');
     assert.equal(snapshot.asxStatus.calendarVerified, true);
@@ -168,6 +168,20 @@ describe('Australia market desk evidence model', () => {
     assert.ok(snapshot.warnings.includes(AUSTRALIA_DESK_BASKET_LIMITATION));
     assert.ok(snapshot.warnings.includes('Market observations use an undocumented upstream access path.'));
     assert.ok(snapshot.warnings.includes('Quote observation time is unavailable; retrieval time is not exchange time.'));
+  });
+
+  it('uses the Sydney calendar date across the UTC date boundary', () => {
+    const snapshot = buildAustraliaMarketDeskSnapshot([], [], {
+      now: new Date('2026-07-21T15:30:00Z'),
+    });
+
+    assert.equal(snapshot.asxStatus.localDate, '2026-07-22');
+    assert.equal(snapshot.asxSourceReviewAgeMs, 0);
+    assert.equal(snapshot.asxSourceReviewStatus, 'current');
+    assert.equal(
+      snapshot.warnings.some((warning) => warning.includes('future-dated')),
+      false,
+    );
   });
 
   it('fails visibly when a symbol is missing or retrieval age is stale', () => {
@@ -262,7 +276,7 @@ describe('Australia market desk evidence model', () => {
     assert.equal(asx?.quote?.price, 8901);
     assert.equal(asx?.quote?.sparkline?.length, 256);
     assert.equal(asx?.quote?.sparkline?.[0], 145);
-    assert.equal(asx?.quote?.sparkline?.at(-1), 400);
+    assert.equal(asx?.quote?.sparkline?.[255], 400);
     assert.equal(snapshot.missingSymbols.includes('^AXJO'), false);
   });
 
