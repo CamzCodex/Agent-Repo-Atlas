@@ -27,6 +27,21 @@ Last reviewed: 2026-07-22
 
 An earlier SHA's success cannot satisfy step 8.
 
+## Current WP1 evidence
+
+- Focused trust suite: 40 tests, 10 suites, 0 failures.
+- TypeScript, changed-file Biome, Markdown and JSON validation: passed.
+- Full and Finance production bundles: passed with documented Vite warnings.
+- Fallback-loader full suite: 16,128 tests; 16,107 passed; 15 failed; 6 skipped.
+- Failure split: two sandbox-blocked `tsx` IPC generator subprocesses and thirteen
+  missing dynamic-module exports in `redis-caching.test.mjs` under the fallback
+  loader.
+- Exact published-head Actions runs: none.
+
+This evidence keeps WP1 red/pending. The fallback-loader failures require
+confirmation using the repository's normal runner in hosted CI; they are not an
+accepted exclusion.
+
 ## Cross-repo acceptance
 
 - Neutral examples pass producer and consumer validators.

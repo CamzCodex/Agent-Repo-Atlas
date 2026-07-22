@@ -79,4 +79,4 @@ The stock runtime is a separate MIT-licensed backend with immutable archives, ty
 
 ## Current acceptance status
 
-The trust-defect branch is published, but it is **not green**. Focused tests, TypeScript, Markdown/JSON validation and both production variants passed locally. The normal `tsx` launcher is blocked by sandbox IPC restrictions, the fallback full suite has not established an accepted result, and GitHub reports no Actions run on implementation baseline `1510c32`. No PR is merge-ready. Stock Runtime integration is not operational.
+The trust-defect branch is published, but it is **not green**. Focused tests, TypeScript, Markdown/JSON validation and both production variants passed locally. The fallback-loader full suite ran 16,128 tests: 16,107 passed, 15 failed and 6 were skipped. Two failures were generator subprocesses blocked from creating a `tsx` IPC socket; thirteen were missing dynamic-module exports in `redis-caching.test.mjs` under the nonstandard loader. These failures are not waived. GitHub reports no Actions run on the published branch. No PR is merge-ready. Stock Runtime integration is not operational.
