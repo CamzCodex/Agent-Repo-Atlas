@@ -6,8 +6,8 @@ Last reviewed: 2026-07-22
 
 | WP | Outcome | Dependencies | Exit gate | Status |
 | --- | --- | --- | --- | --- |
-| WP1 | Close mission, macro race, request-order and clipboard defects | None | Focused + full upstream tests, TypeScript, full and Finance builds on exact published SHA | In progress |
-| WP2 | Transfer validated hardening into Australia desk and reconcile PR #6/#10 | WP1 | Clean ancestry; exact-head checks; accurate PR bodies | Blocked by WP1 publication |
+| WP1 | Close mission, macro race, request-order and clipboard defects | None | Focused + full upstream tests, TypeScript, full and Finance builds on exact published SHA | Implemented; hosted exact-head gate pending |
+| WP2 | Transfer validated hardening into Australia desk and reconcile PR #6/#10 | WP1 | Clean ancestry; exact-head checks; accurate PR bodies | Blocked by WP1 exact-head validation |
 | WP3 | Dedicated `worldmonitor-camz` migration plan | WP2 | Green source SHA, provenance, licence, protections and upstream-sync runbook | Planned |
 | WP4 | Neutral observation/event/provider/rights contracts | WP2; licence decision | Schema examples and compatibility/security vectors accepted | Planned |
 | WP5 | ABS and RBA official macro adapters | WP4 | Provider manifests, raw hashes, revisions, coverage and rights tests | Planned |
@@ -21,15 +21,14 @@ Last reviewed: 2026-07-22
 
 ## Immediate sequence
 
-1. Publish `fix/worldmonitor-trust-defects` from `b9568b8`.
-2. Run exact-head hosted validation; do not substitute an earlier workflow.
-3. Close obsolete PRs #8, #9 and #11 without merging.
-4. Merge the fix PR only after explicit operator authorization; this roadmap does not grant it.
-5. Revalidate PR #10 on its new exact head and correct its body.
-6. Transfer/merge the validated hardening into `camz/australia-desk` only after a clean compare.
-7. Revalidate PR #6; keep it draft while any gate is red/pending.
-8. Approve or reject dedicated-repository migration.
-9. Approve neutral spec ownership and licence before runtime implementation.
+1. Run exact-head hosted validation for draft PR #12; do not substitute an earlier workflow.
+2. Correct failures without widening the trust-fix scope.
+3. Merge the fix PR only after every gate is green and explicit operator authorization; this roadmap does not grant it.
+4. Revalidate PR #10 on its new exact head and correct its body.
+5. Transfer/merge the validated hardening into `camz/australia-desk` only after a clean compare.
+6. Revalidate PR #6; keep it draft while any gate is red/pending.
+7. Approve or reject dedicated-repository migration.
+8. Approve neutral spec ownership and licence before runtime implementation.
 
 ## Dedicated repository migration plan
 

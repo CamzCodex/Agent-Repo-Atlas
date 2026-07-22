@@ -28,17 +28,18 @@ The stock runtime is a separate MIT-licensed backend with immutable archives, ty
 | `camz/local-foundation` | `00d35489d871165acb160e3c313457de7f916deb` | 10 ahead / 0 behind vendor |
 | `camz/australia-desk` | `2805e57001028327e3f2dd4f3b2a9da4b94f12e2` | 68 ahead / 0 behind foundation |
 | `camz/australia-adversarial-v4` | `b9568b884e983f9e4decc2cc7961e52db71a2987` | 7 ahead / 0 behind Australia desk |
-| `fix/worldmonitor-trust-defects` | Created from `b9568b8`; publication pending | Implements the four immediate trust fixes in atomic commits |
+| `fix/worldmonitor-trust-defects` | Published implementation baseline `1510c324e23edebfbf94d15245fc316b021c2d32` | Seven atomic commits; draft PR #12; no Actions run on this head |
 
 ## Pull requests and validation
 
 | PR | State | Finding | Disposition |
 | --- | --- | --- | --- |
 | #6 Australia / ASX desk | Open draft; head `2805e57` | Ancestry-clean, but not merge-ready and body lacks current hardening stack | Keep draft |
-| #8 adversarial v3 | Open draft; head `721b3b0` | Explicitly superseded by #10 | Close without merge |
-| #9 v3 validation marker | Open; head `86be6c1` | Obsolete operational scaffolding | Close without merge |
+| #8 adversarial v3 | Closed without merge; head `721b3b0` | Explicitly superseded by #10 and #12 | No further action |
+| #9 v3 validation marker | Closed without merge; head `86be6c1` | Obsolete operational scaffolding | No further action |
 | #10 adversarial v4 | Open draft; head `b9568b8` | Body says four commits but branch is seven ahead; current head has no workflow run | Keep draft; update only after fixes land and exact-head gate runs |
-| #11 v4 validation marker | Open; head `63c7caf` | Workflow run `29881947809` succeeded, but validated target `0295244`, not current PR #10 head | Close without merge after recording this mismatch |
+| #11 v4 validation marker | Closed without merge; head `63c7caf` | Workflow run `29881947809` succeeded, but validated target `0295244`, not current PR #10 or #12 | No further action |
+| #12 trust defects and baseline | Open draft; implementation baseline `1510c32` | Four bounded fixes and the required architecture/governance baseline; no Actions run | Keep draft until complete exact-head gate is green |
 
 ## Existing strengths confirmed
 
@@ -78,4 +79,4 @@ The stock runtime is a separate MIT-licensed backend with immutable archives, ty
 
 ## Current acceptance status
 
-The published v4 head is **not green**. Focused validation of the new trust-defect branch is green locally, but exact-head hosted validation and publication evidence must be recorded after the branch is pushed. No PR is merge-ready. Stock Runtime integration is not operational.
+The trust-defect branch is published, but it is **not green**. Focused tests, TypeScript, Markdown/JSON validation and both production variants passed locally. The normal `tsx` launcher is blocked by sandbox IPC restrictions, the fallback full suite has not established an accepted result, and GitHub reports no Actions run on implementation baseline `1510c32`. No PR is merge-ready. Stock Runtime integration is not operational.
