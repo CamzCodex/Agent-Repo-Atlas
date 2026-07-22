@@ -1,12 +1,22 @@
 # World Monitor Context Schema
 
-Status: Draft design for neutral repository
+Status: v1 producer implemented; clean-room consumer is draft and locally validated
 
-Version: `0.1.0`
+Version: `1.0.0`
 
 Last reviewed: 2026-07-22
 
-This document is an independent data-contract design. It does not authorize copying AGPL implementation into Stock Runtime. The normative JSON Schema and test vectors should be created in the proposed neutral `CamzCodex/worldmonitor-context-spec` repository after ownership and licence approval.
+This document is an independent data-contract design. It does not authorize copying AGPL implementation into Stock Runtime. The normative JSON Schema is temporarily held by the MIT Stock Runtime consumer so that the clean-room boundary owns validation; it should move unchanged into a dedicated neutral `CamzCodex/worldmonitor-context-spec` repository when repository creation is available.
+
+## Implementation status
+
+- The existing `worldmonitor-australia-context-v2` remains available for internal producer use but is not accepted by the Runtime.
+- `src/services/worldmonitor-context-v1.ts` maps the existing Australia context into neutral v1 observations and events.
+- Official deterministic ASX session evidence is exportable now.
+- Timing-uncertain Yahoo-derived quotes are excluded unless a real observation time, fresh state, HTTPS source, eligible source class and usable value are all present.
+- The Runtime consumer is implemented in draft PR `CamzCodex/Stock-Market-Agent-Runtime#5` with strict validation, prompt-safe projection, original-byte archival, citations and recommendation attribution.
+- Cross-repository compatibility was locally proven using the actual producer output and the actual Runtime validator: three ASX session observations and one event were accepted; the timing-uncertain quote was not exported.
+- Hosted Runtime validation is currently blocked because private-repository GitHub Actions jobs terminate with zero steps under the account quota. This is not represented as a green hosted gate.
 
 ## Payload envelope
 
