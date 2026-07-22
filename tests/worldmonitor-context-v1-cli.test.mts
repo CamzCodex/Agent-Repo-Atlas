@@ -6,6 +6,8 @@ import { resolve } from 'node:path';
 import { promisify } from 'node:util';
 import { afterEach, describe, it } from 'node:test';
 
+import { repositoryCommit } from '../scripts/export-worldmonitor-context-v1.mts';
+
 const execFileAsync = promisify(execFile);
 const roots: string[] = [];
 
@@ -80,6 +82,29 @@ describe('World Monitor neutral context v1 CLI', () => {
         'test-commit',
       ], { cwd: process.cwd() }),
       /symlinked context output file/,
+    );
+  });
+
+  it('refuses to claim HEAD provenance when tracked producer files are dirty', async () => {
+    const root = await temporaryRoot();
+    await execFileAsync('git', ['init'], { cwd: root });
+    await writeFile(resolve(root, 'producer.txt'), 'clean\n');
+    await execFileAsync('git', ['add', 'producer.txt'], { cwd: root });
+    await execFileAsync('git', [
+      '-c',
+      'user.name=World Monitor Test',
+      '-c',
+      'user.email=worldmonitor-test@example.invalid',
+      'commit',
+      '-m',
+      'test fixture',
+    ], { cwd: root });
+
+    assert.match(repositoryCommit(root), /^[0-9a-f]{40}$/);
+    await writeFile(resolve(root, 'producer.txt'), 'dirty\n');
+    assert.throws(
+      () => repositoryCommit(root),
+      /clean producer commit/,
     );
   });
 });

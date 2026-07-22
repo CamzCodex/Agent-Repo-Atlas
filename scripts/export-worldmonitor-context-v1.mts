@@ -48,15 +48,24 @@ async function packageVersion(rootDir: string): Promise<string> {
   return value.version;
 }
 
-function repositoryCommit(rootDir: string): string {
+export function repositoryCommit(rootDir: string): string {
   try {
-    return execFileSync('git', ['rev-parse', '--verify', 'HEAD'], {
+    const commit = execFileSync('git', ['rev-parse', '--verify', 'HEAD'], {
       cwd: rootDir,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
     }).trim();
+    const trackedChanges = execFileSync('git', ['status', '--porcelain=v1', '--untracked-files=no'], {
+      cwd: rootDir,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+    if (trackedChanges) {
+      throw new Error('Refusing to export from a dirty producer tree; commit or restore tracked changes first.');
+    }
+    return commit;
   } catch {
-    throw new Error('Unable to resolve the producer commit; pass --commit explicitly.');
+    throw new Error('Unable to resolve a clean producer commit; commit or restore tracked changes, or pass --commit explicitly.');
   }
 }
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { randomBytes } from 'node:crypto';
-import { chmod, lstat, readFile, rename, writeFile } from 'node:fs/promises';
+import { chmod, lstat, readFile, rename, stat, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -27,12 +27,16 @@ function assignedValue(text, key) {
 
 async function readEnvironmentFile(path) {
   try {
-    const stat = await lstat(path);
-    if (stat.isSymbolicLink()) throw new Error('Refusing to update a symlinked .env file.');
-    if (!stat.isFile()) throw new Error('.env exists but is not a regular file.');
-    return await readFile(path, 'utf8');
+    const pathStat = await lstat(path);
+    if (pathStat.isSymbolicLink()) {
+      const targetStat = await stat(path);
+      if (!targetStat.isFile()) throw new Error('Symlinked .env target is not a regular file.');
+      return { content: await readFile(path, 'utf8'), isSymbolicLink: true };
+    }
+    if (!pathStat.isFile()) throw new Error('.env exists but is not a regular file.');
+    return { content: await readFile(path, 'utf8'), isSymbolicLink: false };
   } catch (error) {
-    if (error?.code === 'ENOENT') return null;
+    if (error?.code === 'ENOENT') return { content: null, isSymbolicLink: false };
     throw error;
   }
 }
@@ -47,7 +51,7 @@ export async function ensureCamzStackEnvironment(options = {}) {
   const checkOnly = options.checkOnly === true;
   const generator = options.randomBytes ?? randomBytes;
   const existing = await readEnvironmentFile(path);
-  let content = existing ?? [
+  let content = existing.content ?? [
     '# Camz World Monitor local self-hosted stack',
     '# Generated values are local-only. Add optional provider keys below.',
     'WM_PORT=3000',
@@ -74,6 +78,7 @@ export async function ensureCamzStackEnvironment(options = {}) {
   }
 
   if (!checkOnly && missing.length > 0) {
+    if (existing.isSymbolicLink) throw new Error('Refusing to update a symlinked .env file.');
     const temporaryPath = `${path}.tmp-${process.pid}`;
     await writeFile(temporaryPath, content, { encoding: 'utf8', mode: 0o600, flag: 'wx' });
     await rename(temporaryPath, path);
@@ -84,7 +89,7 @@ export async function ensureCamzStackEnvironment(options = {}) {
     schemaVersion: 'camz-worldmonitor-stack-env-v1',
     path,
     ok: checkOnly ? missing.length === 0 : true,
-    created: existing === null && !checkOnly,
+    created: existing.content === null && !checkOnly,
     generatedKeys: checkOnly ? [] : missing,
     configuredKeys: configured,
     missingKeys: checkOnly ? missing : [],

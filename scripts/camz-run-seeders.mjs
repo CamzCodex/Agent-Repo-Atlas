@@ -110,8 +110,9 @@ export async function runCamzSeeders(options = {}) {
     const last = lastMeaningfulLine(result.output);
     let status = 'failed';
     if (result.timedOut) status = 'timed-out';
-    else if (/skip|not set|missing.*key|not found/i.test(last)) status = 'skipped';
-    else if (result.code === 0) status = 'passed';
+    else if (result.code === 0) {
+      status = /skip|not set|missing.*key|not found/i.test(last) ? 'skipped' : 'passed';
+    }
     const label = { passed: 'OK', skipped: 'SKIP', failed: 'FAIL', 'timed-out': 'TIMEOUT' }[status];
     process.stdout.write(`${label}${last && status !== 'passed' ? ` (${last})` : ''}\n`);
     results.push({ name, status, exitCode: result.code, detail: last || result.error });

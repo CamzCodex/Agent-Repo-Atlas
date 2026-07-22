@@ -13,7 +13,7 @@ import {
   probeCamzLocal,
   renderCamzLocalSmoke,
 } from '../scripts/camz-local-smoke.mjs';
-import { listSeeders } from '../scripts/camz-run-seeders.mjs';
+import { listSeeders, runCamzSeeders } from '../scripts/camz-run-seeders.mjs';
 
 const temporaryRoots = [];
 const servers = [];
@@ -103,6 +103,27 @@ describe('Camz stack environment initialization', () => {
       /symlinked \.env/,
     );
   });
+
+  it('reads a complete symlinked worktree environment without mutating it', async () => {
+    const root = await temporaryRoot();
+    const target = resolve(root, 'target.env');
+    await writeFile(target, [
+      'RELAY_SHARED_SECRET=relay-secret',
+      'REDIS_PASSWORD=redis-password',
+      'REDIS_TOKEN=redis-token',
+      '',
+    ].join('\n'));
+    await symlink(target, resolve(root, '.env'));
+
+    const check = await ensureCamzStackEnvironment({ rootDir: root, checkOnly: true });
+    assert.equal(check.ok, true);
+    assert.deepEqual(check.missingKeys, []);
+
+    const init = await ensureCamzStackEnvironment({ rootDir: root });
+    assert.equal(init.ok, true);
+    assert.deepEqual(init.generatedKeys, []);
+    assert.match(await readFile(target, 'utf8'), /^REDIS_TOKEN=redis-token$/m);
+  });
 });
 
 describe('Camz local smoke probe', () => {
@@ -150,6 +171,22 @@ describe('Camz local smoke probe', () => {
     assert.equal(report.ok, false);
     assert.equal(report.checks.find((item) => item.id === 'data-health')?.status, 'fail');
   });
+
+  it('fails a full-stack smoke test on a JSON HTTP 500 health response', async () => {
+    const baseUrl = await listen((req, res) => {
+      if (req.url === '/assets/app.js') return respond(res, 200, 'application/javascript', 'export {};');
+      if (req.url === '/api/sidecar-health') {
+        return respond(res, 200, 'application/json', JSON.stringify({ status: 'ok', mode: 'docker' }));
+      }
+      if (req.url === '/api/health?compact=1') {
+        return respond(res, 500, 'application/json', JSON.stringify({ error: 'internal failure' }));
+      }
+      return respond(res, 200, 'text/html', '<html><body><script type="module" src="/assets/app.js"></script></body></html>');
+    });
+    const report = await probeCamzLocal({ baseUrl, requireStack: true });
+    assert.equal(report.ok, false);
+    assert.equal(report.checks.find((item) => item.id === 'data-health')?.status, 'fail');
+  });
 });
 
 describe('Camz cross-platform seeder discovery', () => {
@@ -166,6 +203,34 @@ describe('Camz cross-platform seeder discovery', () => {
     assert.deepEqual(names, ['seed-alpha.mjs', 'seed-zulu.mjs']);
     const filtered = await listSeeders({ scriptsDir: resolve(root, 'scripts'), match: 'zulu' });
     assert.deepEqual(filtered, ['seed-zulu.mjs']);
+  });
+
+  it('never masks a nonzero seeder exit as a skip based on its error text', async () => {
+    const root = await temporaryRoot();
+    const scriptsDir = resolve(root, 'scripts');
+    await mkdir(scriptsDir);
+    await writeFile(resolve(scriptsDir, 'seed-failure.mjs'), [
+      "console.error('Fossil series not found');",
+      'process.exit(1);',
+      '',
+    ].join('\n'));
+    await writeFile(resolve(scriptsDir, 'seed-skip.mjs'), [
+      "console.log('OPTIONAL_API_KEY not set - skipping');",
+      'process.exit(0);',
+      '',
+    ].join('\n'));
+
+    const results = await runCamzSeeders({
+      rootDir: root,
+      scriptsDir,
+      skipEnvFile: true,
+      env: { REDIS_TOKEN: 'test-token' },
+      timeoutSeconds: 5,
+    });
+    assert.deepEqual(results.map(({ name, status, exitCode }) => ({ name, status, exitCode })), [
+      { name: 'seed-failure.mjs', status: 'failed', exitCode: 1 },
+      { name: 'seed-skip.mjs', status: 'skipped', exitCode: 0 },
+    ]);
   });
 });
 

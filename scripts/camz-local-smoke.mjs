@@ -123,7 +123,7 @@ export async function probeCamzLocal(options = {}) {
     const healthPayload = jsonBody(health);
     dataStatus = typeof healthPayload?.status === 'string' ? healthPayload.status : null;
     const redisDown = health.status === 503 || dataStatus === 'REDIS_DOWN';
-    if (!healthPayload || redisDown) {
+    if (!isSuccessfulHttp(health) || !healthPayload || redisDown) {
       checks.push(check(
         'data-health',
         'fail',
