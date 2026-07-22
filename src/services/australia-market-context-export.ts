@@ -2,6 +2,8 @@ import type {
   AustraliaDeskDataMode,
   AustraliaDeskObservation,
   AustraliaMarketDeskSnapshot,
+  AustraliaQuoteGroupStatus,
+  AustraliaSourceReviewStatus,
 } from '@/services/australia-market-desk';
 import {
   FINANCE_OBSERVATION_PROVENANCE_VERSION,
@@ -51,6 +53,8 @@ export interface AustraliaContextObservation {
   changePercent: number | null;
   dataMode: AustraliaDeskDataMode;
   offline: boolean;
+  latestAttemptMode: AustraliaDeskDataMode;
+  latestAttemptOffline: boolean;
   evidence: AustraliaContextEvidence;
 }
 
@@ -70,7 +74,13 @@ export interface AustraliaMarketContextExport {
     earlyClose: boolean;
     holidayName: string | null;
     sourceCheckedAt: string;
+    sourceReviewAgeMs: number | null;
+    sourceReviewStatus: AustraliaSourceReviewStatus;
     evidence: AustraliaContextEvidence;
+  };
+  quoteGroups: {
+    equities: AustraliaQuoteGroupStatus;
+    resources: AustraliaQuoteGroupStatus;
   };
   observations: AustraliaContextObservation[];
   missingSymbols: string[];
@@ -82,6 +92,7 @@ const READ_ONLY_CONSTRAINTS = Object.freeze([
   'Context only; not an investment recommendation.',
   'No order, position-size, target-price, or execution instruction is included.',
   'Retrieval/cache time is not a substitute for exchange observation time.',
+  'Displayed-data state and latest refresh state must remain distinguishable.',
   'Undocumented, estimated, deterministic, and AI-derived evidence must remain distinguishable.',
   'Associations in downstream research must not be presented as proven causation.',
   'The equity basket is a compact benchmark/bellwether sample, not Australian market breadth or an investable universe.',
@@ -156,8 +167,14 @@ function exportObservation(observation: AustraliaDeskObservation): AustraliaCont
     changePercent: observation.quote?.change ?? null,
     dataMode: observation.dataMode,
     offline: observation.offline,
+    latestAttemptMode: observation.latestAttemptMode,
+    latestAttemptOffline: observation.latestAttemptOffline,
     evidence: exportEvidence(observation.provenance),
   };
+}
+
+function copyGroupStatus(status: AustraliaQuoteGroupStatus): AustraliaQuoteGroupStatus {
+  return { ...status };
 }
 
 export function buildAustraliaMarketContextExport(
@@ -179,7 +196,13 @@ export function buildAustraliaMarketContextExport(
       earlyClose: snapshot.asxStatus.earlyClose,
       holidayName: snapshot.asxStatus.holidayName,
       sourceCheckedAt: snapshot.asxSourceCheckedAt,
+      sourceReviewAgeMs: snapshot.asxSourceReviewAgeMs,
+      sourceReviewStatus: snapshot.asxSourceReviewStatus,
       evidence: exportEvidence(snapshot.asxStatusProvenance),
+    },
+    quoteGroups: {
+      equities: copyGroupStatus(snapshot.marketGroupStatus),
+      resources: copyGroupStatus(snapshot.resourceGroupStatus),
     },
     observations: [...snapshot.markets, ...snapshot.resources].map(exportObservation),
     missingSymbols: [...snapshot.missingSymbols],
