@@ -61,6 +61,7 @@ export interface AustraliaDeskObservation {
 export interface AustraliaMarketDeskSnapshot {
   generatedAt: string;
   asxSourceCheckedAt: string;
+  /** Calendar-day age in Australia/Sydney, not elapsed UTC clock time. */
   asxSourceReviewAgeMs: number | null;
   asxSourceReviewStatus: AustraliaSourceReviewStatus;
   asxStatus: AsxCashEquityStatus;
@@ -90,7 +91,6 @@ export interface AustraliaMarketDeskOptions {
 
 const DEFAULT_QUOTE_MAX_AGE_MS = 15 * 60 * 1000;
 const ASX_SOURCE_REVIEW_MAX_AGE_MS = 90 * 24 * 60 * 60 * 1000;
-const ASX_SOURCE_FUTURE_TOLERANCE_MS = 5 * 60 * 1000;
 const MAX_SPARKLINE_POINTS = 256;
 
 const LABELS: Readonly<Record<AustraliaDeskMarketSymbol | AustraliaDeskResourceSymbol, string>> = {
@@ -190,15 +190,17 @@ function quoteMap(quotes: readonly MarketData[]): Map<string, MarketData> {
   return result;
 }
 
-function sourceCheckAgeMs(nowMs: number): number | null {
+function sourceCheckAgeMs(localDate: string | null): number | null {
+  if (!localDate) return null;
   const checkedAtMs = Date.parse(`${ASX_MARKET_HOURS_METADATA.sourceCheckedAt}T00:00:00Z`);
-  if (!Number.isFinite(nowMs) || !Number.isFinite(checkedAtMs)) return null;
-  return nowMs - checkedAtMs;
+  const localDateMs = Date.parse(`${localDate}T00:00:00Z`);
+  if (!Number.isFinite(localDateMs) || !Number.isFinite(checkedAtMs)) return null;
+  return localDateMs - checkedAtMs;
 }
 
 function sourceReviewStatus(ageMs: number | null): AustraliaSourceReviewStatus {
   if (ageMs === null || !Number.isFinite(ageMs)) return 'invalid';
-  if (ageMs < -ASX_SOURCE_FUTURE_TOLERANCE_MS) return 'future';
+  if (ageMs < 0) return 'future';
   if (ageMs > ASX_SOURCE_REVIEW_MAX_AGE_MS) return 'overdue';
   return 'current';
 }
@@ -289,14 +291,14 @@ export function buildAustraliaMarketDeskSnapshot(
     .filter((observation) => observation.quote === null)
     .map((observation) => observation.symbol);
 
-  const reviewAgeMs = sourceCheckAgeMs(nowMs);
+  const reviewAgeMs = sourceCheckAgeMs(asxStatus.localDate);
   const reviewStatus = sourceReviewStatus(reviewAgeMs);
   const warnings: string[] = [AUSTRALIA_DESK_BASKET_LIMITATION];
   if (!asxStatus.calendarVerified) warnings.push('ASX calendar year is unverified.');
   if (reviewStatus === 'overdue') {
     warnings.push('ASX trading-hours/calendar sources are past the 90-day review interval.');
   } else if (reviewStatus === 'future') {
-    warnings.push('ASX source-check date is future-dated relative to the model clock.');
+    warnings.push('ASX source-check date is future-dated relative to the Sydney calendar date.');
   } else if (reviewStatus === 'invalid') {
     warnings.push('ASX source-check date could not be evaluated.');
   }
