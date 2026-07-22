@@ -72,11 +72,18 @@ describe('Australia macro context model', () => {
 
   it('renders live cards while preserving source, timing, and basket warnings', () => {
     const now = new Date('2026-07-22T00:05:00Z');
-    const snapshot = buildAustraliaMarketDeskSnapshot(
-      markets,
-      resources,
-      { now, fetchedAt: '2026-07-22T00:00:00Z' },
-    );
+    const liveState = {
+      mode: 'live' as const,
+      timestamp: Date.parse('2026-07-22T00:00:00Z'),
+      offline: false,
+    };
+    const snapshot = buildAustraliaMarketDeskSnapshot(markets, resources, {
+      now,
+      marketDataState: liveState,
+      marketLatestAttemptState: liveState,
+      resourceDataState: liveState,
+      resourceLatestAttemptState: liveState,
+    });
     const html = renderAustraliaMacroContext(
       buildAustraliaMacroContextModel(now, snapshot),
       snapshot,
@@ -91,7 +98,7 @@ describe('Australia macro context model', () => {
     assert.match(html, /0\.6600/);
     assert.match(html, /ASX · official · model-derived/);
     assert.match(html, /Yahoo Finance path/);
-    assert.match(html, /fetch\/cache clock/);
+    assert.match(html, /Live · Fresh · fetch\/cache clock/);
     assert.match(html, /Missing Observed At/);
     assert.match(html, /ASX basket/);
     assert.match(html, /AUD\/resources/);
@@ -106,8 +113,26 @@ describe('Australia macro context model', () => {
     const now = new Date('2026-07-22T00:20:00Z');
     const snapshot = buildAustraliaMarketDeskSnapshot(markets, resources, {
       now,
-      marketFetchedAt: '2026-07-22T00:19:00Z',
-      resourceFetchedAt: '2026-07-21T23:30:00Z',
+      marketDataState: {
+        mode: 'live',
+        timestamp: Date.parse('2026-07-22T00:19:00Z'),
+        offline: false,
+      },
+      marketLatestAttemptState: {
+        mode: 'live',
+        timestamp: Date.parse('2026-07-22T00:19:00Z'),
+        offline: false,
+      },
+      resourceDataState: {
+        mode: 'cached',
+        timestamp: Date.parse('2026-07-21T23:30:00Z'),
+        offline: false,
+      },
+      resourceLatestAttemptState: {
+        mode: 'cached',
+        timestamp: Date.parse('2026-07-21T23:30:00Z'),
+        offline: false,
+      },
       quoteMaxAgeMs: 15 * 60 * 1000,
     });
     const model = buildAustraliaMacroContextModel(now, snapshot);
@@ -117,8 +142,40 @@ describe('Australia macro context model', () => {
     assert.equal(model.resourceEvidence.freshness, 'stale');
     assert.match(model.marketEvidenceLabel, /fresh/);
     assert.match(model.resourceEvidenceLabel, /stale/);
-    assert.match(html, /ASX basket[\s\S]*fresh/);
-    assert.match(html, /AUD\/resources[\s\S]*stale/);
+    assert.match(html, /ASX basket[\s\S]*Live[\s\S]*fresh/);
+    assert.match(html, /AUD\/resources[\s\S]*Cached[\s\S]*stale/);
+  });
+
+  it('shows last-good cached data and an unavailable latest attempt as separate facts', () => {
+    const now = new Date('2026-07-22T00:20:00Z');
+    const snapshot = buildAustraliaMarketDeskSnapshot(markets, resources, {
+      now,
+      marketDataState: {
+        mode: 'cached',
+        timestamp: Date.parse('2026-07-22T00:10:00Z'),
+        offline: false,
+      },
+      marketLatestAttemptState: { mode: 'unavailable', timestamp: null, offline: false },
+      resourceDataState: {
+        mode: 'live',
+        timestamp: Date.parse('2026-07-22T00:19:00Z'),
+        offline: false,
+      },
+      resourceLatestAttemptState: {
+        mode: 'live',
+        timestamp: Date.parse('2026-07-22T00:19:00Z'),
+        offline: false,
+      },
+    });
+    const html = renderAustraliaMacroContext(
+      buildAustraliaMacroContextModel(now, snapshot),
+      snapshot,
+    );
+
+    assert.match(html, /Cached · Latest attempt Unavailable/);
+    assert.match(html, /ASX basket[\s\S]*Latest attempt Unavailable/);
+    assert.match(html, /Latest Australian equity refresh is unavailable/);
+    assert.doesNotMatch(html, /AUD\/resources[\s\S]*Latest attempt Unavailable/);
   });
 
   it('renders official holiday context even before quote data arrives', () => {
