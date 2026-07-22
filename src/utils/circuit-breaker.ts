@@ -143,7 +143,12 @@ export class CircuitBreaker<T> {
     onDataState?: (state: BreakerDataState) => void,
   ): void {
     this.lastDataState = state;
-    onDataState?.({ ...state });
+    if (!onDataState) return;
+    try {
+      onDataState({ ...state });
+    } catch (error) {
+      console.warn(`[${this.name}] Data-state observer failed:`, error);
+    }
   }
 
   private hydratePersistentCache(cacheKey: string): Promise<void> {
