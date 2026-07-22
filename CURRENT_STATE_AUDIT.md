@@ -5,7 +5,7 @@ Scope: World Monitor Australia hardening and read-only Stock Runtime integration
 
 ## BLUF
 
-World Monitor is a strong, mature upstream application and should be extended, not rebuilt. The Camz Australia stack is ancestry-clean, but the application is hosted on a non-default lineage inside `Agent-Repo-Atlas`; GitHub `main` has no common ancestor with the World Monitor vendor or Australia branches. PR #10 is draft and its body is stale. Its current head, `b9568b884e983f9e4decc2cc7961e52db71a2987`, was not validated by the successful exact-head workflow: run `29881947809` validated the earlier target `02952445bfc221b16d100eba3b077c9db95173c5` through automation head `63c7caf0e8756e9a87e6a208ff4dfb610ad45b34`.
+World Monitor is a strong, mature upstream application and should be extended, not rebuilt. The Camz Australia stack is ancestry-clean, but the application is hosted on a non-default lineage inside `Agent-Repo-Atlas`; GitHub `main` has no common ancestor with the World Monitor vendor or Australia branches. PR #10 is draft and its body is stale. Its current head, `b9568b884e983f9e4decc2cc7961e52db71a2987`, was not validated by the successful exact-head workflow: the job log for run `29881947809` proves that the exact-SHA assertion used target `1897f82853da8559a4a085d24b8d426097a5ba60` through automation head `63c7caf0e8756e9a87e6a208ff4dfb610ad45b34`. Earlier PR text incorrectly identified the target as `02952445bfc221b16d100eba3b077c9db95173c5`; the job log is authoritative.
 
 The stock runtime is a separate MIT-licensed backend with immutable archives, typed output schemas, citations, risk artifacts, provider degradation metadata and a no-broker boundary. No World Monitor runtime provider exists. Integration is not operational.
 
@@ -38,7 +38,7 @@ The stock runtime is a separate MIT-licensed backend with immutable archives, ty
 | #8 adversarial v3 | Closed without merge; head `721b3b0` | Explicitly superseded by #10 and #12 | No further action |
 | #9 v3 validation marker | Closed without merge; head `86be6c1` | Obsolete operational scaffolding | No further action |
 | #10 adversarial v4 | Open draft; head `b9568b8` | Body says four commits but branch is seven ahead; current head has no workflow run | Keep draft; update only after fixes land and exact-head gate runs |
-| #11 v4 validation marker | Closed without merge; head `63c7caf` | Workflow run `29881947809` succeeded, but validated target `0295244`, not current PR #10 or #12 | No further action |
+| #11 v4 validation marker | Closed without merge; head `63c7caf` | Workflow run `29881947809` succeeded, but validated target `1897f82`, not current PR #10 or #12 | Prior target claim corrected from `0295244` using the job log |
 | #12 trust defects and baseline | Open draft; implementation baseline `1510c32` | Four bounded fixes and the required architecture/governance baseline; no Actions run | Keep draft until complete exact-head gate is green |
 
 ## Existing strengths confirmed
