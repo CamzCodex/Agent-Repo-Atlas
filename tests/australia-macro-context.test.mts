@@ -14,7 +14,7 @@ const macroPanelSource = readFileSync(
   'utf8',
 );
 
-function quote(symbol: string, price: number, change: number): MarketData {
+function quote(symbol: string, price: number, change: number | null): MarketData {
   return {
     symbol,
     name: symbol,
@@ -91,15 +91,17 @@ describe('Australia macro context model', () => {
     assert.match(html, /0\.6600/);
     assert.match(html, /ASX · official · model-derived/);
     assert.match(html, /Yahoo Finance path/);
-    assert.match(html, /fetch\/cache clock/);
+    assert.match(html, /Fetch\/cache clock/);
     assert.match(html, /Missing Observed At/);
     assert.match(html, /ASX basket/);
+    assert.match(html, /latest refresh Unknown/);
     assert.match(html, /AUD\/resources/);
     assert.match(html, /not exchange-grade real-time data/);
     assert.match(html, /Retrieval\/cache time must not be presented as exchange observation time/);
     assert.match(html, /not ASX market breadth/);
     assert.match(html, /data-australia-context-export/);
     assert.match(html, /Copy context JSON/);
+    assert.match(html, /Copy read-only Australia market context as JSON/);
   });
 
   it('does not let a fresh equity group visually mask stale resources', () => {
@@ -121,6 +123,41 @@ describe('Australia macro context model', () => {
     assert.match(html, /AUD\/resources[\s\S]*stale/);
   });
 
+  it('surfaces a failed latest refresh without discarding retained prices', () => {
+    const now = new Date('2026-07-22T00:20:00Z');
+    const snapshot = buildAustraliaMarketDeskSnapshot(markets, resources, {
+      now,
+      marketFetchedAt: '2026-07-22T00:19:00Z',
+      resourceFetchedAt: '2026-07-22T00:18:00Z',
+      marketDataState: { mode: 'cached', timestamp: Date.parse('2026-07-22T00:19:00Z'), offline: false },
+      resourceDataState: { mode: 'cached', timestamp: Date.parse('2026-07-22T00:18:00Z'), offline: false },
+      marketLatestAttemptState: { mode: 'unavailable', timestamp: null, offline: false },
+      resourceLatestAttemptState: { mode: 'live', timestamp: Date.parse('2026-07-22T00:18:00Z'), offline: false },
+    });
+    const html = renderAustraliaMacroContext(buildAustraliaMacroContextModel(now, snapshot), snapshot);
+
+    assert.match(html, /ASX basket[\s\S]*latest refresh Unavailable/);
+    assert.match(html, /Latest Australian equity refresh is unavailable/);
+    assert.match(html, /8,900\.25/);
+  });
+
+  it('does not colour an unavailable change as a negative move', () => {
+    const neutralMarkets = [
+      quote('^AXJO', 8900.25, null),
+      ...markets.slice(1),
+    ];
+    const now = new Date('2026-07-22T00:05:00Z');
+    const snapshot = buildAustraliaMarketDeskSnapshot(neutralMarkets, resources, {
+      now,
+      fetchedAt: '2026-07-22T00:00:00Z',
+    });
+    const html = renderAustraliaMacroContext(buildAustraliaMacroContextModel(now, snapshot), snapshot);
+
+    assert.match(html, /8,900\.25/);
+    assert.match(html, /Change unavailable/);
+    assert.match(html, /color:var\(--text-dim\);font-weight:600[^>]*>Change unavailable/);
+  });
+
   it('renders official holiday context even before quote data arrives', () => {
     const html = renderAustraliaMacroContext(
       buildAustraliaMacroContextModel(new Date('2026-12-25T01:00:00Z')),
@@ -135,11 +172,14 @@ describe('Australia macro context model', () => {
 
   it('warns rather than inventing a future calendar state', () => {
     const model = buildAustraliaMacroContextModel(new Date('2027-07-22T00:05:00Z'));
+    const html = renderAustraliaMacroContext(model);
 
     assert.equal(model.status.session, 'unknown');
     assert.equal(model.status.calendarVerified, false);
     assert.ok(model.warnings.includes('ASX calendar year is unverified.'));
     assert.ok(model.sessionEvidence.flags.includes('low-confidence'));
+    assert.match(html, /Session/);
+    assert.match(html, /color:#e67e22/);
   });
 });
 
@@ -152,21 +192,32 @@ describe('Macro Tiles Australia mission wiring', () => {
     assert.match(macroPanelSource, /labels: Record<Tab, string> = \{ au: 'Australia', us: 'US', eu: 'Euro Area', cn: 'China' \}/);
   });
 
-  it('loads stock and commodity cards through the existing circuit-breaker services', () => {
+  it('loads quote groups with immutable displayed and latest-attempt state', () => {
     assert.match(macroPanelSource, /fetchMultipleStocks\(marketDefinitions\)/);
     assert.match(macroPanelSource, /fetchCommodityQuotes\(resourceDefinitions\)/);
-    assert.match(macroPanelSource, /this\._australiaMarketFetchedAt = fetchedAt/);
-    assert.match(macroPanelSource, /this\._australiaResourceFetchedAt = fetchedAt/);
-    assert.match(macroPanelSource, /marketFetchedAt: this\._australiaMarketFetchedAt/);
-    assert.match(macroPanelSource, /resourceFetchedAt: this\._australiaResourceFetchedAt/);
+    assert.match(macroPanelSource, /_australiaMarketDataState/);
+    assert.match(macroPanelSource, /_australiaResourceDataState/);
+    assert.match(macroPanelSource, /_australiaMarketLatestAttemptState/);
+    assert.match(macroPanelSource, /marketDataState: this\._australiaMarketDataState/);
+    assert.match(macroPanelSource, /marketLatestAttemptState: this\._australiaMarketLatestAttemptState/);
+    assert.doesNotMatch(macroPanelSource, /_australiaMarketFetchedAt/);
   });
 
-  it('copies a typed read-only context envelope rather than scraping panel HTML', () => {
+  it('uses a monotonic epoch so obsolete requests cannot overwrite newer state', () => {
+    assert.match(macroPanelSource, /const epoch = \+\+this\._australiaLoadEpoch/);
+    assert.match(macroPanelSource, /epoch !== this\._australiaLoadEpoch/);
+    assert.match(macroPanelSource, /this\.signal\.aborted/);
+    assert.match(macroPanelSource, /shouldReplaceDisplayedState/);
+    assert.match(macroPanelSource, /this\._australiaLoadEpoch \+= 1/);
+  });
+
+  it('copies a typed read-only context envelope with denied-clipboard fallback', () => {
     assert.match(macroPanelSource, /buildAustraliaMarketContextExport\(this\._buildAustraliaSnapshot\(now\)\)/);
     assert.match(macroPanelSource, /serializeAustraliaMarketContextExport\(context\)/);
-    assert.match(macroPanelSource, /navigator\.clipboard\?\.writeText/);
-    assert.match(macroPanelSource, /navigator\.clipboard\.writeText\(text\)/);
+    assert.match(macroPanelSource, /await navigator\.clipboard\.writeText\(text\)/);
+    assert.match(macroPanelSource, /catch \{\s*copied = this\._copyWithTextarea\(text\)/);
     assert.match(macroPanelSource, /finally \{\s*textarea\.remove\(\)/);
+    assert.match(macroPanelSource, /if \(button\.disabled \|\| this\.signal\.aborted\) return/);
     assert.match(macroPanelSource, /data-australia-context-export/);
   });
 

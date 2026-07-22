@@ -3,7 +3,6 @@ import type {
   AustraliaDeskObservation,
   AustraliaMarketDeskSnapshot,
   AustraliaQuoteGroupStatus,
-  AustraliaSourceReviewStatus,
 } from '@/services/australia-market-desk';
 import {
   FINANCE_OBSERVATION_PROVENANCE_VERSION,
@@ -13,7 +12,7 @@ import {
   type FinanceTransformationKind,
 } from '@/shared/finance-observation-provenance';
 
-export const AUSTRALIA_MARKET_CONTEXT_SCHEMA_VERSION = 'worldmonitor-australia-context-v1';
+export const AUSTRALIA_MARKET_CONTEXT_SCHEMA_VERSION = 'worldmonitor-australia-context-v2';
 
 export type AustraliaContextAssetClass = 'index' | 'equity' | 'fx' | 'commodity';
 export type AustraliaContextQuoteUnit =
@@ -53,9 +52,19 @@ export interface AustraliaContextObservation {
   changePercent: number | null;
   dataMode: AustraliaDeskDataMode;
   offline: boolean;
-  latestAttemptMode: AustraliaDeskDataMode;
-  latestAttemptOffline: boolean;
   evidence: AustraliaContextEvidence;
+}
+
+export interface AustraliaContextControls {
+  readOnly: true;
+  investmentRecommendationIncluded: false;
+  targetPriceIncluded: false;
+  positionSizingIncluded: false;
+  orderInstructionIncluded: false;
+  executionInstructionIncluded: false;
+  causationEstablished: false;
+  providerRightsStatus: 'internal-research-only';
+  redistributionRightsReviewed: false;
 }
 
 export interface AustraliaMarketContextExport {
@@ -75,16 +84,17 @@ export interface AustraliaMarketContextExport {
     holidayName: string | null;
     sourceCheckedAt: string;
     sourceReviewAgeMs: number | null;
-    sourceReviewStatus: AustraliaSourceReviewStatus;
+    sourceReviewStatus: AustraliaMarketDeskSnapshot['asxSourceReviewStatus'];
     evidence: AustraliaContextEvidence;
   };
-  quoteGroups: {
-    equities: AustraliaQuoteGroupStatus;
-    resources: AustraliaQuoteGroupStatus;
+  groups: {
+    australianEquities: AustraliaQuoteGroupStatus;
+    audAndResources: AustraliaQuoteGroupStatus;
   };
   observations: AustraliaContextObservation[];
   missingSymbols: string[];
   warnings: string[];
+  controls: AustraliaContextControls;
   constraints: string[];
 }
 
@@ -92,13 +102,25 @@ const READ_ONLY_CONSTRAINTS = Object.freeze([
   'Context only; not an investment recommendation.',
   'No order, position-size, target-price, or execution instruction is included.',
   'Retrieval/cache time is not a substitute for exchange observation time.',
-  'Displayed-data state and latest refresh state must remain distinguishable.',
+  'Displayed-data state and latest refresh-attempt state must remain separate.',
   'Undocumented, estimated, deterministic, and AI-derived evidence must remain distinguishable.',
   'Associations in downstream research must not be presented as proven causation.',
   'The equity basket is a compact benchmark/bellwether sample, not Australian market breadth or an investable universe.',
   'Provider-derived values are for internal research context; redistribution or republication requires a separate rights review.',
   'Confidence values are policy heuristics, not calibrated probabilities.',
 ]);
+
+const CONTROLS: AustraliaContextControls = Object.freeze({
+  readOnly: true,
+  investmentRecommendationIncluded: false,
+  targetPriceIncluded: false,
+  positionSizingIncluded: false,
+  orderInstructionIncluded: false,
+  executionInstructionIncluded: false,
+  causationEstablished: false,
+  providerRightsStatus: 'internal-research-only',
+  redistributionRightsReviewed: false,
+});
 
 const QUOTE_METADATA: Readonly<Record<string, { currency: string | null; quoteUnit: AustraliaContextQuoteUnit }>> = {
   '^AXJO': { currency: null, quoteUnit: 'index-points' },
@@ -167,14 +189,8 @@ function exportObservation(observation: AustraliaDeskObservation): AustraliaCont
     changePercent: observation.quote?.change ?? null,
     dataMode: observation.dataMode,
     offline: observation.offline,
-    latestAttemptMode: observation.latestAttemptMode,
-    latestAttemptOffline: observation.latestAttemptOffline,
     evidence: exportEvidence(observation.provenance),
   };
-}
-
-function copyGroupStatus(status: AustraliaQuoteGroupStatus): AustraliaQuoteGroupStatus {
-  return { ...status };
 }
 
 export function buildAustraliaMarketContextExport(
@@ -200,13 +216,14 @@ export function buildAustraliaMarketContextExport(
       sourceReviewStatus: snapshot.asxSourceReviewStatus,
       evidence: exportEvidence(snapshot.asxStatusProvenance),
     },
-    quoteGroups: {
-      equities: copyGroupStatus(snapshot.marketGroupStatus),
-      resources: copyGroupStatus(snapshot.resourceGroupStatus),
+    groups: {
+      australianEquities: { ...snapshot.marketGroupStatus },
+      audAndResources: { ...snapshot.resourceGroupStatus },
     },
     observations: [...snapshot.markets, ...snapshot.resources].map(exportObservation),
     missingSymbols: [...snapshot.missingSymbols],
     warnings: [...snapshot.warnings],
+    controls: { ...CONTROLS },
     constraints: [...READ_ONLY_CONSTRAINTS],
   };
 }
