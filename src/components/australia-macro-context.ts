@@ -11,6 +11,7 @@ import {
 import {
   AUSTRALIA_DESK_MARKET_SYMBOLS,
   AUSTRALIA_DESK_RESOURCE_SYMBOLS,
+  type AustraliaDeskDataMode,
   type AustraliaDeskObservation,
   type AustraliaMarketDeskSnapshot,
 } from '@/services/australia-market-desk';
@@ -103,6 +104,7 @@ function buildFallbackSessionEvidence(
       `Trading-hours and calendar sources last checked ${ASX_MARKET_HOURS_METADATA.sourceCheckedAt}.`,
       `Calendar source: ${ASX_MARKET_HOURS_METADATA.calendarSourceUrl}`,
       'The model evaluation time is not a live ASX schedule retrieval time.',
+      'Confidence is a heuristic policy label, not a calibrated probability.',
       status.calendarVerified
         ? 'The local ASX calendar year is verified.'
         : 'The local weekday calendar year is unverified; session state is intentionally unknown.',
@@ -169,8 +171,33 @@ function formatPrice(value: number | null): string {
   return value.toLocaleString(undefined, { maximumFractionDigits: 2 });
 }
 
+function breakerModeLabel(mode: AustraliaDeskDataMode, offline: boolean): string {
+  const label = humanize(mode);
+  return offline ? `${label} Offline` : label;
+}
+
+function deliveryModeLabel(observation: AustraliaDeskObservation | null): string {
+  if (!observation) return 'Unknown mode';
+  const displayed = breakerModeLabel(observation.dataMode, observation.offline);
+  const latest = breakerModeLabel(
+    observation.latestAttemptMode,
+    observation.latestAttemptOffline,
+  );
+  return latest === displayed ? displayed : `${displayed} · Latest attempt ${latest}`;
+}
+
+function latestAttemptDegraded(observation: AustraliaDeskObservation): boolean {
+  return observation.latestAttemptMode === 'unavailable'
+    || observation.latestAttemptOffline
+    || (
+      observation.dataMode === 'cached'
+      && observation.latestAttemptMode === 'live'
+    );
+}
+
 function observationTone(observation: AustraliaDeskObservation): string {
   if (observation.quote === null) return '#e74c3c';
+  if (latestAttemptDegraded(observation)) return '#e67e22';
   if (observation.dataMode === 'cached' || observation.provenance.freshness === 'stale') return '#f39c12';
   if (observation.dataMode === 'unavailable' || observation.offline) return '#e67e22';
   if (observation.provenance.freshness === 'future' || observation.provenance.freshness === 'invalid') return '#e74c3c';
@@ -183,17 +210,11 @@ function freshnessBasisLabel(evidence: FinanceObservationProvenanceAssessment): 
   return 'no clock';
 }
 
-function dataModeLabel(observation: AustraliaDeskObservation | null): string {
-  if (!observation) return 'Unknown mode';
-  const mode = humanize(observation.dataMode);
-  return observation.offline ? `${mode} · Offline` : mode;
-}
-
 function groupEvidenceLabel(
   observations: readonly AustraliaDeskObservation[] | undefined,
   provenanceLabel: string,
 ): string {
-  return `${dataModeLabel(representativeObservation(observations))} · ${provenanceLabel}`;
+  return `${deliveryModeLabel(representativeObservation(observations))} · ${provenanceLabel}`;
 }
 
 function observationCard(observation: AustraliaDeskObservation): string {
@@ -203,7 +224,7 @@ function observationCard(observation: AustraliaDeskObservation): string {
   const changeLabel = change === null || change === undefined || !Number.isFinite(change)
     ? 'Change unavailable'
     : `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`;
-  const sourceState = `${dataModeLabel(observation)} · ${humanize(observation.provenance.freshness)} · ${freshnessBasisLabel(observation.provenance)} · ${humanize(observation.provenance.sourceClass)}`;
+  const sourceState = `${deliveryModeLabel(observation)} · ${humanize(observation.provenance.freshness)} · ${freshnessBasisLabel(observation.provenance)} · ${humanize(observation.provenance.sourceClass)}`;
   const flags = observation.provenance.flags
     .filter((flag) => [
       'unverified-access-method',
@@ -222,7 +243,7 @@ function observationCard(observation: AustraliaDeskObservation): string {
         <div style="font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.06em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(observation.label)}</div>
         <div style="font-size:9px;color:var(--text-dim);margin-top:1px">${escapeHtml(observation.symbol)}</div>
       </div>
-      <span style="font-size:8px;color:${tone};font-weight:700;text-transform:uppercase;white-space:nowrap">${escapeHtml(sourceState)}</span>
+      <span style="font-size:8px;color:${tone};font-weight:700;text-transform:uppercase;text-align:right">${escapeHtml(sourceState)}</span>
     </div>
     <div style="font-size:21px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;margin-top:6px">${escapeHtml(price)}</div>
     <div style="font-size:10px;color:${tone};font-weight:600;margin-top:2px">${escapeHtml(changeLabel)}</div>
