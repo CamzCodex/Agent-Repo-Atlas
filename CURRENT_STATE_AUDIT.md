@@ -40,7 +40,7 @@ The stock runtime is a separate MIT-licensed backend with immutable archives, ty
 | #10 adversarial v4 | Open draft; head `b9568b8` | Body says four commits but branch is seven ahead; current head has no workflow run | Keep draft; update only after fixes land and exact-head gate runs |
 | #11 v4 validation marker | Closed without merge; head `63c7caf` | Workflow run `29881947809` succeeded, but validated target `1897f82`, not current PR #10 or #12 | Prior target claim corrected from `0295244` using the job log |
 | #12 trust defects and baseline | Open draft; implementation baseline `1510c32` | Four bounded fixes and the required architecture/governance baseline; no Actions run | Keep draft until complete exact-head gate is green |
-| #13 reusable exact-head gate | Open draft; head `0f73263` on the `main` lineage | Removes the hard-coded v4 target while retaining owner-only, same-repo and read-only controls | Review and explicitly approve before merge; then validate #12 |
+| #13 reusable exact-head gate | Open draft; head `cc93d25` on the `main` lineage | Removes the hard-coded v4 target while retaining owner-only, same-repo, read-only and non-persisted-credential controls | Review and explicitly approve before merge; then validate #12 |
 
 ## Existing strengths confirmed
 
