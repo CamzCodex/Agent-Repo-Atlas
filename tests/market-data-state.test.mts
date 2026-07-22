@@ -4,6 +4,9 @@ import { beforeEach, describe, it } from 'node:test';
 import type { MarketData } from '../src/types/index.ts';
 import { buildAustraliaMarketDeskSnapshot } from '../src/services/australia-market-desk.ts';
 import {
+  beginMarketRequest,
+  completeMarketRequest,
+  getLatestMarketRequestToken,
   getLatestMarketRequestState,
   getMarketDataDeliveryState,
   getMarketDataState,
@@ -54,12 +57,19 @@ describe('market quote array delivery-state metadata', () => {
     assert.equal(getMarketDataState(data), null);
     assert.equal(getMarketDataDeliveryState(data), null);
 
+    const requestToken = completeMarketRequest(
+      beginMarketRequest(MARKET_SYMBOLS, { requestId: 'request-1', startedAtMs: 100 }),
+      { mode: 'unavailable', timestamp: null, offline: false },
+      200,
+    );
+
     markMarketDataState(
       data,
       { mode: 'cached', timestamp: 1_000, offline: true },
       {
         latestAttemptState: { mode: 'unavailable', timestamp: null, offline: false },
         requestSymbols: MARKET_SYMBOLS,
+        requestToken,
       },
     );
 
@@ -68,6 +78,14 @@ describe('market quote array delivery-state metadata', () => {
       dataState: { mode: 'cached', timestamp: 1_000, offline: true },
       latestAttemptState: { mode: 'unavailable', timestamp: null, offline: false },
       requestKey: 'BHP.AX,CBA.AX,CSL.AX,^AXJO',
+      requestToken: {
+        requestId: 'request-1',
+        requestKey: 'BHP.AX,CBA.AX,CSL.AX,^AXJO',
+        invocationSequence: 1,
+        startedAtMs: 100,
+        completedAtMs: 200,
+        state: { mode: 'unavailable', timestamp: null, offline: false },
+      },
     });
     assert.deepEqual(
       getLatestMarketRequestState([...MARKET_SYMBOLS].reverse()),
@@ -79,6 +97,8 @@ describe('market quote array delivery-state metadata', () => {
     delivery.dataState.mode = 'live';
     delivery.latestAttemptState.mode = 'live';
     delivery.requestKey = null;
+    assert.ok(delivery.requestToken?.state);
+    delivery.requestToken.state.mode = 'live';
     const displayedOnly = getMarketDataState(data);
     assert.deepEqual(displayedOnly, { mode: 'cached', timestamp: 1_000, offline: true });
     displayedOnly!.mode = 'live';
@@ -88,9 +108,62 @@ describe('market quote array delivery-state metadata', () => {
         dataState: { mode: 'cached', timestamp: 1_000, offline: true },
         latestAttemptState: { mode: 'unavailable', timestamp: null, offline: false },
         requestKey: 'BHP.AX,CBA.AX,CSL.AX,^AXJO',
+        requestToken: {
+          requestId: 'request-1',
+          requestKey: 'BHP.AX,CBA.AX,CSL.AX,^AXJO',
+          invocationSequence: 1,
+          startedAtMs: 100,
+          completedAtMs: 200,
+          state: { mode: 'unavailable', timestamp: null, offline: false },
+        },
       },
       'consumer mutation must not rewrite stored evidence state',
     );
+  });
+
+  it('keeps invocation order authoritative when an older request completes last', () => {
+    const older = beginMarketRequest(MARKET_SYMBOLS, {
+      requestId: 'older',
+      startedAtMs: 100,
+    });
+    const newer = beginMarketRequest(MARKET_SYMBOLS, {
+      requestId: 'newer',
+      startedAtMs: 200,
+    });
+
+    completeMarketRequest(
+      newer,
+      { mode: 'live', timestamp: 250, offline: false },
+      300,
+    );
+    completeMarketRequest(
+      older,
+      { mode: 'cached', timestamp: 150, offline: true },
+      400,
+    );
+
+    assert.deepEqual(getLatestMarketRequestToken([...MARKET_SYMBOLS].reverse()), {
+      requestId: 'newer',
+      requestKey: 'BHP.AX,CBA.AX,CSL.AX,^AXJO',
+      invocationSequence: 2,
+      startedAtMs: 200,
+      completedAtMs: 300,
+      state: { mode: 'live', timestamp: 250, offline: false },
+    });
+  });
+
+  it('does not let an older completion replace a newer in-flight invocation', () => {
+    const older = beginMarketRequest(MARKET_SYMBOLS, { requestId: 'older', startedAtMs: 100 });
+    const newer = beginMarketRequest(MARKET_SYMBOLS, { requestId: 'newer', startedAtMs: 200 });
+
+    completeMarketRequest(
+      older,
+      { mode: 'unavailable', timestamp: null, offline: false },
+      300,
+    );
+
+    assert.deepEqual(getLatestMarketRequestToken(MARKET_SYMBOLS), newer);
+    assert.equal(getLatestMarketRequestState(MARKET_SYMBOLS), null);
   });
 
   it('prefers displayed-data timestamps and exposes a failed latest refresh separately', () => {

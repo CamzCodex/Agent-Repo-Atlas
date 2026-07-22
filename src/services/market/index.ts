@@ -24,7 +24,8 @@ import { createCircuitBreaker, type BreakerDataState } from '@/utils/circuit-bre
 import { getHydratedData } from '@/services/bootstrap';
 import { MarketServiceClient } from '@/services/generated-rpc-clients';
 import {
-  markLatestMarketRequestState,
+  beginMarketRequest,
+  completeMarketRequest,
   markMarketDataState,
 } from '@/services/market-data-state';
 
@@ -126,17 +127,24 @@ export async function fetchMultipleStocks(
   }
   const allSymbolStrings = [...symbolMetaMap.keys()];
   const setKey = symbolSetKey(allSymbolStrings);
+  const requestToken = beginMarketRequest(allSymbolStrings);
   let breakerState: BreakerDataState = { ...UNAVAILABLE_DATA_STATE };
 
-  const resp = await stockBreaker.execute(async () => {
-    return client.listMarketQuotes({ symbols: allSymbolStrings });
-  }, emptyStockFallback, {
-    cacheKey: setKey,
-    shouldCache: (r) => r.quotes.length > 0,
-    onDataState: (state) => { breakerState = state; },
-  });
+  let resp: ListMarketQuotesResponse;
+  try {
+    resp = await stockBreaker.execute(async () => {
+      return client.listMarketQuotes({ symbols: allSymbolStrings });
+    }, emptyStockFallback, {
+      cacheKey: setKey,
+      shouldCache: (r) => r.quotes.length > 0,
+      onDataState: (state) => { breakerState = state; },
+    });
+  } catch (error) {
+    completeMarketRequest(requestToken, UNAVAILABLE_DATA_STATE);
+    throw error;
+  }
   const latestAttemptState = { ...breakerState };
-  markLatestMarketRequestState(allSymbolStrings, latestAttemptState);
+  const completedRequestToken = completeMarketRequest(requestToken, latestAttemptState);
 
   const results = resp.quotes.map((q) => {
     const trimmed = q.symbol.trim();
@@ -147,6 +155,7 @@ export async function fetchMultipleStocks(
   markMarketDataState(results, breakerState, {
     latestAttemptState,
     requestSymbols: allSymbolStrings,
+    requestToken: completedRequestToken,
   });
   if (results.length > 0) {
     options.onBatch?.(results);
@@ -167,6 +176,7 @@ export async function fetchMultipleStocks(
     markMarketDataState(data, displayedState, {
       latestAttemptState,
       requestSymbols: allSymbolStrings,
+      requestToken: completedRequestToken,
     });
   }
 
@@ -206,17 +216,24 @@ export async function fetchCommodityQuotes(
   const symbols = commodities.map((c) => c.symbol);
   const meta = new Map(commodities.map((c) => [c.symbol, c]));
   const cacheKey = [...symbols].sort().join(',');
+  const requestToken = beginMarketRequest(symbols);
   let breakerState: BreakerDataState = { ...UNAVAILABLE_DATA_STATE };
 
-  const resp = await commodityBreaker.execute(async () => {
-    return client.listCommodityQuotes({ symbols });
-  }, emptyCommodityFallback, {
-    cacheKey,
-    shouldCache: (r: ListCommodityQuotesResponse) => r.quotes.length > 0,
-    onDataState: (state) => { breakerState = state; },
-  });
+  let resp: ListCommodityQuotesResponse;
+  try {
+    resp = await commodityBreaker.execute(async () => {
+      return client.listCommodityQuotes({ symbols });
+    }, emptyCommodityFallback, {
+      cacheKey,
+      shouldCache: (r: ListCommodityQuotesResponse) => r.quotes.length > 0,
+      onDataState: (state) => { breakerState = state; },
+    });
+  } catch (error) {
+    completeMarketRequest(requestToken, UNAVAILABLE_DATA_STATE);
+    throw error;
+  }
   const latestAttemptState = { ...breakerState };
-  markLatestMarketRequestState(symbols, latestAttemptState);
+  const completedRequestToken = completeMarketRequest(requestToken, latestAttemptState);
 
   const results: MarketData[] = resp.quotes.map((q) => {
     const m = meta.get(q.symbol);
@@ -233,6 +250,7 @@ export async function fetchCommodityQuotes(
   markMarketDataState(results, breakerState, {
     latestAttemptState,
     requestSymbols: symbols,
+    requestToken: completedRequestToken,
   });
   if (results.length > 0) options.onBatch?.(results);
   return {
