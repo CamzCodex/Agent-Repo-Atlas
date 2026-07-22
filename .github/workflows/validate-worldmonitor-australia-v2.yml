@@ -48,21 +48,29 @@ jobs:
       - name: Run secret-safe diagnostics
         run: npm run camz:diagnostics -- --strict
 
-      - name: Check Australia desk files
+      - name: Check Australia desk and cache-evidence files
         run: >-
           npx biome check
           shared/stocks.json
           scripts/shared/stocks.json
           src/shared/asx-market-hours.ts
+          src/utils/circuit-breaker.ts
+          src/services/market/index.ts
+          src/services/market-data-state.ts
           src/services/australia-market-desk.ts
           src/services/australia-market-context-export.ts
           src/services/mission-presets.ts
           src/components/australia-macro-context.ts
           src/components/MacroTilesPanel.ts
+          e2e/mission-presets.spec.ts
           tests/asx-market-hours-browser-parity.test.mts
           tests/australia-market-desk.test.mts
           tests/australia-macro-context.test.mts
           tests/australia-market-context-export.test.mts
+          tests/australia-mission-extension.test.mts
+          tests/circuit-breaker-data-state.test.mts
+          tests/market-data-state.test.mts
+          tests/market-fetch-data-state-wiring.test.mts
           tests/macro-tiles-china-ui.test.mts
 
       - name: Test ASX session and browser parity
@@ -73,6 +81,20 @@ jobs:
 
       - name: Test finance observation provenance
         run: npx tsx --test tests/finance-observation-provenance.test.mts
+
+      - name: Test stable mission core and Australia extension
+        run: >-
+          npx tsx --test
+          tests/mission-presets.test.mts
+          tests/australia-mission-extension.test.mts
+
+      - name: Test breaker and market cache evidence
+        run: >-
+          npx tsx --test
+          tests/circuit-breaker-data-state.test.mts
+          tests/market-data-state.test.mts
+          tests/market-fetch-data-state-wiring.test.mts
+          tests/market-quote-cache-keying.test.mjs
 
       - name: Test Australia desk model and retrieval clocks
         run: npx tsx --test tests/australia-market-desk.test.mts
