@@ -16,12 +16,12 @@ git clone --branch camz/local-foundation --single-branch \
   https://github.com/CamzCodex/Agent-Repo-Atlas.git \
   worldmonitor-camz
 cd worldmonitor-camz
+git config pull.ff only
 ```
 
-Keep the public upstream available for comparison:
+Keep the Camz repository as `origin` and add the public project for comparison:
 
 ```bash
-git remote rename origin camz
 git remote add upstream https://github.com/koala73/worldmonitor.git
 git remote -v
 ```
@@ -40,7 +40,23 @@ node --version
 
 Equivalent version managers such as `fnm`, `asdf`, or Volta are fine. The active major must be 24 for the supported local baseline.
 
-## 3. Run secret-safe diagnostics
+To update an existing checkout without accepting an accidental merge commit:
+
+```bash
+git switch camz/local-foundation
+git pull --ff-only origin camz/local-foundation
+```
+
+## 3. Install and run secret-safe diagnostics
+
+The supported one-command setup is:
+
+```bash
+npm run camz:setup
+```
+
+It performs a deterministic `npm ci` and then runs the strict local readiness
+diagnostic. It does not create or print provider credentials.
 
 Before installing anything:
 
@@ -64,14 +80,17 @@ node scripts/camz-local-diagnostics.mjs --strict
 
 `--strict` remains non-zero until dependencies are installed. Missing Docker and optional provider keys are warnings, not hard failures.
 
-## 4. Install dependencies
+## 4. Verify the accepted local build
 
 ```bash
-npm ci
-npm run camz:diagnostics -- --strict
+npm run camz:verify
 ```
 
-For a test-only worktree that must skip lifecycle scripts, upstream also provides:
+This sequential gate checks the Camz/ASX foundation, neutral context producer,
+local operations tooling, TypeScript and the Finance production build. Heavy
+checks stay sequential to avoid memory pressure.
+
+For a test-only worktree that must skip lifecycle scripts, the repository also provides:
 
 ```bash
 npm run worktree:bootstrap:test-only
@@ -79,14 +98,16 @@ npm run worktree:bootstrap:test-only
 
 Use `npm ci` for the normal local application because it honours the repository lockfile and completes the upstream post-install setup.
 
-## 5. Create a local environment file
+## 5. Optional provider environment
 
 The base dashboard starts without provider credentials. Create `.env.local` only for the feeds you intend to use:
 
 ```bash
-touch .env.local
-chmod 600 .env.local
+cp .env.example .env.local
 ```
+
+On Windows PowerShell, use `Copy-Item .env.example .env.local`. Delete the
+unused values or leave them empty; only configured keys enable their provider.
 
 Useful optional groups include:
 
@@ -106,23 +127,30 @@ Never commit `.env`, `.env.local`, provider credentials, broker credentials, pri
 
 For sensitive analysis, prefer an OpenAI-compatible local endpoint such as Ollama through `LLM_API_URL`. A desktop or local-AI configuration does not by itself prove every data request stays local; review the relevant provider path before using confidential material.
 
-## 6. Validate the Camz foundation
+## 6. Start and smoke-test the Finance cockpit
 
-Run focused tests first:
-
-```bash
-npm run test:camz-foundation
-```
-
-Then run the upstream gates sequentially:
+In terminal 1:
 
 ```bash
-npm run typecheck
-npm run test:data
-npm run build:finance
+npm run camz:start
 ```
 
-The focused suite covers:
+In terminal 2:
+
+```bash
+npm run camz:smoke
+```
+
+Open `http://127.0.0.1:3000`, choose **Mission → Australia / ASX Desk**, and
+keep the startup terminal open while using the dashboard. The smoke command
+verifies that the dashboard HTML and compiled entry module are both reachable.
+In Vite mode the absent Docker sidecar is an expected warning.
+
+The local Vite watcher deliberately ignores tests, documentation, SDKs and
+other non-runtime trees. This prevents large checkouts from exhausting Linux
+watcher limits without reducing application hot reload coverage.
+
+The focused verification covers:
 
 - ASX cash-equity phases in `Australia/Sydney`;
 - Sydney/Adelaide daylight-saving behaviour;
@@ -131,17 +159,66 @@ The focused suite covers:
 - finance observation provenance, age, source class, transformation, and confidence flags;
 - proof that local diagnostics do not expose secret values.
 
-## 7. Start the finance variant
+## 7. Export trusted Runtime context
+
+Write a neutral v1 payload to the gitignored `tmp/` directory:
 
 ```bash
-npm run dev:finance
+npm run camz:context:export
 ```
 
-Open the Vite URL printed in the terminal, normally `http://localhost:3000`.
+The command writes `tmp/worldmonitor-context-v1.json` atomically with private
+file permissions where supported. It records the exact producer commit and
+exports the official deterministic ASX-session context. Timing-uncertain
+Yahoo-derived quotes remain excluded. Use `--output <path>` to place the file
+beside a local Stock Runtime checkout, and `--at <ISO-time>` for a reproducible
+test vector.
+
+## 8. Full private self-hosted stack
+
+```bash
+npm run camz:stack:init
+npm run camz:stack:up
+npm run camz:stack:status
+npm run camz:stack:smoke
+```
+
+`camz:stack:init` creates or repairs the three required local-only secrets in
+`.env` without overwriting configured values and without printing secret
+values. The Compose stack then starts the application, authenticated AIS relay,
+Redis and the authenticated Redis REST proxy.
+
+Populate available data after the containers are healthy:
+
+```bash
+npm run camz:stack:seed
+npm run camz:stack:smoke
+```
+
+The Node-based seeder runner is cross-platform. It runs the same
+`scripts/seed-*.mjs` set sequentially, skips providers whose optional keys are
+absent, and applies a 30-minute per-seeder timeout while leaving bundle seeders
+to their own internal section timeouts. Use `npm run camz:stack:seed -- --list`
+to preview the set or `--match earthquakes` to run a bounded subset.
+
+Operational commands:
+
+```bash
+npm run camz:stack:logs
+npm run camz:stack:status
+npm run camz:stack:down
+```
+
+Open `http://127.0.0.1:3000`. The full-stack smoke checks the dashboard, built
+entry asset, API sidecar and Redis-backed data-health path. `DEGRADED` is a
+warning until the expected providers have produced data; `REDIS_DOWN` is
+always a failure. After configuring every provider expected in your operating
+profile, use `npm run camz:stack:smoke -- --require-data-ready` as the stricter
+acceptance check.
 
 The first run should be treated as an analyst cockpit, not an execution terminal. Keep broker/order entry and authoritative market data in their existing systems.
 
-## 8. Optional: restore upstream GitHub workflows locally
+## 9. Optional: restore upstream GitHub workflows locally
 
 The connected GitHub App lacks the special permission required to write `.github/workflows`. The vendor mirror therefore preserves upstream workflow files byte-for-byte under `.github/upstream-workflows-disabled`.
 
@@ -161,11 +238,11 @@ The command refuses to overwrite an existing `.github/workflows` directory. `--f
 
 Do not push the restored path through the current connected GitHub App; GitHub will reject it until the App receives workflow-write permission.
 
-## 9. Full self-hosted stack
+## 10. Deployment boundaries
 
-The Vite finance interface is much lighter than the complete data stack. Full self-hosting additionally needs Docker/Podman, Redis, the Redis REST proxy, relay services, generated secrets, and scheduled seeders.
-
-Start with the browser application. Add the full stack only when there is a concrete need for private feeds, durable local cache control, a local relay, or custom seeders.
+The Vite Finance interface is the fastest analyst workflow. The Compose stack
+adds private cache ownership, authenticated relay services and local seeding.
+It does not turn delayed or undocumented data into licensed exchange data.
 
 Before exposing any instance to the internet:
 
@@ -176,7 +253,7 @@ Before exposing any instance to the internet:
 - document source and redistribution terms for every production feed;
 - meet AGPL source-availability obligations for a modified public deployment.
 
-## 10. Finance trust rules
+## 11. Finance trust rules
 
 The Camz enhancement direction is deliberately evidence-first:
 
@@ -188,4 +265,9 @@ The Camz enhancement direction is deliberately evidence-first:
 - stale, future-dated, malformed, and unverified-calendar states fail visibly;
 - no automatic trading or order routing is introduced.
 
-The next integration step is an opt-in Australia/ASX workspace using these session and provenance primitives, followed by a read-only context adapter for `Stock-Market-Agent-Runtime`.
+The Australia/ASX workspace and neutral `1.0.0` read-only context producer are
+implemented. The matching clean-room `Stock-Market-Agent-Runtime` consumer is
+locally validated on its draft PR but remains unmerged while private-repository
+GitHub Actions are unable to start. Until that consumer is accepted, local
+World Monitor is operational as an intelligence cockpit and context producer,
+but automated Runtime ingestion must be described as pending rather than live.
