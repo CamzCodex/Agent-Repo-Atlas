@@ -1,7 +1,9 @@
 # World Monitor Context Schema
 
-Status: Draft design for neutral repository  
-Version: `0.1.0`  
+Status: Draft design for neutral repository
+
+Version: `0.1.0`
+
 Last reviewed: 2026-07-22
 
 This document is an independent data-contract design. It does not authorize copying AGPL implementation into Stock Runtime. The normative JSON Schema and test vectors should be created in the proposed neutral `CamzCodex/worldmonitor-context-spec` repository after ownership and licence approval.

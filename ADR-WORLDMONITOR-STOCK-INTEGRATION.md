@@ -1,7 +1,9 @@
 # ADR: World Monitor to Stock Runtime Integration
 
-Status: Proposed  
-Date: 2026-07-22  
+Status: Proposed
+
+Date: 2026-07-22
+
 Decision owner: Cameron / designated integration maintainer
 
 ## Context
