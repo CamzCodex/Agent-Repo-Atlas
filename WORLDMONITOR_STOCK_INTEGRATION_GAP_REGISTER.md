@@ -1,0 +1,30 @@
+# World Monitor Stock Integration Gap Register
+
+Last reviewed: 2026-07-22
+
+| ID | Severity | System | Finding | Evidence | User/investment impact | Current control | Required correction | Owner | Dependencies | Validation | Status |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| WM-001 | High | World Monitor | Current PR #10 head was never exactly validated | Job log proves run `29881947809` targeted `1897f82`; PR head is `b9568b8` | False green/unsafe merge | Draft PR | Validate final published SHA | World Monitor maintainer | WP1 fixes | Workflow target and head equality | Open |
+| WM-002 | High | Repository governance | World Monitor lineage is disconnected from default `main` | GitHub compare reports no common ancestor | CI/security/release ambiguity | Vendor and Camz branches | Migrate only from a known-green SHA | Repo owner | Exact-head green | Provenance and ancestry audit | Open |
+| WM-003 | High | Mission presets | Variant-incompatible programmatic apply was test-only, not implemented | `b9568b8` source lacked guard while test expected it | Unsupported workspace state | Picker filtering | Fail closed in core function | World Monitor | None | full/finance accept; four variants reject | Fixed on trust branch |
+| WM-004 | High | Macro Tiles | FRED/Eurostat/China whole-panel writes lacked newest-request guard | State mutations occurred after unguarded `Promise.allSettled` | Older data can overwrite newer state | AU subflow epoch only | Whole-panel gate across success/error/mission/destroy | World Monitor | Panel lifecycle | Concurrency and source-wiring tests | Fixed on trust branch |
+| WM-005 | High | Market state | Latest attempt registry used completion order | Mark occurred after breaker completion | Wrong latest-attempt provenance | Per-array state | Explicit invocation token and monotonic sequence | World Monitor | Market services | Older-completes-last test | Fixed on trust branch |
+| WM-006 | Medium | Clipboard | Component-local Clipboard promise could hang | Direct awaited `writeText()` with no timeout | Frozen export feedback and teardown write | Fallback textarea | Shared timed, cancellable, single-flight helper | World Monitor | Panel lifecycle | rejection/timeout/cancel/destroy tests | Fixed on trust branch |
+| WM-007 | Critical | Integration | No neutral contract or runtime provider exists | Runtime `main` has no WM adapter | Integration is non-operational | Manual JSON copy only | Neutral schema + clean-room provider | Cross-repo integration lead | Rights decision | End-to-end contract test | Open |
+| WM-008 | High | Data rights | Yahoo-derived AU quotes are undocumented/timing-uncertain | Australia desk labels path undocumented/delayed | Misleading or unlawful redistribution | Internal-research-only control | Licensed replacement and rights registry | Data/licensing owner | Procurement | Entitlement/export tests | Open |
+| WM-009 | High | Historical data | No revision-preserving observation/event history | Hot cache/current state dominates | Irreproducible recommendations and look-ahead bias | Stock run archive captures outputs | Provider runs, raw hashes and revisions | Data platform | Schema and storage ADR | Replay/revision tests | Open |
+| WM-010 | High | Security | External text can contaminate downstream agent prompts | No cross-system injection isolation contract | Recommendation manipulation | Existing sanitizers and adversarial role | Treat text as data; isolate and validate AI outputs | Security owner | Neutral contract | Prompt-injection test vectors | Open |
+| WM-011 | High | Entity resolution | Issuer/event/sanctions joins lack bounded match semantics | No neutral entity mapping contract | False exposure or sanctions escalation | Human review only | Stable IDs, match method/confidence and dissent | Data platform | Entity registry | False-positive corpus | Open |
+| WM-012 | High | ASX breadth | Universe, point-in-time membership and actions are incomplete | Only seeded index/bellwethers | Survivorship-biased breadth | Breadth panels not claimed as licensed AU breadth | Block breadth until prerequisites pass | Market-data owner | Licensed ASX boundary | Coverage/exclusion report | Open |
+| WM-013 | Medium | Calendar | 2027 ASX calendar is unverified | Session helper returns unknown outside coverage | Session context degrades | Fail-to-unknown | Verify official 2027 calendar before use | Provider owner | Official schedule | Calendar parity tests | Open |
+| WM-014 | Medium | PR hygiene | Superseded PRs #8/#9/#11 remain open | Live PR state | Reviewer confusion and stale evidence | Descriptive PR bodies | Close without merge; update #10 after publication | Repo maintainer | None | PR list review | Open |
+| WM-015 | High | Operations | Provider health lacks AU-specific manifest/run/rejection coverage | No provider register/runtime metrics | Silent coverage erosion | Generic freshness/health | Provider manifests and zero-tolerance invariants | Operations owner | Provider framework | Outage/schema drift drills | Open |
+| WM-016 | Medium | Performance | Richer sources may increase dashboard and agent latency | Existing full build already has large chunks | Slow/stale context delivery | Cache tiers and lazy chunks | Budgets, async export and payload limits | Performance owner | Contract sizing | Load and payload tests | Open |
+
+## Refuted findings
+
+| ID | Claim tested | Result | Evidence |
+| --- | --- | --- | --- |
+| RF-001 | World Monitor currently performs automated trading | Refuted | No broker/order/portfolio path in Australia export; machine controls explicitly prohibit it |
+| RF-002 | A new map/panel/provider platform is required | Refuted | Mature upstream architecture already supplies these primitives |
+| RF-003 | Successful run `29881947809` makes current PR #10 green | Refuted | Run target and PR head differ |

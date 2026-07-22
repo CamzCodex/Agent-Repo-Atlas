@@ -6,7 +6,8 @@ const source = readFileSync(new URL('../src/components/MacroTilesPanel.ts', impo
 
 describe('MacroTilesPanel China launch surface', () => {
   it('keeps China behind the explicit launch-ready gate and hydrates both seed keys', () => {
-    assert.match(source, /type Tab = 'us' \| 'eu' \| 'cn'/);
+    assert.match(source, /type Tab = 'au' \| 'us' \| 'eu' \| 'cn'/);
+    assert.match(source, /const base: Tab\[\] = isChinaLaunchReady\(this\._china\) \? \['us', 'eu', 'cn'\] : \['us', 'eu'\]/);
     assert.match(source, /getHydratedData\('chinaMacro'\)/);
     assert.match(source, /getHydratedData\('chinaReleaseCalendar'\)/);
     assert.match(source, /launchReady === true/);

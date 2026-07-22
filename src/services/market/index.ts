@@ -6,13 +6,28 @@
  */
 
 import { getRpcBaseUrl } from '@/services/rpc-client';
-import type { ListMarketQuotesResponse, ListCommodityQuotesResponse, GetSectorSummaryResponse, ListCryptoQuotesResponse, ListCryptoSectorsResponse, CryptoSector, ListDefiTokensResponse, ListAiTokensResponse, ListOtherTokensResponse, MarketQuote as ProtoMarketQuote, CryptoQuote as ProtoCryptoQuote } from '@/generated/client/worldmonitor/market/v1/service_client';
+import type {
+  ListMarketQuotesResponse,
+  ListCommodityQuotesResponse,
+  GetSectorSummaryResponse,
+  ListCryptoQuotesResponse,
+  ListCryptoSectorsResponse,
+  CryptoSector,
+  ListDefiTokensResponse,
+  ListAiTokensResponse,
+  ListOtherTokensResponse,
+  MarketQuote as ProtoMarketQuote,
+  CryptoQuote as ProtoCryptoQuote,
+} from '@/generated/client/worldmonitor/market/v1/service_client';
 import type { MarketData, CryptoData, TokenData } from '@/types';
-import { createCircuitBreaker } from '@/utils/circuit-breaker';
+import { createCircuitBreaker, type BreakerDataState } from '@/utils/circuit-breaker';
 import { getHydratedData } from '@/services/bootstrap';
 import { MarketServiceClient } from '@/services/generated-rpc-clients';
-
-// ---- Client + Circuit Breakers ----
+import {
+  beginMarketRequest,
+  completeMarketRequest,
+  markMarketDataState,
+} from '@/services/market-data-state';
 
 const client = new MarketServiceClient(getRpcBaseUrl(), { fetch: (...args: Parameters<typeof fetch>) => globalThis.fetch(...args) });
 const MARKET_QUOTES_CACHE_TTL_MS = 5 * 60 * 1000;
@@ -33,8 +48,7 @@ const emptyCryptoSectorsFallback: ListCryptoSectorsResponse = { sectors: [] };
 const emptyDefiTokensFallback: ListDefiTokensResponse = { tokens: [] };
 const emptyAiTokensFallback: ListAiTokensResponse = { tokens: [] };
 const emptyOtherTokensFallback: ListOtherTokensResponse = { tokens: [] };
-
-// ---- Proto -> legacy adapters ----
+const UNAVAILABLE_DATA_STATE: BreakerDataState = { mode: 'unavailable', timestamp: null, offline: false };
 
 function toMarketData(proto: ProtoMarketQuote, meta?: { name?: string; display?: string }): MarketData {
   return {
@@ -47,6 +61,13 @@ function toMarketData(proto: ProtoMarketQuote, meta?: { name?: string; display?:
   };
 }
 
+function cloneMarketData(data: readonly MarketData[]): MarketData[] {
+  return data.map((entry) => ({
+    ...entry,
+    ...(entry.sparkline ? { sparkline: [...entry.sparkline] } : {}),
+  }));
+}
+
 function toCryptoData(proto: ProtoCryptoQuote): CryptoData {
   return {
     name: proto.name,
@@ -57,58 +78,73 @@ function toCryptoData(proto: ProtoCryptoQuote): CryptoData {
   };
 }
 
-// ========================================================================
-// Exported types (preserving legacy interface)
-// ========================================================================
-
 export interface MarketFetchResult {
   data: MarketData[];
   skipped?: boolean;
   reason?: string;
   rateLimited?: boolean;
+  /** State associated with the data returned to this caller. */
+  dataState?: BreakerDataState;
+  /** State of the newest fetch invocation before any last-good fallback. */
+  latestAttemptState?: BreakerDataState;
 }
 
-// ========================================================================
-// Stocks -- replaces fetchMultipleStocks + fetchStockQuote
-// ========================================================================
+interface LastSuccessfulMarketResult {
+  data: MarketData[];
+  timestamp: number;
+}
 
-const lastSuccessfulByKey = new Map<string, MarketData[]>();
+const MAX_LAST_SUCCESSFUL_KEYS = 64;
+const lastSuccessfulByKey = new Map<string, LastSuccessfulMarketResult>();
 
 function symbolSetKey(symbols: string[]): string {
   return [...new Set(symbols.map((symbol) => symbol.trim()))].sort().join(',');
+}
+
+function rememberLastSuccessful(setKey: string, data: MarketData[], state: BreakerDataState): void {
+  const timestamp = state.timestamp;
+  if (timestamp === null || !Number.isFinite(timestamp)) return;
+  lastSuccessfulByKey.delete(setKey);
+  lastSuccessfulByKey.set(setKey, { data: cloneMarketData(data), timestamp });
+  while (lastSuccessfulByKey.size > MAX_LAST_SUCCESSFUL_KEYS) {
+    const oldest = lastSuccessfulByKey.keys().next().value;
+    if (oldest === undefined) break;
+    lastSuccessfulByKey.delete(oldest);
+  }
 }
 
 export async function fetchMultipleStocks(
   symbols: Array<{ symbol: string; name: string; display: string }>,
   options: { onBatch?: (results: MarketData[]) => void } = {},
 ): Promise<MarketFetchResult> {
-  // Preserve exact requested symbols for cache keys and request payloads so
-  // case-distinct instruments do not collapse into one cache entry.
   const symbolMetaMap = new Map<string, { symbol: string; name: string; display: string }>();
-  // Case-insensitive fallback: maps UPPER(symbol) → first requested candidate.
-  // "First wins" is intentional — assumes case-variants are the same instrument
-  // (e.g. btc-usd / BTC-USD both refer to the same asset). When the backend
-  // normalizes casing (e.g. returns "Btc-Usd"), we still recover metadata
-  // rather than silently dropping it as the old null-sentinel approach did.
   const uppercaseMetaMap = new Map<string, { symbol: string; name: string; display: string }>();
   for (const s of symbols) {
     const trimmed = s.symbol.trim();
     if (!symbolMetaMap.has(trimmed)) symbolMetaMap.set(trimmed, s);
-
     const upper = trimmed.toUpperCase();
-    if (!uppercaseMetaMap.has(upper)) {
-      uppercaseMetaMap.set(upper, s);
-    }
+    if (!uppercaseMetaMap.has(upper)) uppercaseMetaMap.set(upper, s);
   }
   const allSymbolStrings = [...symbolMetaMap.keys()];
   const setKey = symbolSetKey(allSymbolStrings);
+  const requestToken = beginMarketRequest(allSymbolStrings);
+  let breakerState: BreakerDataState = { ...UNAVAILABLE_DATA_STATE };
 
-  const resp = await stockBreaker.execute(async () => {
-    return client.listMarketQuotes({ symbols: allSymbolStrings });
-  }, emptyStockFallback, {
-    cacheKey: setKey,
-    shouldCache: (r) => r.quotes.length > 0,
-  });
+  let resp: ListMarketQuotesResponse;
+  try {
+    resp = await stockBreaker.execute(async () => {
+      return client.listMarketQuotes({ symbols: allSymbolStrings });
+    }, emptyStockFallback, {
+      cacheKey: setKey,
+      shouldCache: (r) => r.quotes.length > 0,
+      onDataState: (state) => { breakerState = state; },
+    });
+  } catch (error) {
+    completeMarketRequest(requestToken, UNAVAILABLE_DATA_STATE);
+    throw error;
+  }
+  const latestAttemptState = { ...breakerState };
+  const completedRequestToken = completeMarketRequest(requestToken, latestAttemptState);
 
   const results = resp.quotes.map((q) => {
     const trimmed = q.symbol.trim();
@@ -116,21 +152,41 @@ export async function fetchMultipleStocks(
     return toMarketData(q, meta);
   });
 
-  // Fire onBatch with whatever we got
+  markMarketDataState(results, breakerState, {
+    latestAttemptState,
+    requestSymbols: allSymbolStrings,
+    requestToken: completedRequestToken,
+  });
   if (results.length > 0) {
     options.onBatch?.(results);
+    rememberLastSuccessful(setKey, results, breakerState);
   }
 
-  if (results.length > 0) {
-    lastSuccessfulByKey.set(setKey, results);
+  const lastSuccessful = lastSuccessfulByKey.get(setKey);
+  const data = results.length > 0
+    ? results
+    : (lastSuccessful ? cloneMarketData(lastSuccessful.data) : []);
+  let displayedState = { ...breakerState };
+  if (results.length === 0 && lastSuccessful) {
+    displayedState = {
+      mode: 'cached',
+      timestamp: lastSuccessful.timestamp,
+      offline: breakerState.offline,
+    };
+    markMarketDataState(data, displayedState, {
+      latestAttemptState,
+      requestSymbols: allSymbolStrings,
+      requestToken: completedRequestToken,
+    });
   }
 
-  const data = results.length > 0 ? results : (lastSuccessfulByKey.get(setKey) || []);
   return {
     data,
     skipped: resp.finnhubSkipped || undefined,
     reason: resp.skipReason || undefined,
     rateLimited: resp.rateLimited || undefined,
+    dataState: { ...displayedState },
+    latestAttemptState,
   };
 }
 
@@ -143,24 +199,12 @@ export async function fetchStockQuote(
   return result.data[0] || { symbol, name, display, price: null, change: null };
 }
 
-// ========================================================================
-// Commodities -- uses listCommodityQuotes (reads market:commodities-bootstrap:v1)
-// ========================================================================
-
-/** Pre-warm the commodity circuit-breaker cache from bootstrap hydration data.
- *  Called from data-loader when bootstrap quotes are consumed so the SWR path
- *  has stale data to serve if the first live RPC call fails. */
 export function warmCommodityCache(quotes: ListCommodityQuotesResponse): void {
   const symbols = quotes.quotes.map((q) => q.symbol);
   const cacheKey = [...symbols].sort().join(',');
   commodityBreaker.recordSuccess(quotes, cacheKey);
 }
 
-/**
- * Pre-warm the sector circuit-breaker cache from bootstrap hydration data.
- * Valuations are included in the sector summary payload; clients pick them up
- * on the next breaker refresh (5-min TTL) without a separate cache-bust.
- */
 export function warmSectorCache(resp: GetSectorSummaryResponse): void {
   sectorBreaker.recordSuccess(resp);
 }
@@ -172,13 +216,24 @@ export async function fetchCommodityQuotes(
   const symbols = commodities.map((c) => c.symbol);
   const meta = new Map(commodities.map((c) => [c.symbol, c]));
   const cacheKey = [...symbols].sort().join(',');
+  const requestToken = beginMarketRequest(symbols);
+  let breakerState: BreakerDataState = { ...UNAVAILABLE_DATA_STATE };
 
-  const resp = await commodityBreaker.execute(async () => {
-    return client.listCommodityQuotes({ symbols });
-  }, emptyCommodityFallback, {
-    cacheKey,
-    shouldCache: (r: ListCommodityQuotesResponse) => r.quotes.length > 0,
-  });
+  let resp: ListCommodityQuotesResponse;
+  try {
+    resp = await commodityBreaker.execute(async () => {
+      return client.listCommodityQuotes({ symbols });
+    }, emptyCommodityFallback, {
+      cacheKey,
+      shouldCache: (r: ListCommodityQuotesResponse) => r.quotes.length > 0,
+      onDataState: (state) => { breakerState = state; },
+    });
+  } catch (error) {
+    completeMarketRequest(requestToken, UNAVAILABLE_DATA_STATE);
+    throw error;
+  }
+  const latestAttemptState = { ...breakerState };
+  const completedRequestToken = completeMarketRequest(requestToken, latestAttemptState);
 
   const results: MarketData[] = resp.quotes.map((q) => {
     const m = meta.get(q.symbol);
@@ -192,22 +247,23 @@ export async function fetchCommodityQuotes(
     };
   });
 
+  markMarketDataState(results, breakerState, {
+    latestAttemptState,
+    requestSymbols: symbols,
+    requestToken: completedRequestToken,
+  });
   if (results.length > 0) options.onBatch?.(results);
-  return { data: results };
+  return {
+    data: results,
+    dataState: { ...breakerState },
+    latestAttemptState,
+  };
 }
-
-// ========================================================================
-// Sectors -- uses getSectorSummary (reads market:sectors:v2)
-// ========================================================================
 
 export async function fetchSectors(): Promise<GetSectorSummaryResponse> {
   return sectorBreaker.execute(async () => {
     return client.getSectorSummary({ period: '' });
   }, emptySectorFallback, {
-    // Require sectors AND the valuations field to be present (not missing) so
-    // pre-PR payloads that lack the valuations key are never cached/replayed
-    // as stale data for the session. Empty object {} is OK (API may legitimately
-    // return zero valuations after Yahoo failures) but the key must exist.
     shouldCache: (r: GetSectorSummaryResponse) => {
       if (r.sectors.length === 0) return false;
       const withValuations = r as GetSectorSummaryResponse & { valuations?: unknown };
@@ -215,10 +271,6 @@ export async function fetchSectors(): Promise<GetSectorSummaryResponse> {
     },
   });
 }
-
-// ========================================================================
-// Crypto -- replaces fetchCrypto
-// ========================================================================
 
 let lastSuccessfulCrypto: CryptoData[] = [];
 
@@ -230,7 +282,7 @@ export async function fetchCrypto(): Promise<CryptoData[]> {
   }
 
   const resp = await cryptoBreaker.execute(async () => {
-    return client.listCryptoQuotes({ ids: [] }); // empty = all defaults
+    return client.listCryptoQuotes({ ids: [] });
   }, emptyCryptoFallback);
 
   const results = resp.quotes
@@ -244,10 +296,6 @@ export async function fetchCrypto(): Promise<CryptoData[]> {
 
   return lastSuccessfulCrypto;
 }
-
-// ========================================================================
-// Crypto Sectors
-// ========================================================================
 
 let lastSuccessfulSectors: CryptoSector[] = [];
 
@@ -269,13 +317,7 @@ export async function fetchCryptoSectors(): Promise<CryptoSector[]> {
   return lastSuccessfulSectors;
 }
 
-// ========================================================================
-// Token Panels (DeFi, AI, Other)
-// ========================================================================
-
 function toTokenData(q: ProtoCryptoQuote): TokenData {
-  // Bootstrap hydration delivers the raw seed shape ({change24h}) while the RPC
-  // handler normalises to the proto field name ({change}).  Handle both.
   const raw = q as unknown as { change?: number; change24h?: number };
   return {
     name: q.name,

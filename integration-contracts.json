@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "1.0.0",
+  "lastReviewed": "2026-07-22",
+  "contracts": [
+    {"id":"CONTRACT-AU-CONTEXT-V2","description":"Existing Australia desk read-only export","status":"draft-producer-only","owner":"worldmonitor","dependencies":[],"version":"worldmonitor-australia-context-v2","lastReviewed":"2026-07-22"},
+    {"id":"CONTRACT-WM-CONTEXT-0","description":"Proposed neutral observation/event context contract","status":"proposed","owner":"worldmonitor-context-spec","dependencies":["DEC-002","WP4"],"version":"0.1.0","lastReviewed":"2026-07-22"},
+    {"id":"CONTRACT-RUNTIME-PROVIDER-0","description":"Clean-room Stock Runtime context provider contract","status":"planned","owner":"stock-runtime","dependencies":["CONTRACT-WM-CONTEXT-0","RIGHT-CAMZ-CONTEXT"],"version":"0.1.0","lastReviewed":"2026-07-22"},
+    {"id":"CONTRACT-NO-TRADING","description":"Read-only controls forbidding broker, order, sizing and portfolio actions","status":"mandatory","owner":"command-centre-agent-os","dependencies":[],"version":"1.0.0","lastReviewed":"2026-07-22"},
+    {"id":"CONTRACT-ARCHIVE-ORIGINAL","description":"Archive original context bytes, digest and validation report with each stock run","status":"planned","owner":"stock-runtime","dependencies":["CONTRACT-RUNTIME-PROVIDER-0"],"version":"0.1.0","lastReviewed":"2026-07-22"}
+  ]
+}

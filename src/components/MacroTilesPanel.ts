@@ -4,12 +4,37 @@ import type {
   EconomicServiceClient,
   GetChinaMacroSnapshotResponse,
 } from '@/generated/client/worldmonitor/economic/v1/service_client';
+import type { MarketData } from '@/types';
+import type { BreakerDataState } from '@/utils/circuit-breaker';
+import { ClipboardCopyController } from '@/utils/clipboard';
+import { LatestRequestGate } from '@/utils/latest-request-gate';
 import { Panel } from './Panel';
 import { t } from '@/services/i18n';
 import { escapeHtml, unsafeRawHtml } from '@/utils/sanitize';
 import { getEurostatCountryData } from '@/services/economic';
 import type { GetEurostatCountryDataResponse } from '@/services/economic';
 import { getHydratedData } from '@/services/bootstrap';
+import { loadStoredMissionPreset } from '@/services/mission-presets';
+import { COMMODITIES, MARKET_SYMBOLS } from '@/config/markets';
+import {
+  fetchCommodityQuotes,
+  fetchMultipleStocks,
+  type MarketFetchResult,
+} from '@/services/market';
+import {
+  AUSTRALIA_DESK_MARKET_SYMBOLS,
+  AUSTRALIA_DESK_RESOURCE_SYMBOLS,
+  buildAustraliaMarketDeskSnapshot,
+  type AustraliaMarketDeskSnapshot,
+} from '@/services/australia-market-desk';
+import {
+  buildAustraliaMarketContextExport,
+  serializeAustraliaMarketContextExport,
+} from '@/services/australia-market-context-export';
+import {
+  buildAustraliaMacroContextModel,
+  renderAustraliaMacroContext,
+} from './australia-macro-context';
 
 let _client: EconomicServiceClient | null = null;
 async function getEconomicClient(): Promise<EconomicServiceClient> {
@@ -21,7 +46,7 @@ async function getEconomicClient(): Promise<EconomicServiceClient> {
   return _client;
 }
 
-type Tab = 'us' | 'eu' | 'cn';
+type Tab = 'au' | 'us' | 'eu' | 'cn';
 
 interface MacroTile {
   id: string;
@@ -33,6 +58,26 @@ interface MacroTile {
   neutral?: boolean;
   format: (v: number) => string;
   deltaFormat?: (v: number) => string;
+}
+
+const UNAVAILABLE_BREAKER_STATE: BreakerDataState = {
+  mode: 'unavailable',
+  timestamp: null,
+  offline: false,
+};
+
+function copyBreakerState(state: BreakerDataState | null | undefined): BreakerDataState {
+  return state ? { ...state } : { ...UNAVAILABLE_BREAKER_STATE };
+}
+
+function shouldReplaceDisplayedState(
+  current: BreakerDataState | null,
+  candidate: BreakerDataState,
+): boolean {
+  if (!current) return true;
+  if (candidate.timestamp === null) return current.timestamp === null;
+  if (current.timestamp === null) return true;
+  return candidate.timestamp >= current.timestamp;
 }
 
 function pctFmt(v: number): string {
@@ -202,7 +247,6 @@ const EU_CORE = ['DE', 'FR', 'IT', 'ES'];
 
 function fmtEuDate(d: string): string {
   if (!d) return '';
-  // YYYY-MM → "Jan 2026"; YYYY-QN stays as-is
   const parts = /^(\d{4})-(\d{2})$/.exec(d);
   if (parts) {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -244,13 +288,34 @@ export class MacroTilesPanel extends Panel {
   private _eurostat: GetEurostatCountryDataResponse | null = null;
   private _estrObs: { date: string; value: number }[] = [];
   private _china: GetChinaMacroSnapshotResponse | null = null;
+  private _australiaMissionActive = false;
+  private _australiaMarkets: MarketData[] = [];
+  private _australiaResources: MarketData[] = [];
+  private _australiaMarketDataState: BreakerDataState | null = null;
+  private _australiaResourceDataState: BreakerDataState | null = null;
+  private _australiaMarketLatestAttemptState: BreakerDataState | null = null;
+  private _australiaResourceLatestAttemptState: BreakerDataState | null = null;
+  private _australiaLoadEpoch = 0;
+  private _macroFetchGate = new LatestRequestGate();
+  private _clipboardCopy = new ClipboardCopyController();
+  private _asxClockTimer: ReturnType<typeof setInterval> | null = null;
+  private _copyFeedbackTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
     super({ id: 'macro-tiles', title: 'Macro Indicators', showCount: false, infoTooltip: t('components.macroTiles.infoTooltip') });
+    this._syncAustraliaMission();
 
     this.content.addEventListener('click', (e) => {
-      const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-tab]');
-      if (btn?.dataset.tab === 'us' || btn?.dataset.tab === 'eu' || btn?.dataset.tab === 'cn') {
+      const target = e.target as HTMLElement;
+      const exportButton = target.closest<HTMLButtonElement>('[data-australia-context-export]');
+      if (exportButton) {
+        e.preventDefault();
+        void this._copyAustraliaContext(exportButton);
+        return;
+      }
+
+      const btn = target.closest<HTMLElement>('[data-tab]');
+      if (btn?.dataset.tab === 'au' || btn?.dataset.tab === 'us' || btn?.dataset.tab === 'eu' || btn?.dataset.tab === 'cn') {
         this._tab = btn.dataset.tab as Tab;
         this._render();
       }
@@ -276,7 +341,135 @@ export class MacroTilesPanel extends Panel {
     });
   }
 
+  private _syncAustraliaMission(): void {
+    const active = loadStoredMissionPreset()?.id === 'australia-market-watch';
+    if (active === this._australiaMissionActive) return;
+
+    this._macroFetchGate.invalidate();
+    this._australiaLoadEpoch += 1;
+    this._australiaMissionActive = active;
+    if (active) {
+      this._tab = 'au';
+      if (!this._asxClockTimer) {
+        this._asxClockTimer = setInterval(() => {
+          if (this._australiaMissionActive && this._tab === 'au' && this._hasData) this._render();
+        }, 30_000);
+      }
+      return;
+    }
+
+    if (this._tab === 'au') this._tab = 'us';
+    if (this._asxClockTimer) {
+      clearInterval(this._asxClockTimer);
+      this._asxClockTimer = null;
+    }
+  }
+
+  private _applyAustraliaResult(
+    group: 'market' | 'resource',
+    result: PromiseSettledResult<MarketFetchResult>,
+  ): void {
+    const fulfilled = result.status === 'fulfilled' ? result.value : null;
+    const latestAttemptState = fulfilled
+      ? copyBreakerState(fulfilled.latestAttemptState ?? fulfilled.dataState)
+      : copyBreakerState(null);
+
+    if (group === 'market') {
+      this._australiaMarketLatestAttemptState = latestAttemptState;
+    } else {
+      this._australiaResourceLatestAttemptState = latestAttemptState;
+    }
+    if (!fulfilled || fulfilled.data.length === 0) return;
+
+    const displayedState = copyBreakerState(fulfilled.dataState ?? fulfilled.latestAttemptState);
+    const currentState = group === 'market'
+      ? this._australiaMarketDataState
+      : this._australiaResourceDataState;
+    if (!shouldReplaceDisplayedState(currentState, displayedState)) return;
+
+    if (group === 'market') {
+      this._australiaMarkets = fulfilled.data;
+      this._australiaMarketDataState = displayedState;
+    } else {
+      this._australiaResources = fulfilled.data;
+      this._australiaResourceDataState = displayedState;
+    }
+  }
+
+  private async _loadAustraliaQuotes(): Promise<void> {
+    if (!this._australiaMissionActive || this.signal.aborted) return;
+    const epoch = ++this._australiaLoadEpoch;
+
+    const marketSymbols = new Set<string>(AUSTRALIA_DESK_MARKET_SYMBOLS);
+    const resourceSymbols = new Set<string>(AUSTRALIA_DESK_RESOURCE_SYMBOLS);
+    const marketDefinitions = MARKET_SYMBOLS.filter((entry) => marketSymbols.has(entry.symbol));
+    const resourceDefinitions = COMMODITIES.filter((entry) => resourceSymbols.has(entry.symbol));
+    const [marketResult, resourceResult] = await Promise.allSettled([
+      fetchMultipleStocks(marketDefinitions),
+      fetchCommodityQuotes(resourceDefinitions),
+    ]);
+
+    if (
+      this.signal.aborted
+      || epoch !== this._australiaLoadEpoch
+      || !this._australiaMissionActive
+    ) return;
+    this._applyAustraliaResult('market', marketResult);
+    this._applyAustraliaResult('resource', resourceResult);
+  }
+
+  private _buildAustraliaSnapshot(now: Date): AustraliaMarketDeskSnapshot {
+    return buildAustraliaMarketDeskSnapshot(
+      this._australiaMarkets,
+      this._australiaResources,
+      {
+        now,
+        marketDataState: this._australiaMarketDataState,
+        resourceDataState: this._australiaResourceDataState,
+        marketLatestAttemptState: this._australiaMarketLatestAttemptState,
+        resourceLatestAttemptState: this._australiaResourceLatestAttemptState,
+      },
+    );
+  }
+
+  private async _copyAustraliaContext(button: HTMLButtonElement): Promise<void> {
+    if (button.disabled || this.signal.aborted) return;
+    button.disabled = true;
+    const now = new Date();
+    const context = buildAustraliaMarketContextExport(this._buildAustraliaSnapshot(now));
+    const text = serializeAustraliaMarketContextExport(context);
+    const copyResult = await this._clipboardCopy.copy(text, { signal: this.signal });
+    if (copyResult.status === 'cancelled') return;
+    const copied = copyResult.status === 'copied';
+
+    button.textContent = copied ? 'Copied' : 'Copy failed';
+    if (this._copyFeedbackTimer) clearTimeout(this._copyFeedbackTimer);
+    this._copyFeedbackTimer = setTimeout(() => {
+      this._copyFeedbackTimer = null;
+      if (!button.isConnected || this.signal.aborted) return;
+      button.textContent = 'Copy context JSON';
+      button.disabled = false;
+    }, 1_500);
+  }
+
+  public override destroy(): void {
+    this._clipboardCopy.destroy();
+    this._macroFetchGate.invalidate();
+    this._australiaLoadEpoch += 1;
+    if (this._asxClockTimer) {
+      clearInterval(this._asxClockTimer);
+      this._asxClockTimer = null;
+    }
+    if (this._copyFeedbackTimer) {
+      clearTimeout(this._copyFeedbackTimer);
+      this._copyFeedbackTimer = null;
+    }
+    super.destroy();
+  }
+
   public async fetchData(): Promise<boolean> {
+    this._syncAustraliaMission();
+    const fetchSequence = this._macroFetchGate.begin();
     this.showLoading();
     try {
       const client = await getEconomicClient();
@@ -290,7 +483,11 @@ export class MacroTilesPanel extends Panel {
         }),
         getEurostatCountryData(),
         hydratedChina ?? client.getChinaMacroSnapshot({}),
+        this._australiaMissionActive ? this._loadAustraliaQuotes() : Promise.resolve(),
       ]);
+
+      this._syncAustraliaMission();
+      if (this.signal.aborted || !this._macroFetchGate.isCurrent(fetchSequence)) return false;
 
       const results = fredResp.status === 'fulfilled' ? (fredResp.value.results ?? {}) : {};
       this._estrObs = results['ESTR']?.observations ?? [];
@@ -312,34 +509,47 @@ export class MacroTilesPanel extends Panel {
         { id: 'fed', label: 'Fed Funds Rate', ...fed, lowerIsBetter: false, neutral: true, format: pctFmt },
       ];
 
-      const hasUs = this._usTiles.some(t => t.value !== null);
+      const hasAustralia = this._australiaMissionActive;
+      const hasUs = this._usTiles.some(tile => tile.value !== null);
       const hasEu = this._eurostat !== null;
       const hasChina = isChinaLaunchReady(this._china);
-      if (!hasUs && !hasEu && !hasChina) {
+      if (!hasAustralia && !hasUs && !hasEu && !hasChina) {
         if (!this._hasData) this.showError('Macro data unavailable', () => void this.fetchData());
         return false;
       }
-      if (!hasUs && this._tab === 'us') this._tab = hasChina ? 'cn' : 'eu';
-      if (!hasChina && this._tab === 'cn') this._tab = hasUs ? 'us' : 'eu';
+      if (!hasUs && this._tab === 'us') this._tab = hasAustralia ? 'au' : (hasChina ? 'cn' : 'eu');
+      if (!hasChina && this._tab === 'cn') this._tab = hasAustralia ? 'au' : (hasUs ? 'us' : 'eu');
 
       this._hasData = true;
       this._render();
       return true;
     } catch (e) {
+      this._syncAustraliaMission();
+      if (this.signal.aborted || !this._macroFetchGate.isCurrent(fetchSequence)) return false;
+      if (this._australiaMissionActive) {
+        this._hasData = true;
+        this._tab = 'au';
+        this._render();
+        return true;
+      }
       if (!this._hasData) this.showError(e instanceof Error ? e.message : 'Failed to load', () => void this.fetchData());
       return false;
     }
   }
 
   private _render(afterUpdate?: () => void): void {
+    this._syncAustraliaMission();
     const tabs = this._availableTabs();
-    const labels: Record<Tab, string> = { us: 'US', eu: 'Euro Area', cn: 'China' };
+    if (!tabs.includes(this._tab)) this._tab = tabs[0] ?? 'us';
+    const labels: Record<Tab, string> = { au: 'Australia', us: 'US', eu: 'Euro Area', cn: 'China' };
     const tabBar = `<div role="tablist" aria-label="Macro economy" style="display:flex;gap:4px;margin-bottom:10px;overflow-x:auto">
       ${tabs.map((tab) => `<button id="macro-tiles-tab-${tab}" role="tab" aria-selected="${this._tab === tab}" aria-controls="macro-tiles-tabpanel" tabindex="${this._tab === tab ? '0' : '-1'}" class="panel-tab${this._tab === tab ? ' active' : ''}" data-tab="${tab}" style="font-size:11px;padding:6px 10px;min-height:44px">${labels[tab]}</button>`).join('')}
     </div>`;
 
     let body: string;
-    if (this._tab === 'us') {
+    if (this._tab === 'au') {
+      body = this._buildAustraliaBody();
+    } else if (this._tab === 'us') {
       body = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px">${this._usTiles.map(tileHtml).join('')}</div>`;
     } else if (this._tab === 'eu') {
       body = this._buildEuBody();
@@ -355,7 +565,14 @@ export class MacroTilesPanel extends Panel {
   }
 
   private _availableTabs(): Tab[] {
-    return isChinaLaunchReady(this._china) ? ['us', 'eu', 'cn'] : ['us', 'eu'];
+    const base: Tab[] = isChinaLaunchReady(this._china) ? ['us', 'eu', 'cn'] : ['us', 'eu'];
+    return this._australiaMissionActive ? ['au', ...base] : base;
+  }
+
+  private _buildAustraliaBody(): string {
+    const now = new Date();
+    const snapshot = this._buildAustraliaSnapshot(now);
+    return renderAustraliaMacroContext(buildAustraliaMacroContextModel(now, snapshot), snapshot);
   }
 
   private _buildChinaBody(): string {
@@ -393,7 +610,7 @@ export class MacroTilesPanel extends Panel {
       { id: 'eu-estr', label: '€STR (ECB Rate)', ...estr, lowerIsBetter: false, neutral: true, format: pctFmt },
     ];
 
-    if (!euTiles.some(t => t.value !== null)) {
+    if (!euTiles.some(tile => tile.value !== null)) {
       return '<div style="padding:8px;color:var(--text-dim);font-size:12px">Euro Area data unavailable</div>';
     }
 
