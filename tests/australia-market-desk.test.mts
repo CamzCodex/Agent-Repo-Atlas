@@ -47,6 +47,23 @@ function quote(symbol: string, price: number, change: number): MarketData {
   };
 }
 
+const marketQuotes = [
+  quote('^AXJO', 8900, 0.4),
+  quote('BHP.AX', 46.2, -0.2),
+  quote('CBA.AX', 178.1, 0.1),
+  quote('CSL.AX', 116.3, 1.2),
+];
+
+const commodityQuotes = [
+  quote('AUDUSD=X', 0.66, 0.2),
+  quote('HG=F', 5.1, -0.1),
+  quote('GC=F', 3100, 0.3),
+  quote('MTF=F', 124, -0.4),
+  quote('BZ=F', 74, 0.5),
+  quote('CL=F', 70, 0.4),
+  quote('NG=F', 3.3, -0.8),
+];
+
 describe('Australia / ASX mission preset', () => {
   it('centres the map on Oceania and selects the finance-in-context workspace', () => {
     const preset = getMissionPreset('australia-market-watch');
@@ -109,22 +126,6 @@ describe('Australia desk seeded universe', () => {
 });
 
 describe('Australia market desk evidence model', () => {
-  const marketQuotes = [
-    quote('^AXJO', 8900, 0.4),
-    quote('BHP.AX', 46.2, -0.2),
-    quote('CBA.AX', 178.1, 0.1),
-    quote('CSL.AX', 116.3, 1.2),
-  ];
-  const commodityQuotes = [
-    quote('AUDUSD=X', 0.66, 0.2),
-    quote('HG=F', 5.1, -0.1),
-    quote('GC=F', 3100, 0.3),
-    quote('MTF=F', 124, -0.4),
-    quote('BZ=F', 74, 0.5),
-    quote('CL=F', 70, 0.4),
-    quote('NG=F', 3.3, -0.8),
-  ];
-
   it('separates model evaluation from ASX source verification and quote access', () => {
     const snapshot = buildAustraliaMarketDeskSnapshot(marketQuotes, commodityQuotes, {
       now: new Date('2026-07-22T00:05:00Z'),
@@ -132,6 +133,8 @@ describe('Australia market desk evidence model', () => {
     });
 
     assert.equal(snapshot.asxSourceCheckedAt, '2026-07-22');
+    assert.equal(snapshot.asxSourceReviewAgeMs, 5 * 60 * 1000);
+    assert.equal(snapshot.asxSourceReviewStatus, 'current');
     assert.equal(snapshot.asxStatus.phase, 'regular');
     assert.equal(snapshot.asxStatus.calendarVerified, true);
     assert.equal(snapshot.asxStatusProvenance.sourceClass, 'official');
@@ -142,17 +145,26 @@ describe('Australia market desk evidence model', () => {
     assert.equal(snapshot.asxStatusProvenance.fetchedAtMs, null);
     assert.equal(snapshot.asxStatusProvenance.termsUrl, null);
 
+    assert.deepEqual(snapshot.marketGroupStatus, {
+      dataMode: 'unknown',
+      dataOffline: false,
+      latestAttemptMode: 'unknown',
+      latestAttemptOffline: false,
+    });
     assert.equal(snapshot.markets.length, AUSTRALIA_DESK_MARKET_SYMBOLS.length);
     assert.equal(snapshot.resources.length, AUSTRALIA_DESK_RESOURCE_SYMBOLS.length);
     assert.deepEqual(snapshot.missingSymbols, []);
 
     const asxQuote = snapshot.markets[0];
     assert.equal(asxQuote?.symbol, '^AXJO');
+    assert.equal(asxQuote?.dataMode, 'unknown');
+    assert.equal(asxQuote?.latestAttemptMode, 'unknown');
     assert.equal(asxQuote?.provenance.sourceClass, 'undocumented');
     assert.equal(asxQuote?.provenance.freshness, 'fresh');
     assert.equal(asxQuote?.provenance.freshnessBasis, 'fetched-at');
     assert.ok(asxQuote?.provenance.flags.includes('unverified-access-method'));
     assert.ok(asxQuote?.provenance.flags.includes('missing-observed-at'));
+    assert.ok(asxQuote?.provenance.notes.some((note) => note.includes('not a calibrated probability')));
     assert.ok(snapshot.warnings.includes(AUSTRALIA_DESK_BASKET_LIMITATION));
     assert.ok(snapshot.warnings.includes('Market observations use an undocumented upstream access path.'));
     assert.ok(snapshot.warnings.includes('Quote observation time is unavailable; retrieval time is not exchange time.'));
@@ -194,6 +206,66 @@ describe('Australia market desk evidence model', () => {
     assert.ok(snapshot.warnings.includes('AUD/resource observations are stale.'));
   });
 
+  it('distinguishes displayed last-good data from an unavailable latest refresh', () => {
+    const snapshot = buildAustraliaMarketDeskSnapshot(marketQuotes, commodityQuotes, {
+      now: new Date('2026-07-22T00:20:00Z'),
+      marketDataState: {
+        mode: 'cached',
+        timestamp: Date.parse('2026-07-22T00:10:00Z'),
+        offline: false,
+      },
+      marketLatestAttemptState: { mode: 'unavailable', timestamp: null, offline: false },
+      resourceDataState: {
+        mode: 'live',
+        timestamp: Date.parse('2026-07-22T00:19:00Z'),
+        offline: false,
+      },
+      resourceLatestAttemptState: {
+        mode: 'live',
+        timestamp: Date.parse('2026-07-22T00:19:00Z'),
+        offline: false,
+      },
+    });
+
+    assert.deepEqual(snapshot.marketGroupStatus, {
+      dataMode: 'cached',
+      dataOffline: false,
+      latestAttemptMode: 'unavailable',
+      latestAttemptOffline: false,
+    });
+    assert.equal(snapshot.markets[0]?.dataMode, 'cached');
+    assert.equal(snapshot.markets[0]?.latestAttemptMode, 'unavailable');
+    assert.equal(snapshot.markets[0]?.provenance.fetchedAtMs, Date.parse('2026-07-22T00:10:00Z'));
+    assert.ok(snapshot.warnings.includes('Australian equity observations are being served from cache.'));
+    assert.ok(snapshot.warnings.includes(
+      'Latest Australian equity refresh is unavailable; displaying the last usable observations.',
+    ));
+  });
+
+  it('prefers a later valid duplicate and bounds normalized sparklines', () => {
+    const oversizedSparkline = Array.from({ length: 400 }, (_, index) => index + 1);
+    const snapshot = buildAustraliaMarketDeskSnapshot(
+      [
+        quote('^AXJO', 0, 0),
+        { ...quote(' ^AXJO ', 8901, 0.5), sparkline: [-1, 0, Number.NaN, ...oversizedSparkline] },
+        ...marketQuotes.slice(1),
+      ],
+      commodityQuotes,
+      {
+        now: new Date('2026-07-22T00:05:00Z'),
+        fetchedAt: '2026-07-22T00:00:00Z',
+      },
+    );
+
+    const asx = snapshot.markets[0];
+    assert.equal(asx?.quote?.symbol, '^AXJO');
+    assert.equal(asx?.quote?.price, 8901);
+    assert.equal(asx?.quote?.sparkline?.length, 256);
+    assert.equal(asx?.quote?.sparkline?.[0], 145);
+    assert.equal(asx?.quote?.sparkline?.at(-1), 400);
+    assert.equal(snapshot.missingSymbols.includes('^AXJO'), false);
+  });
+
   it('rejects zero, negative, and invalid prices instead of exposing false availability', () => {
     const snapshot = buildAustraliaMarketDeskSnapshot(
       [
@@ -225,6 +297,8 @@ describe('Australia market desk evidence model', () => {
 
     assert.equal(snapshot.asxStatus.session, 'unknown');
     assert.equal(snapshot.asxStatus.calendarVerified, false);
+    assert.equal(snapshot.asxSourceReviewStatus, 'overdue');
+    assert.ok((snapshot.asxSourceReviewAgeMs ?? 0) > 90 * 24 * 60 * 60 * 1000);
     assert.ok(snapshot.warnings.includes('ASX calendar year is unverified.'));
     assert.ok(snapshot.warnings.includes('ASX trading-hours/calendar sources are past the 90-day review interval.'));
     assert.ok(snapshot.asxStatusProvenance.flags.includes('low-confidence'));
