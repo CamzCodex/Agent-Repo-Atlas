@@ -27,9 +27,12 @@ build gates.
 - The pull request author must be the repository owner.
 - The marker and target must be in the same repository.
 - Workflow permissions are read-only.
+- Checkout credentials are not persisted into either working tree.
 - The workflow does not execute marker-branch code.
 - A successful run applies only to the exact expected SHA recorded in the job
   log. A later target commit invalidates that result.
+- The job summary records target, base, expected head, result and run ID even
+  when a later validation step fails.
 
 Validation-marker pull requests are operational scaffolding. Close them without
 merging after recording the run against the target pull request.

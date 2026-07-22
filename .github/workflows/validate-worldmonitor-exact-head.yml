@@ -28,6 +28,7 @@ jobs:
           path: trigger
           fetch-depth: 1
           show-progress: false
+          persist-credentials: false
 
       - name: Read and validate target contract
         id: target
@@ -54,6 +55,7 @@ jobs:
           path: target
           fetch-depth: 0
           show-progress: false
+          persist-credentials: false
 
       - name: Use repository Node version
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
@@ -96,7 +98,7 @@ jobs:
               '*.ts' '*.tsx' '*.mts' '*.mjs' '*.cjs' '*.json'
           )
           if ((${#files[@]})); then
-            npx biome check "${files[@]}"
+            npx biome check -- "${files[@]}"
           fi
 
       - name: Run focused trust contracts
@@ -165,3 +167,22 @@ jobs:
       - name: Build Finance production variant
         working-directory: target
         run: npm run build:finance
+
+      - name: Publish exact-head evidence
+        if: always()
+        shell: bash
+        env:
+          TARGET_BRANCH: ${{ steps.target.outputs.target }}
+          BASE_BRANCH: ${{ steps.target.outputs.base }}
+          EXPECTED_HEAD: ${{ steps.target.outputs.expected }}
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          {
+            echo '## World Monitor exact-head validation'
+            echo
+            echo "- Target branch: \`${TARGET_BRANCH:-unresolved}\`"
+            echo "- Base branch: \`${BASE_BRANCH:-unresolved}\`"
+            echo "- Expected head: \`${EXPECTED_HEAD:-unresolved}\`"
+            echo "- Job status: **${JOB_STATUS}**"
+            echo "- Run: \`${GITHUB_RUN_ID}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
