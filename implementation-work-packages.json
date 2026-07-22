@@ -2,17 +2,17 @@
   "schemaVersion": "1.0.0",
   "lastReviewed": "2026-07-22",
   "workPackages": [
-    {"id":"WP1","description":"Finish current World Monitor trust hardening","status":"in-progress","owner":"worldmonitor-maintainer","dependencies":[],"decisionGate":"exact-head-full-gate","lastReviewed":"2026-07-22"},
-    {"id":"WP2","description":"Accept hardening into Australia desk and reconcile PRs","status":"blocked","owner":"worldmonitor-maintainer","dependencies":["WP1"],"decisionGate":"ancestry-clean-and-green","lastReviewed":"2026-07-22"},
-    {"id":"WP3","description":"Prepare dedicated worldmonitor-camz repository migration","status":"planned","owner":"repo-owner","dependencies":["WP2"],"decisionGate":"known-green-source-sha","lastReviewed":"2026-07-22"},
-    {"id":"WP4","description":"Create neutral observation, event, provider and rights contracts","status":"planned","owner":"integration-lead","dependencies":["WP2","DEC-002"],"decisionGate":"schema-rights-security-approval","lastReviewed":"2026-07-22"},
+    {"id":"WP1","description":"Finish current World Monitor trust hardening","status":"completed","owner":"worldmonitor-maintainer","dependencies":[],"decisionGate":"passed-runs-29890576554-29890927449","lastReviewed":"2026-07-22"},
+    {"id":"WP2","description":"Accept hardening into Australia desk and reconcile PRs","status":"completed","owner":"worldmonitor-maintainer","dependencies":["WP1"],"decisionGate":"passed-runs-29891260615-29891791572","lastReviewed":"2026-07-22"},
+    {"id":"WP3","description":"Prepare dedicated worldmonitor-camz repository migration","status":"deferred-until-contract-stack-green","owner":"repo-owner","dependencies":["WP2","WP4","WP10"],"decisionGate":"known-green-producer-and-consumer-shas","lastReviewed":"2026-07-22"},
+    {"id":"WP4","description":"Create neutral observation, event, provider and rights contracts","status":"implemented-pending-pr-validation","owner":"integration-lead","dependencies":["WP2","DEC-002"],"decisionGate":"producer-exact-head-and-runtime-pr-green","lastReviewed":"2026-07-22"},
     {"id":"WP5","description":"Implement ABS and RBA adapters","status":"planned","owner":"australia-data-owner","dependencies":["WP4"],"decisionGate":"provider-tests-and-rights","lastReviewed":"2026-07-22"},
     {"id":"WP6","description":"Implement APRA, AEMO, DFAT and ASIC adapters","status":"planned","owner":"australia-data-owner","dependencies":["WP4","WP5"],"decisionGate":"provider-tests-and-rights","lastReviewed":"2026-07-22"},
     {"id":"WP7","description":"Establish licensed ASX boundary","status":"blocked-rights","owner":"licensed-market-data-owner","dependencies":["WP4"],"decisionGate":"signed-entitlement-map","lastReviewed":"2026-07-22"},
     {"id":"WP8","description":"Build revision-preserving historical store","status":"planned","owner":"data-platform-owner","dependencies":["WP4"],"decisionGate":"replay-backup-restore","lastReviewed":"2026-07-22"},
     {"id":"WP9","description":"Build evidence-linked exposure and hypothesis engine","status":"planned","owner":"intelligence-owner","dependencies":["WP6","WP7","WP8"],"decisionGate":"dissent-and-no-causation-evaluation","lastReviewed":"2026-07-22"},
-    {"id":"WP10","description":"Implement clean-room Stock Runtime provider","status":"planned","owner":"stock-runtime-owner","dependencies":["WP4"],"decisionGate":"end-to-end-no-trading-tests","lastReviewed":"2026-07-22"},
-    {"id":"WP11","description":"Integrate roles and adversarial evaluation","status":"planned","owner":"stock-governance-owner","dependencies":["WP10"],"decisionGate":"contribution-ablation-approved","lastReviewed":"2026-07-22"},
+    {"id":"WP10","description":"Implement clean-room Stock Runtime provider","status":"draft-pr-local-green-hosted-quota-blocked","owner":"stock-runtime-owner","dependencies":["WP4"],"decisionGate":"hosted-exact-head-required-before-merge","lastReviewed":"2026-07-22"},
+    {"id":"WP11","description":"Integrate roles and adversarial evaluation","status":"partially-implemented-pending-pr-validation","owner":"stock-governance-owner","dependencies":["WP10"],"decisionGate":"contribution-ablation-approved","lastReviewed":"2026-07-22"},
     {"id":"WP12","description":"Production security, rights, observability and release readiness","status":"planned","owner":"operations-owner","dependencies":["WP5","WP6","WP7","WP8","WP9","WP10","WP11"],"decisionGate":"production-readiness-review","lastReviewed":"2026-07-22"}
   ]
 }
