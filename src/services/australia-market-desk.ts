@@ -10,7 +10,10 @@ import {
   formatFinanceObservationProvenance,
   type FinanceObservationProvenanceAssessment,
 } from '@/shared/finance-observation-provenance';
-import { getMarketDataDeliveryState } from '@/services/market-data-state';
+import {
+  getLatestMarketRequestState,
+  getMarketDataDeliveryState,
+} from '@/services/market-data-state';
 
 export const AUSTRALIA_DESK_MARKET_SYMBOLS = [
   '^AXJO',
@@ -241,9 +244,11 @@ export function buildAustraliaMarketDeskSnapshot(
   const resourceState = options.resourceDataState ?? resourceDelivery?.dataState ?? null;
   const marketAttemptState = options.marketLatestAttemptState
     ?? marketDelivery?.latestAttemptState
+    ?? getLatestMarketRequestState(AUSTRALIA_DESK_MARKET_SYMBOLS)
     ?? marketState;
   const resourceAttemptState = options.resourceLatestAttemptState
     ?? resourceDelivery?.latestAttemptState
+    ?? getLatestMarketRequestState(AUSTRALIA_DESK_RESOURCE_SYMBOLS)
     ?? resourceState;
   const marketGroupStatus = groupStatus(marketState, marketAttemptState);
   const resourceGroupStatus = groupStatus(resourceState, resourceAttemptState);
