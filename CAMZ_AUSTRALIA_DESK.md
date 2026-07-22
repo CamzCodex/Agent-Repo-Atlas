@@ -4,9 +4,11 @@ This branch adds the first usable Australia-focused workspace on top of the vali
 
 - Base enhancement: `camz/local-foundation`
 - Australia branch: `camz/australia-desk`
+- Second-pass hardening: `camz/australia-adversarial-v3`
 - Upstream provenance: `.worldmonitor-upstream.json`
 - Platform licence: `AGPL-3.0-only`
-- Adversarial register: `CAMZ_AUSTRALIA_DESK_ADVERSARIAL_REVIEW.md`
+- Primary adversarial register: `CAMZ_AUSTRALIA_DESK_ADVERSARIAL_REVIEW.md`
+- Second-pass register: `CAMZ_AUSTRALIA_DESK_ADVERSARIAL_PASS_2.md`
 
 ## What changed
 
@@ -42,14 +44,20 @@ The Australia tab renders:
 - the current Sydney-local ASX phase and verified-calendar state;
 - seeded ASX 200, BHP, CBA and CSL cards;
 - AUD/USD, copper, gold, Newcastle coal, Brent, WTI and natural-gas cards;
-- positive/negative change cues;
+- positive, negative and neutral change cues;
 - explicit freshness clock basis on each card;
 - separate ASX-basket and AUD/resources evidence rows;
+- displayed-data mode separately from the latest refresh-attempt mode;
 - undocumented-access, stale, future, invalid and missing-observation-time flags;
+- warnings when the latest refresh failed but last-good values remain visible;
 - warnings that the data is seeded context rather than exchange-grade real-time data;
 - a visible reminder that four equities are a benchmark/bellwether sample, not ASX market breadth.
 
 The tab refreshes the Sydney session clock every 30 seconds while active. Equity and resource retrieval clocks remain independent. Retrieval/cache time is never presented as the exchange observation timestamp.
+
+Quote loading uses a monotonic request epoch. An obsolete response cannot overwrite newer panel state, and mission changes or panel destruction invalidate in-flight Australia quote work.
+
+The **Copy context JSON** action is single-flight. A denied Clipboard API call falls back to a temporary read-only textarea that is removed in `finally`.
 
 ## Seeded Australian market universe
 
@@ -120,30 +128,34 @@ The snapshot keeps these evidence classes separate:
    - source class: undocumented;
    - transformation: normalized;
    - retrieval/cache clock: explicit when available;
-   - exchange observation time: currently unavailable.
+   - exchange observation time: currently unavailable;
+   - displayed state and latest refresh attempt remain separate.
 
 3. **AUD and resource observations**
    - independent retrieval/cache clock;
+   - independent latest refresh-attempt state;
    - the same missing, stale, future, invalid, and undocumented-access controls;
    - no ability for a fresh equity response to make older resource data look fresh.
 
-The desk deliberately does not collapse those facts into a universal trust score.
+The desk deliberately does not collapse those facts into a universal trust score. Confidence values are policy heuristics, not calibrated probabilities.
 
 ## Read-only context export
 
-`src/services/australia-market-context-export.ts` defines `worldmonitor-australia-context-v1`, a JSON envelope for downstream research systems.
+`src/services/australia-market-context-export.ts` defines `worldmonitor-australia-context-v2`, a JSON envelope for downstream research systems.
 
 The **Copy context JSON** control exports the typed snapshot rather than scraping rendered HTML. The envelope contains:
 
 - schema version, generation time, region and intended use;
-- ASX phase, session, local clock, calendar verification, source-check date and official evidence;
+- ASX phase, session, local clock, calendar verification, source-check date, source-review age/status and official evidence;
+- group-level displayed-data and latest-attempt states for equities and AUD/resources;
 - each index/equity/FX/commodity observation with price, percentage change, asset class, currency and quote unit;
 - provider, access class, transformation description/version and source URL;
 - observed/fetched clocks, `freshnessBasis`, age, freshness, heuristic confidence, flags and notes;
 - missing symbols and degraded-provider warnings;
-- explicit constraints excluding recommendations, position sizing, target prices, orders and execution instructions;
-- an explicit compact-basket limitation;
-- an internal-research rights constraint for provider-derived values.
+- machine-readable controls confirming read-only use and the absence of recommendations, position sizing, target prices, orders and execution instructions;
+- machine-readable `causationEstablished: false`;
+- machine-readable internal-research and unreviewed-redistribution rights state;
+- an explicit compact-basket limitation.
 
 Futures whose current provider contract does not guarantee a normalized unit are labelled `provider-native`; the system does not invent a unit.
 
@@ -163,6 +175,7 @@ npx biome check \
   src/shared/asx-market-hours.ts \
   src/services/australia-market-desk.ts \
   src/services/australia-market-context-export.ts \
+  src/services/market-data-state.ts \
   src/services/mission-presets.ts \
   src/components/australia-macro-context.ts \
   src/components/MacroTilesPanel.ts \
@@ -170,6 +183,7 @@ npx biome check \
   tests/australia-market-desk.test.mts \
   tests/australia-macro-context.test.mts \
   tests/australia-market-context-export.test.mts \
+  tests/market-data-state.test.mts \
   tests/australia-mission-extension.test.mts \
   tests/macro-tiles-china-ui.test.mts
 
@@ -180,6 +194,7 @@ npx tsx --test \
   tests/australia-market-desk.test.mts \
   tests/australia-macro-context.test.mts \
   tests/australia-market-context-export.test.mts \
+  tests/market-data-state.test.mts \
   tests/australia-mission-extension.test.mts \
   tests/macro-tiles-china-ui.test.mts
 
@@ -200,6 +215,7 @@ npm run test:data
 - Do not call the Yahoo-derived values exchange-real-time.
 - Do not infer an upstream observation timestamp from a retrieval/cache timestamp.
 - Always preserve and label `freshnessBasis`.
+- Preserve displayed-data state separately from latest refresh-attempt state.
 - Do not suppress `unknown` calendar state.
 - Do not call the four-equity basket Australian market breadth.
 - Do not treat the mission preset as an investment recommendation.
@@ -209,14 +225,14 @@ npm run test:data
 
 ## Next implementation slice
 
-The next governed step is a read-only provider in `Stock-Market-Agent-Runtime` that validates `worldmonitor-australia-context-v1` and adds it to the evidence-weighted research bag.
+The next governed step is a read-only provider in `Stock-Market-Agent-Runtime` that validates `worldmonitor-australia-context-v2` and adds it to the evidence-weighted research bag.
 
 That adapter should:
 
 - be implemented independently rather than copying AGPL source into the MIT runtime;
 - fail closed on schema mismatch or malformed provenance;
-- preserve `freshnessBasis`, missing-symbol, stale-data and unavailable-observation-time flags;
+- preserve `freshnessBasis`, displayed/latest-attempt state, missing-symbol, stale-data and unavailable-observation-time flags;
 - keep geopolitical, commodity, shipping and China-sensitive context separate from price observations;
 - expose source URLs, units and transformation metadata to talkback/reporting;
-- preserve the internal-research rights constraint;
+- enforce the machine-readable read-only and rights controls;
 - contribute context and dissent, never order routing or automatic trading.
