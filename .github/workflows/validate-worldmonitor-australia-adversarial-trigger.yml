@@ -1,0 +1,122 @@
+name: Validate World Monitor Australia adversarial trigger
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - docs/adoptions/WORLDMONITOR_AUSTRALIA_ADVERSARIAL_V3_VALIDATE_TRIGGER.md
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-worldmonitor-australia-adversarial-trigger
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    if: >-
+      github.actor == github.repository_owner &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - name: Check out validation marker
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: trigger
+          fetch-depth: 1
+          show-progress: false
+
+      - name: Read expected target head
+        id: target
+        shell: bash
+        run: |
+          set -euo pipefail
+          marker=trigger/docs/adoptions/WORLDMONITOR_AUSTRALIA_ADVERSARIAL_V3_VALIDATE_TRIGGER.md
+          expected=$(sed -n 's/^Expected-Head: `\([0-9a-f]\{40\}\)`$/\1/p' "$marker")
+          test -n "$expected"
+          echo "expected=$expected" >> "$GITHUB_OUTPUT"
+
+      - name: Check out Australia adversarial branch
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          ref: camz/australia-adversarial-v3
+          path: target
+          fetch-depth: 0
+          show-progress: false
+
+      - name: Use repository Node version
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: target/.nvmrc
+          cache: npm
+          cache-dependency-path: target/package-lock.json
+
+      - name: Verify exact target, ancestry, and whitespace
+        working-directory: target
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ steps.target.outputs.expected }}"
+          git fetch origin camz/australia-desk --depth=1
+          git merge-base --is-ancestor origin/camz/australia-desk HEAD
+          git diff --check origin/camz/australia-desk...HEAD
+
+      - name: Install locked dependencies
+        working-directory: target
+        run: npm ci --ignore-scripts --prefer-offline --silent
+
+      - name: Run secret-safe diagnostics
+        working-directory: target
+        run: npm run camz:diagnostics -- --strict
+
+      - name: Check adversarial source and tests
+        working-directory: target
+        run: >-
+          npx biome check
+          src/services/australia-market-desk.ts
+          src/services/australia-market-context-export.ts
+          src/components/australia-macro-context.ts
+          src/components/MacroTilesPanel.ts
+          tests/market-data-state.test.mts
+          tests/australia-macro-context.test.mts
+          tests/australia-market-context-export.test.mts
+
+      - name: Run focused Australia adversarial contracts
+        working-directory: target
+        run: >-
+          npx tsx --test
+          tests/asx-market-hours.test.mjs
+          tests/asx-market-hours-browser-parity.test.mts
+          tests/finance-observation-provenance.test.mts
+          tests/circuit-breaker.test.mts
+          tests/market-data-state.test.mts
+          tests/australia-market-desk.test.mts
+          tests/australia-macro-context.test.mts
+          tests/australia-market-context-export.test.mts
+          tests/australia-mission-extension.test.mts
+          tests/macro-tiles-china-ui.test.mts
+
+      - name: Restore preserved upstream workflows
+        working-directory: target
+        run: |
+          npm run camz:restore-workflows
+          git add -A .github/workflows
+
+      - name: Build full dashboard artifacts
+        working-directory: target
+        run: VITE_VARIANT=full ./node_modules/.bin/vite build
+
+      - name: Run complete upstream test suite
+        working-directory: target
+        run: npm run test:data
+
+      - name: Type-check browser application
+        working-directory: target
+        run: npm run typecheck
+
+      - name: Build Finance production variant
+        working-directory: target
+        run: npm run build:finance
