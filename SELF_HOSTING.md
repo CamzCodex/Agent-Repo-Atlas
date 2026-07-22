@@ -40,6 +40,17 @@ required for your operating profile is configured, use
 `npm run camz:stack:smoke -- --require-data-ready` for a strict data-readiness
 gate.
 
+Create the read-only neutral payload consumed by the Stock Runtime integration
+branch with:
+
+```bash
+npm run camz:context:export
+```
+
+The default output is `tmp/worldmonitor-context-v1.json`. This operator-facing
+export includes the official deterministic ASX-session context and excludes
+quotes that lack a trustworthy observation time.
+
 ## 🔐 Required Environment Variables
 
 These must be set before `docker compose up -d`, or one of the containers will exit on boot.

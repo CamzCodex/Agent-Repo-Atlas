@@ -159,7 +159,22 @@ The focused verification covers:
 - finance observation provenance, age, source class, transformation, and confidence flags;
 - proof that local diagnostics do not expose secret values.
 
-## 7. Full private self-hosted stack
+## 7. Export trusted Runtime context
+
+Write a neutral v1 payload to the gitignored `tmp/` directory:
+
+```bash
+npm run camz:context:export
+```
+
+The command writes `tmp/worldmonitor-context-v1.json` atomically with private
+file permissions where supported. It records the exact producer commit and
+exports the official deterministic ASX-session context. Timing-uncertain
+Yahoo-derived quotes remain excluded. Use `--output <path>` to place the file
+beside a local Stock Runtime checkout, and `--at <ISO-time>` for a reproducible
+test vector.
+
+## 8. Full private self-hosted stack
 
 ```bash
 npm run camz:stack:init
@@ -203,7 +218,7 @@ acceptance check.
 
 The first run should be treated as an analyst cockpit, not an execution terminal. Keep broker/order entry and authoritative market data in their existing systems.
 
-## 8. Optional: restore upstream GitHub workflows locally
+## 9. Optional: restore upstream GitHub workflows locally
 
 The connected GitHub App lacks the special permission required to write `.github/workflows`. The vendor mirror therefore preserves upstream workflow files byte-for-byte under `.github/upstream-workflows-disabled`.
 
@@ -223,7 +238,7 @@ The command refuses to overwrite an existing `.github/workflows` directory. `--f
 
 Do not push the restored path through the current connected GitHub App; GitHub will reject it until the App receives workflow-write permission.
 
-## 9. Deployment boundaries
+## 10. Deployment boundaries
 
 The Vite Finance interface is the fastest analyst workflow. The Compose stack
 adds private cache ownership, authenticated relay services and local seeding.
@@ -238,7 +253,7 @@ Before exposing any instance to the internet:
 - document source and redistribution terms for every production feed;
 - meet AGPL source-availability obligations for a modified public deployment.
 
-## 10. Finance trust rules
+## 11. Finance trust rules
 
 The Camz enhancement direction is deliberately evidence-first:
 

@@ -184,6 +184,7 @@ describe('Camz local operations wiring', () => {
       'camz:verify',
       'camz:start',
       'camz:smoke',
+      'camz:context:export',
       'camz:stack:init',
       'camz:stack:up',
       'camz:stack:seed',
