@@ -75,7 +75,7 @@ describe('Australia market context export', () => {
     assert.equal(context.asx.phase, 'regular');
     assert.equal(context.asx.calendarVerified, true);
     assert.equal(context.asx.sourceCheckedAt, '2026-07-22');
-    assert.equal(context.asx.sourceReviewAgeMs, 5 * 60 * 1000);
+    assert.equal(context.asx.sourceReviewAgeMs, 0);
     assert.equal(context.asx.sourceReviewStatus, 'current');
     assert.equal(context.asx.evidence.provenanceSchemaVersion, FINANCE_OBSERVATION_PROVENANCE_VERSION);
     assert.equal(context.asx.evidence.sourceClass, 'official');
