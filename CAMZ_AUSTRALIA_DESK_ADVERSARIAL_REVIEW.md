@@ -1,15 +1,20 @@
 # Australia / ASX Desk — Adversarial Review
 
-Status: active red-team review  
-Branch: `camz/australia-desk`  
-Base: `camz/local-foundation`  
+Status: active red-team review
+
+Branch: `camz/australia-desk`
+
+Base: `camz/local-foundation`
+
 Scope: data integrity, time semantics, provenance, failure modes, security, usability, licensing, and downstream runtime integration.
 
 ## Executive finding
 
-The Australia desk is directionally strong, but it is not yet ready to be described as a trustworthy Australian market-intelligence workstation without qualification.
+The Australia desk is directionally strong, but it is not yet ready to be described as a fully accepted Australian market-intelligence workstation until the exact hardened head passes the focused contracts, complete upstream suite, TypeScript check, and Finance production build.
 
-The strongest parts are the conservative ASX calendar model, explicit separation of deterministic session state from market observations, visible missing-data handling, and the read-only downstream contract. The largest residual risks are false freshness when cached market data is read, semantic overreach from US/crypto panels selected by the Australia preset, a versioned mission-registry compatibility break, and an export contract that does not yet tell downstream consumers whether “freshness” came from an exchange observation clock or only a retrieval/cache clock.
+The strongest parts are the conservative ASX calendar model, explicit separation of deterministic session state from market observations, visible missing-data handling, and the read-only downstream contract. The adversarial pass has now implemented mitigations for false freshness, mission-registry drift, Australia/US semantic leakage, missing freshness basis, misleading ASX fetch clocks, mixed quote-group masking, invalid prices, missing units, and uncalibrated-confidence presentation.
+
+The largest residual risks are provider/redistribution rights, 2027 calendar rollover, possible duplicate market reads from overlapping cache keys, and the absence of licensed Australia-specific breadth and macro feeds.
 
 No broker execution, order placement, portfolio mutation, or automatic trading path was found.
 
@@ -17,28 +22,28 @@ No broker execution, order placement, portfolio mutation, or automatic trading p
 
 | ID | Severity | Finding | Status |
 | --- | --- | --- | --- |
-| AU-ADV-001 | Critical trust | A cached or persisted circuit-breaker response can be timestamped as freshly retrieved by the Australia panel. | Confirmed; fix required |
-| AU-ADV-002 | High compatibility | Australia was appended directly to the stable v1 mission-preset list, breaking the full upstream contract suite. | Confirmed; fix required |
-| AU-ADV-003 | High semantic | The preset auto-selects S&P 500 breadth, BTC/QQQ macro signals, and US mega-cap/CFTC liquidity panels as if they were Australia-native. | Confirmed; remove from default preset |
-| AU-ADV-004 | High downstream integrity | The JSON envelope omits `freshnessBasis`, so a consumer can confuse fetched-at freshness with observed-at freshness. | Confirmed; fix required |
-| AU-ADV-005 | High provenance | ASX model evidence records `fetchedAt: now` even though no live ASX schedule fetch occurs at panel render time. | Confirmed; fix required |
-| AU-ADV-006 | Medium UI integrity | One combined “Quotes” evidence row can let fresh equities visually mask stale resources, or vice versa. | Confirmed; split evidence rows |
-| AU-ADV-007 | Medium data validity | A finite zero or negative quote can remain “available” instead of failing closed as unavailable. | Confirmed; fix required |
-| AU-ADV-008 | Medium scope | An index plus three companies is a useful context basket but not Australian market breadth. | Confirmed; label and constrain |
-| AU-ADV-009 | Medium contract clarity | Exported prices lack currency/unit metadata. | Confirmed; add explicit or provider-native units |
-| AU-ADV-010 | Medium rights | Copying undocumented provider-derived values into an MIT runtime or public report needs an explicit rights/redistribution review. | Confirmed governance risk |
-| AU-ADV-011 | Medium maintenance | Only the 2026 ASX holiday calendar is verified; the safe `unknown` fallback prevents fabrication but creates a year-end operational deadline. | Controlled; calendar rollover required |
-| AU-ADV-012 | Low performance | The Australia tab may fragment market-cache keys and duplicate RPC reads already initiated by the Markets and Commodities panels. | Plausible; measure before changing |
-| AU-ADV-013 | Low calibration | Hard-coded evidence confidence values can look statistically calibrated when they are policy heuristics. | Confirmed presentation risk |
-| AU-ADV-014 | Refuted | The model was suspected of ignoring a staggered ASX opening sequence. ASX moved to a single opening in June 2025; the model’s 10:00 boundary is deliberately conservative. | Refuted |
+| AU-ADV-001 | Critical trust | Cached or persisted circuit-breaker responses could be timestamped as freshly retrieved by the Australia panel. | Mitigated in branch; validation pending |
+| AU-ADV-002 | High compatibility | Australia was appended directly to the stable v1 mission-preset list, breaking the full upstream contract suite. | Mitigated in branch; validation pending |
+| AU-ADV-003 | High semantic | The preset auto-selected S&P 500 breadth, BTC/QQQ macro signals, and US mega-cap/CFTC liquidity panels as if they were Australia-native. | Mitigated in branch; validation pending |
+| AU-ADV-004 | High downstream integrity | The JSON envelope omitted `freshnessBasis`, allowing fetched-at freshness to be confused with observed-at freshness. | Mitigated in branch; validation pending |
+| AU-ADV-005 | High provenance | ASX model evidence recorded `fetchedAt: now` despite no live ASX schedule fetch at panel render time. | Mitigated in branch; validation pending |
+| AU-ADV-006 | Medium UI integrity | One combined “Quotes” evidence row could let fresh equities visually mask stale resources, or vice versa. | Mitigated in branch; validation pending |
+| AU-ADV-007 | Medium data validity | A finite zero or negative quote could remain “available” instead of failing closed. | Mitigated in branch; validation pending |
+| AU-ADV-008 | Medium scope | An index plus three companies is useful context but not Australian market breadth. | Mitigated in labels/export; validation pending |
+| AU-ADV-009 | Medium contract clarity | Exported prices lacked currency/unit metadata. | Mitigated in branch; validation pending |
+| AU-ADV-010 | Medium rights | Copying undocumented provider-derived values into an MIT runtime or public report needs explicit rights and redistribution review. | Open governance risk |
+| AU-ADV-011 | Medium maintenance | Only the 2026 ASX holiday calendar is verified; safe `unknown` fallback creates a year-end operational deadline. | Controlled; calendar rollover required |
+| AU-ADV-012 | Low performance | The Australia tab may fragment market-cache keys and duplicate RPC reads already initiated by Markets and Commodities. | Plausible; measure before changing |
+| AU-ADV-013 | Low calibration | Hard-coded evidence confidence values could look statistically calibrated when they are policy heuristics. | Mitigated in export/UI; validation pending |
+| AU-ADV-014 | Refuted | The model was suspected of ignoring a staggered ASX opening sequence. ASX moved to a single opening in June 2025; the 10:00 boundary is deliberately conservative. | Refuted |
 
 ## Detailed findings
 
 ### AU-ADV-001 — False freshness through fallback data
 
-World Monitor’s circuit breaker distinguishes `live`, `cached`, and `unavailable` data and retains the cache timestamp. The market service currently returns only the quote array, discarding that state. The Australia tab then assigns `new Date()` after any non-empty result.
+World Monitor’s circuit breaker distinguishes `live`, `cached`, and `unavailable` data and retains the cache timestamp. The previous market-service path returned only quote arrays, and Macro Tiles assigned `new Date()` after any non-empty result.
 
-That means these materially different events can be presented with the same fresh retrieval clock:
+That meant these materially different events could be presented with the same fresh retrieval clock:
 
 1. a successful live RPC;
 2. a fresh in-memory cache hit;
@@ -46,85 +51,87 @@ That means these materially different events can be presented with the same fres
 4. stale-while-revalidate data;
 5. a last-successful in-process fallback.
 
-Required correction:
+Implemented mitigation:
 
-- return a per-call immutable data-state envelope from the market service;
-- carry the circuit-breaker timestamp rather than the panel completion time;
-- mark last-successful fallback distinctly;
-- never use a shared breaker’s mutable “last state” after an await, because concurrent symbol-set requests can race;
-- test live, fresh-cache, stale-cache, unavailable, and partial-group refresh paths.
+- the breaker reports immutable state for the exact return path through `onDataState`;
+- concurrent cache keys no longer require reading shared mutable state after an await;
+- stock and commodity results carry breaker state in a weakly held quote-array side channel;
+- the Australia snapshot prefers the breaker timestamp over panel completion time;
+- unavailable results with no timestamp cannot inherit a later panel timestamp;
+- last-successful fallback retains its original timestamp and is labelled cached;
+- live, cached, cooldown, concurrent-key, offline, unavailable, and partial-group paths have focused tests.
 
 ### AU-ADV-002 — Stable mission registry changed in place
 
-The upstream suite explicitly locks the v1 role-preset IDs. Adding Australia directly to `MISSION_PRESETS` changed that public registry and failed the complete suite.
+The upstream suite explicitly locks the seven v1 role-preset IDs. Adding Australia directly to that public registry failed the complete suite.
 
-Required correction:
+Implemented mitigation:
 
-- preserve a stable core registry;
-- register Australia as an extension;
-- expose a combined available list to the UI;
-- restrict the extension to the full and finance variants;
-- ignore or reject a stored Australia mission on unsupported variants;
-- retain explicit tests for core stability and extension uniqueness.
+- the stable core registry remains seven presets;
+- Australia is registered as an extension;
+- browser mission pickers receive the variant-filtered core-plus-extension list;
+- the extension is restricted to full and Finance variants;
+- unsupported variants do not expose or restore the Australia mission;
+- tests lock core stability, extension uniqueness, and variant visibility.
 
 ### AU-ADV-003 — Non-Australian panels selected by default
 
-The current preset selects:
+The previous preset selected:
 
 - `market-breadth`, whose panel is explicitly S&P 500 breadth;
 - `macro-signals`, whose regime is built from BTC, QQQ, XLP, hash rate and crypto fear/greed;
 - `liquidity-shifts`, whose stock basket is US mega-caps and whose institutional data is CFTC positioning.
 
-Those panels may be useful optional global context, but selecting them by default under an Australia label overstates their geographic relevance.
+Those panels may be useful optional global context, but selecting them by default under an Australia label overstated their geographic relevance.
 
-Required correction: remove all three from the default Australia mission. Users can still add them manually.
+Implemented mitigation: all three are removed from the default Australia mission and remain manually selectable global context.
 
 ### AU-ADV-004 — Freshness basis missing from export
 
-The shared provenance model correctly tracks whether age is based on `observed-at`, `fetched-at`, or `none`. The Australia JSON export drops that field.
+The shared provenance model tracks whether age is based on `observed-at`, `fetched-at`, or `none`. The original Australia JSON export dropped that field.
 
-Required correction: export the provenance schema version, `freshnessBasis`, transformation description, and the relevant timestamps. Downstream systems must be able to say “fresh retrieval clock; exchange observation time unavailable.”
+Implemented mitigation: the envelope exports the provenance schema version, `freshnessBasis`, live/cache/unavailable mode, offline state, transformation description/version, and relevant timestamps.
 
-### AU-ADV-005 — ASX schedule evidence implies a live fetch
+### AU-ADV-005 — ASX schedule evidence implied a live fetch
 
-The session model is evaluated at the current time, but its official trading-hours/calendar source was statically verified on a recorded date. Setting both `observedAt` and `fetchedAt` to the render time conflates model evaluation with source retrieval.
+The session model is evaluated at the current time, but its official trading-hours/calendar source was statically verified on a recorded date. Setting both `observedAt` and `fetchedAt` to render time conflated model evaluation with source retrieval.
 
-Required correction:
+Implemented mitigation:
 
-- keep `observedAt` as the model evaluation time;
-- expose the independent source verification date;
-- do not claim a current schedule fetch;
-- warn when the source verification age exceeds the review policy;
-- do not put the calendar URL into a field named `termsUrl`.
+- `observedAt` remains the model evaluation time;
+- the independent source verification date is exported as `sourceCheckedAt`;
+- no current schedule fetch is claimed;
+- a 90-day source-review warning is emitted;
+- the calendar URL is retained in notes rather than misusing `termsUrl`.
 
-### AU-ADV-006 — Mixed quote groups collapse into one evidence row
+### AU-ADV-006 — Mixed quote groups collapsed into one evidence row
 
-Equities and resources already maintain independent retrieval clocks, but the UI chooses the first available quote and renders one generic `Quotes` evidence line.
+Equities and resources maintain independent retrieval clocks, but the original UI rendered one generic `Quotes` evidence line.
 
-Required correction: render separate “ASX basket” and “AUD/resources” evidence rows and include the freshness basis in each label.
+Implemented mitigation: the UI renders separate “ASX basket” and “AUD/resources” evidence rows, including live/cache/offline mode and freshness clock basis.
 
 ### AU-ADV-007 — Invalid price availability
 
-Finite zero and negative values are normalized rather than rejected. For the fixed ASX, FX, metal and energy basket, a non-positive price should fail closed.
+Finite zero and negative values were normalized rather than rejected. For the fixed ASX, FX, metal and energy basket, a non-positive price should fail closed.
 
-Required correction: require a finite price greater than zero; retain nullable change; mark an invalid quote as unavailable and preserve the provider warning.
+Implemented mitigation: prices must be finite and greater than zero; invalid values become unavailable while nullable change remains permitted.
 
 ### AU-ADV-008 — Basket is not breadth
 
 The basket is intentionally compact: one benchmark plus three bellwethers. It cannot support claims about Australian market breadth, small caps, sector participation, or an investable universe.
 
-Required correction: label it “ASX benchmark & bellwethers” and include a machine-readable constraint in the export.
+Implemented mitigation: the UI says “ASX benchmark & bellwethers”, and the machine-readable export carries an explicit compact-basket constraint.
 
 ### AU-ADV-009 — Missing price units
 
-A numeric price without unit/currency is ambiguous across index points, AUD equities, AUD/USD, metals, coal, oil and gas.
+A numeric price without unit or currency is ambiguous across index points, AUD equities, AUD/USD, metals, coal, oil and gas.
 
-Required correction:
+Implemented mitigation:
 
 - index: `index-points`;
-- Australian equities: `AUD per share`;
-- AUD/USD: `USD per AUD`;
-- futures where the current provider contract does not guarantee a normalized unit: `provider-native` rather than an invented unit.
+- Australian equities: `AUD-per-share`;
+- AUD/USD: `USD-per-AUD`;
+- futures whose current provider contract does not guarantee a normalized unit: `provider-native` rather than an invented unit.
 
 ### AU-ADV-010 — Rights and licence boundary
 
@@ -138,6 +145,8 @@ Required controls:
 - preserve source URLs and access classification;
 - do not publish or repackage cached values merely because the JSON export is technically copyable.
 
+The export now carries an internal-research rights constraint, but legal/provider review remains outside this code change.
+
 ### AU-ADV-011 — Calendar rollover
 
 Failing to `unknown` outside 2026 is correct. The operational weakness is that the desk will intentionally degrade on the first unverified weekday of 2027.
@@ -146,7 +155,7 @@ Required control: verify and transcribe the next official ASX calendar before th
 
 ### AU-ADV-012 — Possible duplicate market reads
 
-The Australia tab requests a subset symbol key while the Markets and Commodities panels may request broader configured sets. Because breaker caches are keyed by sorted symbol sets, overlapping requests can occupy separate entries and cause additional RPC/cache work.
+The Australia tab requests a subset symbol key while Markets and Commodities may request broader configured sets. Because breaker caches are keyed by sorted symbol sets, overlapping requests can occupy separate entries and cause additional RPC/cache work.
 
 Required next step: instrument request keys and confirm actual duplication before changing behaviour. Do not trade correctness for cache-key reuse without evidence.
 
@@ -154,24 +163,24 @@ Required next step: instrument request keys and confirm actual duplication befor
 
 Values such as `0.65` are policy judgements, not empirically calibrated probabilities.
 
-Required correction: label the basis as heuristic policy confidence or omit the numeric field until calibration exists.
+Implemented mitigation: the UI warns that confidence values are policy heuristics, and every exported evidence object carries `confidenceMeaning: policy-heuristic-not-calibrated`.
 
 ### AU-ADV-014 — Opening-sequence concern refuted
 
-ASX replaced the former staggered opening rotations with a single opening on 23 June 2025. The official current schedule places the randomized opening transition immediately before normal trading. Reporting `opening-auction` until 10:00 is conservative by seconds, not materially late, and avoids claiming continuous trading prematurely.
+ASX replaced former staggered opening rotations with a single opening on 23 June 2025. The official current schedule places the randomized opening transition immediately before normal trading. Reporting `opening-auction` until 10:00 is conservative by seconds, not materially late, and avoids claiming continuous trading prematurely.
 
 No code change is required for this concern. Preserve the source-check date and revisit only if ASX changes the schedule again.
 
 ## Immediate hardening order
 
-1. Restore the stable mission-registry contract and variant-scope Australia as an extension.
-2. Remove US/crypto-specific panels from the default Australia mission.
-3. Preserve circuit-breaker mode and timestamp through the market service.
-4. Correct ASX source-verification semantics.
-5. Split equities/resources evidence in the UI.
-6. Add freshness basis, units, basket limits, and rights constraints to the export.
-7. Reject non-positive quotes.
-8. Run focused tests, the complete upstream suite, TypeScript, and the Finance production build on the exact branch head.
+1. Run focused cache, mission, ASX, rendering, and export contracts.
+2. Run the complete upstream suite to catch compatibility drift.
+3. Type-check the browser application.
+4. Build the Finance production variant.
+5. Record the exact accepted head and run IDs in the draft PR.
+6. Instrument overlapping market request keys before making performance changes.
+7. Complete provider/redistribution rights review before public context redistribution.
+8. Verify the 2027 ASX calendar before year-end release.
 
 ## Deferred improvements
 
@@ -187,11 +196,12 @@ No code change is required for this concern. Preserve the source-check date and 
 The desk is acceptable only when:
 
 - cached data cannot be made fresh by a panel render;
-- every freshness label names its clock basis;
+- every freshness label names its clock basis and breaker mode;
 - unavailable and invalid prices fail visibly;
 - Australia defaults do not masquerade US/crypto indicators as domestic signals;
 - core mission IDs remain stable;
-- unsupported variants cannot apply the Australia extension;
+- unsupported variants cannot expose or restore the Australia extension;
 - exported prices carry units or an explicit provider-native marker;
+- exported confidence is visibly heuristic rather than calibrated;
 - the export preserves rights and no-trading constraints;
 - all focused and upstream tests, type checking, and the Finance build pass on the exact head SHA.
