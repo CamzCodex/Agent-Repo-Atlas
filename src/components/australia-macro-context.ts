@@ -13,6 +13,7 @@ import {
   AUSTRALIA_DESK_RESOURCE_SYMBOLS,
   type AustraliaDeskObservation,
   type AustraliaMarketDeskSnapshot,
+  type AustraliaQuoteGroupStatus,
 } from '@/services/australia-market-desk';
 import { escapeHtml } from '@/utils/sanitize';
 
@@ -65,6 +66,7 @@ function genericQuoteEvidence(nowMs: number, group: string): FinanceObservationP
     notes: [
       `${group} quotes have not produced a usable retrieval clock in this panel session.`,
       'The current market API does not expose the upstream observation timestamp.',
+      'Confidence is a heuristic policy label, not a calibrated probability.',
     ],
   }, nowMs);
 }
@@ -103,6 +105,7 @@ function buildFallbackSessionEvidence(
       `Trading-hours and calendar sources last checked ${ASX_MARKET_HOURS_METADATA.sourceCheckedAt}.`,
       `Calendar source: ${ASX_MARKET_HOURS_METADATA.calendarSourceUrl}`,
       'The model evaluation time is not a live ASX schedule retrieval time.',
+      'Confidence is a heuristic policy label, not a calibrated probability.',
       status.calendarVerified
         ? 'The local ASX calendar year is verified.'
         : 'The local weekday calendar year is unverified; session state is intentionally unknown.',
@@ -174,7 +177,9 @@ function observationTone(observation: AustraliaDeskObservation): string {
   if (observation.dataMode === 'cached' || observation.provenance.freshness === 'stale') return '#f39c12';
   if (observation.dataMode === 'unavailable' || observation.offline) return '#e67e22';
   if (observation.provenance.freshness === 'future' || observation.provenance.freshness === 'invalid') return '#e74c3c';
-  return observation.quote.change !== null && observation.quote.change >= 0 ? '#27ae60' : '#e74c3c';
+  const change = observation.quote.change;
+  if (change === null || !Number.isFinite(change) || change === 0) return 'var(--text-dim)';
+  return change > 0 ? '#27ae60' : '#e74c3c';
 }
 
 function freshnessBasisLabel(evidence: FinanceObservationProvenanceAssessment): string {
@@ -189,11 +194,17 @@ function dataModeLabel(observation: AustraliaDeskObservation | null): string {
   return observation.offline ? `${mode} · Offline` : mode;
 }
 
+function attemptLabel(status: AustraliaQuoteGroupStatus): string {
+  const mode = humanize(status.latestAttemptMode);
+  return status.latestAttemptOffline ? `${mode} offline` : mode;
+}
+
 function groupEvidenceLabel(
   observations: readonly AustraliaDeskObservation[] | undefined,
+  status: AustraliaQuoteGroupStatus,
   provenanceLabel: string,
 ): string {
-  return `${dataModeLabel(representativeObservation(observations))} · ${provenanceLabel}`;
+  return `${dataModeLabel(representativeObservation(observations))} displayed · latest refresh ${attemptLabel(status)} · ${provenanceLabel}`;
 }
 
 function observationCard(observation: AustraliaDeskObservation): string {
@@ -270,13 +281,13 @@ export function renderAustraliaMacroContext(
     ? `${observationSection('ASX benchmark & bellwethers', snapshot.markets)}${observationSection('AUD and resource transmission', snapshot.resources)}`
     : symbolSummary(model);
   const exportButton = snapshot
-    ? '<button type="button" data-australia-context-export style="border:1px solid var(--border);background:rgba(255,255,255,0.04);color:var(--text);border-radius:5px;padding:6px 8px;font-size:9px;font-weight:600;cursor:pointer;white-space:nowrap">Copy context JSON</button>'
+    ? '<button type="button" data-australia-context-export aria-label="Copy read-only Australia market context as JSON" title="Copies provenance-labelled research context; no trading instructions" style="border:1px solid var(--border);background:rgba(255,255,255,0.04);color:var(--text);border-radius:5px;padding:6px 8px;font-size:9px;font-weight:600;cursor:pointer;white-space:nowrap">Copy context JSON</button>'
     : '';
   const marketEvidenceLabel = snapshot
-    ? groupEvidenceLabel(snapshot.markets, model.marketEvidenceLabel)
+    ? groupEvidenceLabel(snapshot.markets, snapshot.marketGroupStatus, model.marketEvidenceLabel)
     : model.marketEvidenceLabel;
   const resourceEvidenceLabel = snapshot
-    ? groupEvidenceLabel(snapshot.resources, model.resourceEvidenceLabel)
+    ? groupEvidenceLabel(snapshot.resources, snapshot.resourceGroupStatus, model.resourceEvidenceLabel)
     : model.resourceEvidenceLabel;
 
   return `<div style="display:flex;flex-direction:column;gap:10px">
@@ -297,7 +308,7 @@ export function renderAustraliaMacroContext(
     ${observations}
 
     <div>
-      ${evidenceRow('Session', model.sessionEvidenceLabel, '#27ae60')}
+      ${evidenceRow('Session', model.sessionEvidenceLabel, model.statusTone)}
       ${evidenceRow('ASX basket', marketEvidenceLabel, '#f39c12')}
       ${evidenceRow('AUD/resources', resourceEvidenceLabel, '#f39c12')}
     </div>
