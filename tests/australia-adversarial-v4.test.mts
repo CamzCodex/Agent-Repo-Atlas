@@ -109,9 +109,9 @@ describe('Australia adversarial v4 asynchronous controls', () => {
 
   it('falls back after Clipboard API rejection and prevents reentrant copies', () => {
     assert.match(macroPanelSource, /if \(button\.disabled \|\| this\.signal\.aborted\) return/);
-    assert.match(macroPanelSource, /await navigator\.clipboard\.writeText\(text\)/);
-    assert.match(macroPanelSource, /catch \{\s*copied = this\._copyWithTextarea\(text\)/);
-    assert.match(macroPanelSource, /finally \{\s*textarea\.remove\(\)/);
+    assert.match(macroPanelSource, /private _clipboardCopy = new ClipboardCopyController\(\)/);
+    assert.match(macroPanelSource, /this\._clipboardCopy\.copy\(text, \{ signal: this\.signal \}\)/);
+    assert.match(macroPanelSource, /this\._clipboardCopy\.destroy\(\)/);
     assert.match(macroPanelSource, /button\.disabled = true/);
     assert.match(macroPanelSource, /this\._australiaLoadEpoch \+= 1/);
   });

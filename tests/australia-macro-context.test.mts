@@ -225,9 +225,8 @@ describe('Macro Tiles Australia mission wiring', () => {
   it('copies a typed read-only context envelope rather than scraping panel HTML', () => {
     assert.match(macroPanelSource, /buildAustraliaMarketContextExport\(this\._buildAustraliaSnapshot\(now\)\)/);
     assert.match(macroPanelSource, /serializeAustraliaMarketContextExport\(context\)/);
-    assert.match(macroPanelSource, /navigator\.clipboard\?\.writeText/);
-    assert.match(macroPanelSource, /navigator\.clipboard\.writeText\(text\)/);
-    assert.match(macroPanelSource, /finally \{\s*textarea\.remove\(\)/);
+    assert.match(macroPanelSource, /ClipboardCopyController/);
+    assert.match(macroPanelSource, /this\._clipboardCopy\.copy\(text, \{ signal: this\.signal \}\)/);
     assert.match(macroPanelSource, /data-australia-context-export/);
   });
 
