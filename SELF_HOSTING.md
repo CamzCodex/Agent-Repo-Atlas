@@ -6,33 +6,39 @@ Run the full World Monitor stack locally with Docker/Podman.
 
 - **Docker** or **Podman** (rootless works fine)
 - **Docker Compose** or **podman-compose** (`pip install podman-compose` or `uvx podman-compose`)
-- **Node.js 22+** (for running seed scripts on the host)
+- **Node.js 24** (the supported `.nvmrc` target, used for host seed scripts)
 
 ## 🚀 Quick Start
 
 ```bash
 # 1. Clone and enter the repo
-git clone https://github.com/koala73/worldmonitor.git
-cd worldmonitor
-npm install
+git clone --branch camz/local-foundation --single-branch \
+  https://github.com/CamzCodex/Agent-Repo-Atlas.git worldmonitor-camz
+cd worldmonitor-camz
+npm run camz:setup
 
-# 2. Generate the REQUIRED secrets. Without these the stack will not start
-#    (see the "Required Environment Variables" table below).
-echo "RELAY_SHARED_SECRET=$(openssl rand -hex 32)" >> .env
-echo "REDIS_PASSWORD=$(openssl rand -hex 32)"      >> .env
-echo "REDIS_TOKEN=$(openssl rand -hex 32)"         >> .env
+# 2. Generate the REQUIRED local-only secrets without printing their values.
+npm run camz:stack:init
 
 # 3. Start the stack
-docker compose up -d        # or: uvx podman-compose up -d
+npm run camz:stack:up
 
 # 4. Seed data into Redis
-./scripts/run-seeders.sh
+npm run camz:stack:seed
 
-# 5. Open the dashboard
-open http://localhost:3000
+# 5. Verify UI, API sidecar and Redis-backed data health
+npm run camz:stack:smoke
+
+# 6. Open http://127.0.0.1:3000 in your browser
 ```
 
 The dashboard works out of the box with public data sources (earthquakes, weather, conflicts, etc.). API keys unlock additional data feeds.
+
+The normal smoke command treats partially populated optional feeds as a
+warning, but always fails if the local Redis path is down. Once every provider
+required for your operating profile is configured, use
+`npm run camz:stack:smoke -- --require-data-ready` for a strict data-readiness
+gate.
 
 ## 🔐 Required Environment Variables
 
@@ -40,9 +46,9 @@ These must be set before `docker compose up -d`, or one of the containers will e
 
 | Variable | Purpose | How to generate |
 | --- | --- | --- |
-| `RELAY_SHARED_SECRET` | Authenticates every non-public request the dashboard makes to the AIS relay. The relay refuses to start without it. | `openssl rand -hex 32` |
-| `REDIS_PASSWORD` | Redis AUTH password (`--requirepass`). The Redis container refuses to start without it; the REST proxy uses it in its upstream connection string. | `openssl rand -hex 32` |
-| `REDIS_TOKEN` | Bearer token the REST proxy (`redis-rest`) requires on every request, and the value the app sends as `UPSTASH_REDIS_REST_TOKEN`. The proxy and app containers refuse to start without it. | `openssl rand -hex 32` |
+| `RELAY_SHARED_SECRET` | Authenticates every non-public request the dashboard makes to the AIS relay. The relay refuses to start without it. | `npm run camz:stack:init` |
+| `REDIS_PASSWORD` | Redis AUTH password (`--requirepass`). The Redis container refuses to start without it; the REST proxy uses it in its upstream connection string. | `npm run camz:stack:init` |
+| `REDIS_TOKEN` | Bearer token the REST proxy (`redis-rest`) requires on every request, and the value the app sends as `UPSTASH_REDIS_REST_TOKEN`. The proxy and app containers refuse to start without it. | `npm run camz:stack:init` |
 
 > Earlier releases shipped `wm-local-token` as a default for the REST token. That default has been removed (#3804) — the proxy was only reachable from `127.0.0.1:8079` so external exposure required a hostile `docker-compose.override.yml`, but any user who flipped that binding to `0.0.0.0` was instantly authenticated by a publicly documented string. Fresh installs and existing clones both need to set `REDIS_TOKEN` and `REDIS_PASSWORD` in `.env` from this release onward.
 
@@ -50,47 +56,34 @@ These must be set before `docker compose up -d`, or one of the containers will e
 
 ## 🔑 API Keys
 
-Create a `docker-compose.override.yml` to inject your keys. This file is **gitignored** — your secrets stay local.
+Add only the optional keys you use to the generated `.env`. Compose reads this
+file and the cross-platform host seeder reads the same file, preventing
+container and seeder configuration drift. The file is **gitignored**.
 
-```yaml
-services:
-  worldmonitor:
-    environment:
-      # 🤖 LLM — pick one or both (used for intelligence assessments)
-      GROQ_API_KEY: ""            # https://console.groq.com (free, 14.4K req/day)
-      OPENROUTER_API_KEY: ""      # https://openrouter.ai (free, 50 req/day)
+```dotenv
+# LLM — choose local or hosted
+LLM_API_URL=http://host.docker.internal:11434/v1/chat/completions
+LLM_API_KEY=
+LLM_MODEL=
+GROQ_API_KEY=
+OPENROUTER_API_KEY=
 
-      # 📊 Markets & Economics
-      FINNHUB_API_KEY: ""         # https://finnhub.io (free tier)
-      FRED_API_KEY: ""            # https://fred.stlouisfed.org/docs/api/api_key.html (free)
-      EIA_API_KEY: ""             # https://www.eia.gov/opendata/ (free)
+# Markets and economics
+FINNHUB_API_KEY=
+FRED_API_KEY=
+EIA_API_KEY=
 
-      # ⚔️ Conflict & Unrest
-      ACLED_EMAIL: ""             # https://acleddata.com (free for researchers)
-      ACLED_PASSWORD: ""          # OAuth flow — tokens auto-refresh (preferred over ACLED_ACCESS_TOKEN)
-      ACLED_ACCESS_TOKEN: ""      # Alternative: static token (expires every 24h)
-
-      # 🛰️ Earth Observation
-      NASA_FIRMS_API_KEY: ""      # REQUIRED for seed-fire-detections.mjs — https://firms.modaps.eosdis.nasa.gov (free)
-
-      # ✈️ Aviation
-      AVIATIONSTACK_API: ""       # https://aviationstack.com (free tier)
-      TRAVELPAYOUTS_API_TOKEN: "" # https://travelpayouts.com (flight price search — optional)
-      # 🚢 Maritime
-      AISSTREAM_API_KEY: ""       # https://aisstream.io (free)
-
-      # 🌐 Internet Outages (paid)
-      CLOUDFLARE_API_TOKEN: ""    # https://dash.cloudflare.com (requires Radar access)
-
-      # 🔌 Self-hosted LLM (optional — any OpenAI-compatible endpoint)
-      LLM_API_URL: ""             # e.g. http://localhost:11434/v1/chat/completions
-      LLM_API_KEY: ""
-      LLM_MODEL: ""
-
-  ais-relay:
-    environment:
-      AISSTREAM_API_KEY: ""       # same key as above — relay needs it too
+# Conflict, earth observation, aviation and maritime
+ACLED_EMAIL=
+ACLED_PASSWORD=
+NASA_FIRMS_API_KEY=
+AVIATIONSTACK_API=
+AISSTREAM_API_KEY=
 ```
+
+Do not commit `.env`. For a local LLM running on the same Windows/macOS host as
+Docker Desktop, `host.docker.internal` is normally the correct container-to-host
+name; Linux engines may require an explicit host-gateway mapping.
 
 ### 💰 Free vs Paid
 
@@ -106,9 +99,13 @@ services:
 The seed scripts fetch upstream data and write it to Redis. They run **on the host** (not inside the container) and need the Redis REST proxy to be running.
 
 ```bash
-# Run all seeders (auto-sources API keys from docker-compose.override.yml)
-./scripts/run-seeders.sh
+# Run all seeders using .env and the local Redis REST proxy
+npm run camz:stack:seed
 ```
+
+The Node runner works in PowerShell, Command Prompt, Bash and CI. The original
+`./scripts/run-seeders.sh` remains available for POSIX operators who need its
+shell-specific workflow.
 
 **⚠️ Important:** Redis data persists across container restarts via the `redis-data` volume, but is lost on `docker compose down -v`. Re-run the seeders if you remove volumes or see stale data.
 
@@ -116,15 +113,14 @@ To automate, add a cron job:
 
 ```bash
 # Re-seed every 30 minutes
-*/30 * * * * cd /path/to/worldmonitor && ./scripts/run-seeders.sh >> /tmp/wm-seeders.log 2>&1
+*/30 * * * * cd /path/to/worldmonitor && npm run camz:stack:seed >> /tmp/wm-seeders.log 2>&1
 ```
 
 **Per-seeder timeout (`SEED_TIMEOUT`):** standalone seeders are each wrapped in a
-wall-clock cap so one hung upstream can't starve the rest of the run. It defaults
-to `1800` (30 min); override with `SEED_TIMEOUT=<seconds>`, or `SEED_TIMEOUT=0` to
-disable. Bundle seeders (`seed-bundle-*.mjs`) are exempt — they already bound each
-section internally. Requires the `timeout` command (GNU coreutils); if it's absent
-the cap is silently skipped.
+wall-clock cap so one hung upstream cannot starve the rest of the run. It defaults
+to `1800` seconds (30 minutes); pass `--timeout 0` to disable or, for example,
+`--timeout 600` to use ten minutes. Bundle seeders are exempt because they already
+bound each section internally.
 
 ### 🔧 Manual seeder invocation
 
@@ -143,7 +139,8 @@ node scripts/seed-military-flights.mjs
 # ... etc
 ```
 
-`./scripts/run-seeders.sh` auto-sources `REDIS_TOKEN` from `.env`, so the wrapper is the simpler path. Use the manual form only when iterating on a single seeder.
+`npm run camz:stack:seed` reads `REDIS_TOKEN` from `.env`, so the wrapper is the
+simpler path. Use the manual form only when iterating on a single seeder.
 
 ## 🏗️ Architecture
 
@@ -196,12 +193,12 @@ docker build -t worldmonitor:latest -f Dockerfile .
 
 # Rebuild and restart
 docker compose down && docker compose up -d
-./scripts/run-seeders.sh
+npm run camz:stack:seed
 ```
 
 ### ⚠️ Build Notes
 
-- The Docker image uses **Node.js 22 Alpine** for both builder and runtime stages
+- The Docker image uses **Node.js 24 Alpine** for both builder and runtime stages
 - Blog site build is skipped in Docker (separate dependencies)
 - The runtime stage needs `gettext` (Alpine package) for `envsubst` in the nginx config
 - Docker nginx mirrors Vercel's `script-src` policy and does not allow `'unsafe-inline'`; hash-pin any custom inline scripts before adding them to a self-hosted build.
@@ -248,9 +245,10 @@ services:
 
 | Issue | Fix |
 |-------|-----|
-| 📡 `0/55 OK` on health check | Seeders haven't run — `./scripts/run-seeders.sh` |
+| 📡 No healthy data groups | Seeders have not run — `npm run camz:stack:seed` |
 | 🔴 nginx won't start | Check `podman logs worldmonitor` — likely missing `gettext` package |
-| 🔑 Seeders say "Missing UPSTASH_REDIS_REST_URL" | Stack isn't running, or run via `./scripts/run-seeders.sh` (auto-sets env vars) |
+| 🔑 Seeders say `REDIS_TOKEN is required` | Run `npm run camz:stack:init`, then confirm the stack is running |
+| 🔒 Relay repeatedly restarts | Run `npm run camz:stack:check`; the relay and dashboard must share `RELAY_SHARED_SECRET` |
 | 📦 `npm ci` fails in Docker build | Lockfile mismatch — regenerate with `docker run --rm -v $(pwd):/app -w /app node:24-alpine npm install --package-lock-only` |
 | 🚢 No vessel data | Set `AISSTREAM_API_KEY` in both `worldmonitor` and `ais-relay` services |
 | 🔥 No wildfire data | Set `NASA_FIRMS_API_KEY` |
