@@ -81,7 +81,7 @@ jobs:
           src/services/australia-market-context-export.ts
           tests/australia-adversarial-v4.test.mts
 
-      - name: Run focused Australia adversarial contracts
+      - name: Test ASX, provenance, and breaker foundations
         working-directory: target
         run: >-
           npx tsx --test
@@ -89,14 +89,35 @@ jobs:
           tests/asx-market-hours-browser-parity.test.mts
           tests/finance-observation-provenance.test.mts
           tests/circuit-breaker.test.mts
+
+      - name: Test market delivery-state contracts
+        working-directory: target
+        run: >-
+          npx tsx --test
           tests/market-data-state.test.mts
           tests/market-fetch-data-state-wiring.test.mts
+
+      - name: Test Australia desk and UI contracts
+        working-directory: target
+        run: >-
+          npx tsx --test
           tests/australia-market-desk.test.mts
           tests/australia-macro-context.test.mts
+
+      - name: Test Australia export and mission contracts
+        working-directory: target
+        run: >-
+          npx tsx --test
           tests/australia-market-context-export.test.mts
           tests/australia-mission-extension.test.mts
-          tests/macro-tiles-china-ui.test.mts
-          tests/australia-adversarial-v4.test.mts
+
+      - name: Test Macro Tiles China compatibility
+        working-directory: target
+        run: npx tsx --test tests/macro-tiles-china-ui.test.mts
+
+      - name: Test adversarial v4 delta
+        working-directory: target
+        run: npx tsx --test tests/australia-adversarial-v4.test.mts
 
       - name: Restore preserved upstream workflows
         working-directory: target
