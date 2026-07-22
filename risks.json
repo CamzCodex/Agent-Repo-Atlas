@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "1.0.0",
+  "lastReviewed": "2026-07-22",
+  "risks": [
+    {"id":"WM-001","description":"Current published v4 head lacks exact-head validation","status":"open","severity":"high","owner":"worldmonitor-maintainer","dependencies":["WP1"],"lastReviewed":"2026-07-22"},
+    {"id":"WM-002","description":"World Monitor lineage is disconnected from repository default branch","status":"open","severity":"high","owner":"repo-owner","dependencies":["WP2","WP3"],"lastReviewed":"2026-07-22"},
+    {"id":"WM-007","description":"Neutral contract and runtime provider do not exist","status":"open","severity":"critical","owner":"integration-lead","dependencies":["WP4","WP10"],"lastReviewed":"2026-07-22"},
+    {"id":"WM-008","description":"Yahoo-derived AU data rights and timing are uncertain","status":"open","severity":"high","owner":"licensed-market-data-owner","dependencies":["WP7"],"lastReviewed":"2026-07-22"},
+    {"id":"WM-009","description":"Observation and event revisions are not durably preserved","status":"open","severity":"high","owner":"data-platform-owner","dependencies":["WP8"],"lastReviewed":"2026-07-22"},
+    {"id":"WM-010","description":"Hostile provider text may inject downstream agents","status":"open","severity":"high","owner":"security-owner","dependencies":["WP4","WP10"],"lastReviewed":"2026-07-22"},
+    {"id":"WM-011","description":"Entity matching may create false issuer or sanctions exposure","status":"open","severity":"high","owner":"data-platform-owner","dependencies":["WP9"],"lastReviewed":"2026-07-22"},
+    {"id":"WM-012","description":"ASX breadth would be biased without point-in-time universe and actions","status":"open","severity":"high","owner":"licensed-market-data-owner","dependencies":["WP7"],"lastReviewed":"2026-07-22"},
+    {"id":"WM-013","description":"ASX 2027 session calendar remains unverified","status":"open","severity":"medium","owner":"worldmonitor-provider-owner","dependencies":[],"lastReviewed":"2026-07-22"},
+    {"id":"WM-015","description":"AU provider manifests and health controls are absent","status":"open","severity":"high","owner":"operations-owner","dependencies":["WP4","WP5","WP6"],"lastReviewed":"2026-07-22"}
+  ]
+}

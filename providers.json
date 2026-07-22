@@ -1,0 +1,15 @@
+{
+  "schemaVersion": "1.0.0",
+  "lastReviewed": "2026-07-22",
+  "providers": [
+    {"id":"WM-YAHOO-AU-001","description":"Undocumented Yahoo-derived Australia quote fallback","status":"fallback","owner":"worldmonitor-market-data","dependencies":[],"sourceClass":"undocumented-endpoint","rightsPolicy":"internal-research-only","lastReviewed":"2026-07-22"},
+    {"id":"WM-ASX-CAL-001","description":"Official ASX session calendar and reference material","status":"current-2026","owner":"worldmonitor-provider-owner","dependencies":["RIGHT-ASX-CALENDAR"],"sourceClass":"official-public","rightsPolicy":"review-required","lastReviewed":"2026-07-22"},
+    {"id":"WM-ABS-001","description":"Australian Bureau of Statistics macro datasets","status":"planned","owner":"australia-data-owner","dependencies":["WP4","RIGHT-ABS"],"sourceClass":"official-public","rightsPolicy":"pending-review","lastReviewed":"2026-07-22"},
+    {"id":"WM-RBA-001","description":"Reserve Bank of Australia rates, FX and credit datasets","status":"planned","owner":"australia-data-owner","dependencies":["WP4","RIGHT-RBA"],"sourceClass":"official-public","rightsPolicy":"pending-review","lastReviewed":"2026-07-22"},
+    {"id":"WM-APRA-001","description":"APRA ADI capital, liquidity and exposure datasets","status":"planned","owner":"australia-data-owner","dependencies":["WP4","RIGHT-APRA"],"sourceClass":"official-public","rightsPolicy":"pending-review","lastReviewed":"2026-07-22"},
+    {"id":"WM-AEMO-001","description":"AEMO electricity prices, demand, generation and interconnector data","status":"planned","owner":"energy-data-owner","dependencies":["WP4","RIGHT-AEMO"],"sourceClass":"official-or-licensed","rightsPolicy":"pending-review","lastReviewed":"2026-07-22"},
+    {"id":"WM-DFAT-001","description":"DFAT Australian sanctions material","status":"planned","owner":"sanctions-data-owner","dependencies":["WP4","RIGHT-DFAT"],"sourceClass":"official-public","rightsPolicy":"pending-review","lastReviewed":"2026-07-22"},
+    {"id":"WM-ASIC-001","description":"ASIC open/register datasets","status":"planned","owner":"company-data-owner","dependencies":["WP4","RIGHT-ASIC"],"sourceClass":"official-public","rightsPolicy":"dataset-specific-review","lastReviewed":"2026-07-22"},
+    {"id":"WM-ASX-LIC-001","description":"Licensed ASX security master, events, actions, status and quotes","status":"blocked-rights","owner":"licensed-market-data-owner","dependencies":["WP7","RIGHT-ASX-LICENSED"],"sourceClass":"licensed-observation","rightsPolicy":"contract-required","lastReviewed":"2026-07-22"}
+  ]
+}
