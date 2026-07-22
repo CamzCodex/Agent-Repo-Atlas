@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { describe, it } from 'node:test';
+import { beforeEach, describe, it } from 'node:test';
 
 import type { MarketData } from '../src/types/index.ts';
 import { buildAustraliaMarketDeskSnapshot } from '../src/services/australia-market-desk.ts';
@@ -8,7 +8,10 @@ import {
   buildAustraliaMarketContextExport,
   serializeAustraliaMarketContextExport,
 } from '../src/services/australia-market-context-export.ts';
-import { markMarketDataState } from '../src/services/market-data-state.ts';
+import {
+  markMarketDataState,
+  resetMarketDataStateForTests,
+} from '../src/services/market-data-state.ts';
 import { FINANCE_OBSERVATION_PROVENANCE_VERSION } from '../src/shared/finance-observation-provenance.ts';
 
 function quote(symbol: string, price: number, change: number): MarketData {
@@ -38,22 +41,30 @@ function snapshot() {
     quote('CL=F', 70, 0.4),
     quote('NG=F', 3.3, -0.8),
   ];
-  markMarketDataState(markets, {
-    mode: 'live',
-    timestamp: Date.parse('2026-07-22T00:00:00Z'),
-    offline: false,
-  });
-  markMarketDataState(resources, {
-    mode: 'cached',
-    timestamp: Date.parse('2026-07-21T23:59:00Z'),
-    offline: false,
-  });
+  markMarketDataState(
+    markets,
+    { mode: 'live', timestamp: Date.parse('2026-07-22T00:00:00Z'), offline: false },
+    {
+      latestAttemptState: { mode: 'live', timestamp: Date.parse('2026-07-22T00:00:00Z'), offline: false },
+      requestSymbols: markets.map((entry) => entry.symbol),
+    },
+  );
+  markMarketDataState(
+    resources,
+    { mode: 'cached', timestamp: Date.parse('2026-07-21T23:59:00Z'), offline: false },
+    {
+      latestAttemptState: { mode: 'unavailable', timestamp: null, offline: false },
+      requestSymbols: resources.map((entry) => entry.symbol),
+    },
+  );
   return buildAustraliaMarketDeskSnapshot(markets, resources, {
     now: new Date('2026-07-22T00:05:00Z'),
   });
 }
 
 describe('Australia market context export', () => {
+  beforeEach(() => resetMarketDataStateForTests());
+
   it('builds a stable read-only context envelope with honest ASX source clocks', () => {
     const context = buildAustraliaMarketContextExport(snapshot());
 
@@ -64,6 +75,8 @@ describe('Australia market context export', () => {
     assert.equal(context.asx.phase, 'regular');
     assert.equal(context.asx.calendarVerified, true);
     assert.equal(context.asx.sourceCheckedAt, '2026-07-22');
+    assert.equal(context.asx.sourceReviewAgeMs, 5 * 60 * 1000);
+    assert.equal(context.asx.sourceReviewStatus, 'current');
     assert.equal(context.asx.evidence.provenanceSchemaVersion, FINANCE_OBSERVATION_PROVENANCE_VERSION);
     assert.equal(context.asx.evidence.sourceClass, 'official');
     assert.equal(context.asx.evidence.transformationKind, 'deterministic-model');
@@ -72,11 +85,23 @@ describe('Australia market context export', () => {
     assert.equal(context.asx.evidence.fetchedAt, null);
     assert.equal(context.asx.evidence.termsUrl, null);
     assert.equal(context.asx.evidence.confidenceMeaning, 'policy-heuristic-not-calibrated');
+    assert.deepEqual(context.quoteGroups.equities, {
+      dataMode: 'live',
+      dataOffline: false,
+      latestAttemptMode: 'live',
+      latestAttemptOffline: false,
+    });
+    assert.deepEqual(context.quoteGroups.resources, {
+      dataMode: 'cached',
+      dataOffline: false,
+      latestAttemptMode: 'unavailable',
+      latestAttemptOffline: false,
+    });
     assert.equal(context.observations.length, 11);
     assert.deepEqual(context.missingSymbols, []);
   });
 
-  it('classifies units and preserves live/cache modes without recommendations', () => {
+  it('classifies units and preserves displayed/latest modes without recommendations', () => {
     const context = buildAustraliaMarketContextExport(snapshot());
     const bySymbol = new Map(context.observations.map((entry) => [entry.symbol, entry]));
 
@@ -84,6 +109,7 @@ describe('Australia market context export', () => {
     assert.equal(bySymbol.get('^AXJO')?.quoteUnit, 'index-points');
     assert.equal(bySymbol.get('^AXJO')?.currency, null);
     assert.equal(bySymbol.get('^AXJO')?.dataMode, 'live');
+    assert.equal(bySymbol.get('^AXJO')?.latestAttemptMode, 'live');
     assert.equal(bySymbol.get('^AXJO')?.offline, false);
     assert.equal(bySymbol.get('BHP.AX')?.assetClass, 'equity');
     assert.equal(bySymbol.get('BHP.AX')?.quoteUnit, 'AUD-per-share');
@@ -92,6 +118,7 @@ describe('Australia market context export', () => {
     assert.equal(bySymbol.get('AUDUSD=X')?.quoteUnit, 'USD-per-AUD');
     assert.equal(bySymbol.get('AUDUSD=X')?.currency, 'USD');
     assert.equal(bySymbol.get('AUDUSD=X')?.dataMode, 'cached');
+    assert.equal(bySymbol.get('AUDUSD=X')?.latestAttemptMode, 'unavailable');
     assert.equal(bySymbol.get('HG=F')?.assetClass, 'commodity');
     assert.equal(bySymbol.get('HG=F')?.quoteUnit, 'provider-native');
     assert.equal(bySymbol.get('HG=F')?.currency, null);
@@ -113,6 +140,10 @@ describe('Australia market context export', () => {
     assert.ok(context.constraints.some((constraint) => constraint.includes('not Australian market breadth')));
     assert.ok(context.constraints.some((constraint) => constraint.includes('rights review')));
     assert.ok(context.constraints.some((constraint) => constraint.includes('not calibrated probabilities')));
+    assert.ok(context.constraints.some((constraint) => constraint.includes('latest refresh state')));
+    assert.ok(context.warnings.includes(
+      'Latest AUD/resource refresh is unavailable; displaying the last usable observations.',
+    ));
   });
 
   it('preserves missing data and degraded evidence visibly', () => {
@@ -130,6 +161,7 @@ describe('Australia market context export', () => {
     const bhp = context.observations.find((entry) => entry.symbol === 'BHP.AX');
 
     assert.equal(asx?.dataMode, 'unknown');
+    assert.equal(asx?.latestAttemptMode, 'unknown');
     assert.equal(asx?.evidence.freshness, 'stale');
     assert.ok(asx?.evidence.flags.includes('stale-observation'));
     assert.equal(bhp?.quoteAvailable, false);
