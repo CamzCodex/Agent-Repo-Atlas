@@ -1,11 +1,19 @@
 import assert from 'node:assert/strict';
-import { describe, it } from 'node:test';
+import { beforeEach, describe, it } from 'node:test';
 
 import type { MarketData } from '../src/types/index.ts';
-import { buildAustraliaMarketDeskSnapshot } from '../src/services/australia-market-desk.ts';
 import {
+  AUSTRALIA_DESK_MARKET_SYMBOLS,
+  AUSTRALIA_DESK_RESOURCE_SYMBOLS,
+  buildAustraliaMarketDeskSnapshot,
+} from '../src/services/australia-market-desk.ts';
+import {
+  getLatestMarketRequestState,
+  getMarketDataDeliveryState,
   getMarketDataState,
+  markLatestMarketRequestState,
   markMarketDataState,
+  resetMarketDataStateForTests,
 } from '../src/services/market-data-state.ts';
 
 function quote(symbol: string, price: number): MarketData {
@@ -41,22 +49,40 @@ function resourceQuotes(): MarketData[] {
 }
 
 describe('market quote array data-state metadata', () => {
+  beforeEach(() => resetMarketDataStateForTests());
+
   it('returns null for unmarked arrays and defensive copies for marked arrays', () => {
     const data = marketQuotes();
     assert.equal(getMarketDataState(data), null);
 
-    markMarketDataState(data, { mode: 'cached', timestamp: 1_000, offline: true });
+    markMarketDataState(data, { mode: 'cached', timestamp: 1_000, offline: true }, {
+      latestAttemptState: { mode: 'unavailable', timestamp: null, offline: false },
+      requestSymbols: AUSTRALIA_DESK_MARKET_SYMBOLS,
+    });
     const first = getMarketDataState(data);
+    const delivery = getMarketDataDeliveryState(data);
     assert.deepEqual(first, { mode: 'cached', timestamp: 1_000, offline: true });
+    assert.deepEqual(delivery, {
+      dataState: { mode: 'cached', timestamp: 1_000, offline: true },
+      latestAttemptState: { mode: 'unavailable', timestamp: null, offline: false },
+      requestKey: [...AUSTRALIA_DESK_MARKET_SYMBOLS].sort().join(','),
+    });
 
     assert.ok(first);
     first.mode = 'live';
     first.timestamp = 2_000;
     first.offline = false;
+    assert.ok(delivery);
+    delivery.dataState.mode = 'live';
+    delivery.latestAttemptState.mode = 'live';
     assert.deepEqual(
-      getMarketDataState(data),
-      { mode: 'cached', timestamp: 1_000, offline: true },
-      'consumer mutation must not rewrite the stored evidence state',
+      getMarketDataDeliveryState(data),
+      {
+        dataState: { mode: 'cached', timestamp: 1_000, offline: true },
+        latestAttemptState: { mode: 'unavailable', timestamp: null, offline: false },
+        requestKey: [...AUSTRALIA_DESK_MARKET_SYMBOLS].sort().join(','),
+      },
+      'consumer mutation must not rewrite stored evidence state',
     );
   });
 
@@ -67,17 +93,15 @@ describe('market quote array data-state metadata', () => {
       mode: 'cached',
       timestamp: Date.parse('2026-07-21T23:30:00Z'),
       offline: false,
-    });
+    }, { requestSymbols: AUSTRALIA_DESK_MARKET_SYMBOLS });
     markMarketDataState(resources, {
       mode: 'live',
       timestamp: Date.parse('2026-07-22T00:19:00Z'),
       offline: false,
-    });
+    }, { requestSymbols: AUSTRALIA_DESK_RESOURCE_SYMBOLS });
 
     const snapshot = buildAustraliaMarketDeskSnapshot(markets, resources, {
       now: new Date('2026-07-22T00:20:00Z'),
-      // This is the old panel-completion behaviour. It must be ignored because
-      // each array carries stronger per-call breaker evidence.
       marketFetchedAt: '2026-07-22T00:20:00Z',
       resourceFetchedAt: '2026-07-22T00:20:00Z',
       quoteMaxAgeMs: 15 * 60 * 1000,
@@ -94,11 +118,52 @@ describe('market quote array data-state metadata', () => {
     assert.equal(snapshot.warnings.includes('AUD/resource observations are stale.'), false);
   });
 
-  it('does not invent a fetch clock when the breaker returned unavailable', () => {
+  it('surfaces a later failed refresh even when the panel retains an older array', () => {
     const markets = marketQuotes();
     const resources = resourceQuotes();
-    markMarketDataState(markets, { mode: 'unavailable', timestamp: null, offline: false });
-    markMarketDataState(resources, { mode: 'unavailable', timestamp: null, offline: true });
+    markMarketDataState(markets, {
+      mode: 'live',
+      timestamp: Date.parse('2026-07-22T00:18:00Z'),
+      offline: false,
+    }, { requestSymbols: AUSTRALIA_DESK_MARKET_SYMBOLS });
+    markMarketDataState(resources, {
+      mode: 'cached',
+      timestamp: Date.parse('2026-07-22T00:00:00Z'),
+      offline: false,
+    }, { requestSymbols: AUSTRALIA_DESK_RESOURCE_SYMBOLS });
+
+    markLatestMarketRequestState(AUSTRALIA_DESK_RESOURCE_SYMBOLS, {
+      mode: 'unavailable',
+      timestamp: null,
+      offline: true,
+    });
+    assert.deepEqual(getLatestMarketRequestState(AUSTRALIA_DESK_RESOURCE_SYMBOLS), {
+      mode: 'unavailable',
+      timestamp: null,
+      offline: true,
+    });
+
+    const snapshot = buildAustraliaMarketDeskSnapshot(markets, resources, {
+      now: new Date('2026-07-22T00:20:00Z'),
+    });
+
+    assert.equal(snapshot.resourceGroupStatus.dataMode, 'cached');
+    assert.equal(snapshot.resourceGroupStatus.latestAttemptMode, 'unavailable');
+    assert.equal(snapshot.resourceGroupStatus.latestAttemptOffline, true);
+    assert.ok(snapshot.resources.every((entry) => entry.quote !== null));
+    assert.ok(snapshot.warnings.includes('Latest AUD/resource refresh is unavailable; displaying the last usable observations.'));
+    assert.ok(snapshot.warnings.includes('One or more market groups are using offline-mode data.'));
+  });
+
+  it('does not invent a fetch clock when the displayed data state is unavailable', () => {
+    const markets = marketQuotes();
+    const resources = resourceQuotes();
+    markMarketDataState(markets, { mode: 'unavailable', timestamp: null, offline: false }, {
+      requestSymbols: AUSTRALIA_DESK_MARKET_SYMBOLS,
+    });
+    markMarketDataState(resources, { mode: 'unavailable', timestamp: null, offline: true }, {
+      requestSymbols: AUSTRALIA_DESK_RESOURCE_SYMBOLS,
+    });
 
     const snapshot = buildAustraliaMarketDeskSnapshot(markets, resources, {
       now: new Date('2026-07-22T00:20:00Z'),
