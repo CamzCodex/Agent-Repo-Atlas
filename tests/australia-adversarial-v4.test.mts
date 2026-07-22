@@ -90,6 +90,12 @@ function markedSnapshot(
 
 describe('Australia adversarial v4 asynchronous controls', () => {
   it('uses a newest-request-wins epoch and explicit breaker states', () => {
+    assert.match(macroPanelSource, /private _macroFetchGate = new LatestRequestGate\(\)/);
+    assert.match(macroPanelSource, /const fetchSequence = this\._macroFetchGate\.begin\(\)/);
+    assert.match(
+      macroPanelSource,
+      /this\.signal\.aborted \|\| !this\._macroFetchGate\.isCurrent\(fetchSequence\)/,
+    );
     assert.match(macroPanelSource, /private _australiaLoadEpoch = 0/);
     assert.match(macroPanelSource, /const epoch = \+\+this\._australiaLoadEpoch/);
     assert.match(macroPanelSource, /epoch !== this\._australiaLoadEpoch/);

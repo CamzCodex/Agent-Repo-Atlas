@@ -6,6 +6,7 @@ import type {
 } from '@/generated/client/worldmonitor/economic/v1/service_client';
 import type { MarketData } from '@/types';
 import type { BreakerDataState } from '@/utils/circuit-breaker';
+import { LatestRequestGate } from '@/utils/latest-request-gate';
 import { Panel } from './Panel';
 import { t } from '@/services/i18n';
 import { escapeHtml, unsafeRawHtml } from '@/utils/sanitize';
@@ -294,6 +295,7 @@ export class MacroTilesPanel extends Panel {
   private _australiaMarketLatestAttemptState: BreakerDataState | null = null;
   private _australiaResourceLatestAttemptState: BreakerDataState | null = null;
   private _australiaLoadEpoch = 0;
+  private _macroFetchGate = new LatestRequestGate();
   private _asxClockTimer: ReturnType<typeof setInterval> | null = null;
   private _copyFeedbackTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -341,6 +343,7 @@ export class MacroTilesPanel extends Panel {
     const active = loadStoredMissionPreset()?.id === 'australia-market-watch';
     if (active === this._australiaMissionActive) return;
 
+    this._macroFetchGate.invalidate();
     this._australiaLoadEpoch += 1;
     this._australiaMissionActive = active;
     if (active) {
@@ -476,6 +479,7 @@ export class MacroTilesPanel extends Panel {
   }
 
   public override destroy(): void {
+    this._macroFetchGate.invalidate();
     this._australiaLoadEpoch += 1;
     if (this._asxClockTimer) {
       clearInterval(this._asxClockTimer);
@@ -490,6 +494,7 @@ export class MacroTilesPanel extends Panel {
 
   public async fetchData(): Promise<boolean> {
     this._syncAustraliaMission();
+    const fetchSequence = this._macroFetchGate.begin();
     this.showLoading();
     try {
       const client = await getEconomicClient();
@@ -505,6 +510,9 @@ export class MacroTilesPanel extends Panel {
         hydratedChina ?? client.getChinaMacroSnapshot({}),
         this._australiaMissionActive ? this._loadAustraliaQuotes() : Promise.resolve(),
       ]);
+
+      this._syncAustraliaMission();
+      if (this.signal.aborted || !this._macroFetchGate.isCurrent(fetchSequence)) return false;
 
       const results = fredResp.status === 'fulfilled' ? (fredResp.value.results ?? {}) : {};
       this._estrObs = results['ESTR']?.observations ?? [];
@@ -541,6 +549,8 @@ export class MacroTilesPanel extends Panel {
       this._render();
       return true;
     } catch (e) {
+      this._syncAustraliaMission();
+      if (this.signal.aborted || !this._macroFetchGate.isCurrent(fetchSequence)) return false;
       if (this._australiaMissionActive) {
         this._hasData = true;
         this._tab = 'au';
