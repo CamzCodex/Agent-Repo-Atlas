@@ -4,6 +4,7 @@ import { describe, it } from 'node:test';
 import {
   CORE_MISSION_PRESETS,
   MISSION_PRESET_EXTENSIONS,
+  applyMissionPresetToState,
   getAvailableMissionPresets,
   getMissionPreset,
 } from '../src/services/mission-presets.ts';
@@ -40,6 +41,13 @@ describe('Australia mission extension registry', () => {
         `${variant} must not expose the Australia extension`,
       );
     }
+  });
+
+  it('fails closed when code attempts to apply Australia to an unsupported variant', () => {
+    assert.throws(
+      () => applyMissionPresetToState('australia-market-watch', {}, undefined, 'tech'),
+      /Mission preset "australia-market-watch" is not available for variant "tech"/,
+    );
   });
 
   it('does not auto-select US/crypto-specific context panels under the Australia label', () => {
