@@ -43,10 +43,26 @@ describe('Australia mission extension registry', () => {
     }
   });
 
-  it('fails closed when code attempts to apply Australia to an unsupported variant', () => {
+  it('accepts Australia only for the explicitly supported variants', () => {
+    for (const variant of ['full', 'finance']) {
+      assert.equal(
+        applyMissionPresetToState('australia-market-watch', {}, undefined, variant).preset.id,
+        'australia-market-watch',
+      );
+    }
+
+    for (const variant of ['tech', 'commodity', 'energy', 'happy']) {
+      assert.throws(
+        () => applyMissionPresetToState('australia-market-watch', {}, undefined, variant),
+        new RegExp(`Mission preset "australia-market-watch" is not available for variant "${variant}"`),
+      );
+    }
+  });
+
+  it('rejects an unknown preset clearly', () => {
     assert.throws(
-      () => applyMissionPresetToState('australia-market-watch', {}, undefined, 'tech'),
-      /Mission preset "australia-market-watch" is not available for variant "tech"/,
+      () => applyMissionPresetToState('not-a-real-preset' as never, {}, undefined, 'full'),
+      /Unknown mission preset: not-a-real-preset/,
     );
   });
 

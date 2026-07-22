@@ -90,6 +90,12 @@ function markedSnapshot(
 
 describe('Australia adversarial v4 asynchronous controls', () => {
   it('uses a newest-request-wins epoch and explicit breaker states', () => {
+    assert.match(macroPanelSource, /private _macroFetchGate = new LatestRequestGate\(\)/);
+    assert.match(macroPanelSource, /const fetchSequence = this\._macroFetchGate\.begin\(\)/);
+    assert.match(
+      macroPanelSource,
+      /this\.signal\.aborted \|\| !this\._macroFetchGate\.isCurrent\(fetchSequence\)/,
+    );
     assert.match(macroPanelSource, /private _australiaLoadEpoch = 0/);
     assert.match(macroPanelSource, /const epoch = \+\+this\._australiaLoadEpoch/);
     assert.match(macroPanelSource, /epoch !== this\._australiaLoadEpoch/);
@@ -103,9 +109,9 @@ describe('Australia adversarial v4 asynchronous controls', () => {
 
   it('falls back after Clipboard API rejection and prevents reentrant copies', () => {
     assert.match(macroPanelSource, /if \(button\.disabled \|\| this\.signal\.aborted\) return/);
-    assert.match(macroPanelSource, /await navigator\.clipboard\.writeText\(text\)/);
-    assert.match(macroPanelSource, /catch \{\s*copied = this\._copyWithTextarea\(text\)/);
-    assert.match(macroPanelSource, /finally \{\s*textarea\.remove\(\)/);
+    assert.match(macroPanelSource, /private _clipboardCopy = new ClipboardCopyController\(\)/);
+    assert.match(macroPanelSource, /this\._clipboardCopy\.copy\(text, \{ signal: this\.signal \}\)/);
+    assert.match(macroPanelSource, /this\._clipboardCopy\.destroy\(\)/);
     assert.match(macroPanelSource, /button\.disabled = true/);
     assert.match(macroPanelSource, /this\._australiaLoadEpoch \+= 1/);
   });

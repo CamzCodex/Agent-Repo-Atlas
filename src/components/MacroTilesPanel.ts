@@ -6,6 +6,8 @@ import type {
 } from '@/generated/client/worldmonitor/economic/v1/service_client';
 import type { MarketData } from '@/types';
 import type { BreakerDataState } from '@/utils/circuit-breaker';
+import { ClipboardCopyController } from '@/utils/clipboard';
+import { LatestRequestGate } from '@/utils/latest-request-gate';
 import { Panel } from './Panel';
 import { t } from '@/services/i18n';
 import { escapeHtml, unsafeRawHtml } from '@/utils/sanitize';
@@ -294,6 +296,8 @@ export class MacroTilesPanel extends Panel {
   private _australiaMarketLatestAttemptState: BreakerDataState | null = null;
   private _australiaResourceLatestAttemptState: BreakerDataState | null = null;
   private _australiaLoadEpoch = 0;
+  private _macroFetchGate = new LatestRequestGate();
+  private _clipboardCopy = new ClipboardCopyController();
   private _asxClockTimer: ReturnType<typeof setInterval> | null = null;
   private _copyFeedbackTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -341,6 +345,7 @@ export class MacroTilesPanel extends Panel {
     const active = loadStoredMissionPreset()?.id === 'australia-market-watch';
     if (active === this._australiaMissionActive) return;
 
+    this._macroFetchGate.invalidate();
     this._australiaLoadEpoch += 1;
     this._australiaMissionActive = active;
     if (active) {
@@ -427,43 +432,15 @@ export class MacroTilesPanel extends Panel {
     );
   }
 
-  private _copyWithTextarea(text: string): boolean {
-    const textarea = document.createElement('textarea');
-    textarea.value = text;
-    textarea.readOnly = true;
-    textarea.style.position = 'fixed';
-    textarea.style.opacity = '0';
-    document.body.appendChild(textarea);
-    try {
-      textarea.select();
-      return typeof document.execCommand === 'function' && document.execCommand('copy');
-    } finally {
-      textarea.remove();
-    }
-  }
-
   private async _copyAustraliaContext(button: HTMLButtonElement): Promise<void> {
     if (button.disabled || this.signal.aborted) return;
     button.disabled = true;
     const now = new Date();
     const context = buildAustraliaMarketContextExport(this._buildAustraliaSnapshot(now));
     const text = serializeAustraliaMarketContextExport(context);
-    let copied = false;
-
-    try {
-      if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
-        try {
-          await navigator.clipboard.writeText(text);
-          copied = true;
-        } catch {
-          copied = this._copyWithTextarea(text);
-        }
-      } else {
-        copied = this._copyWithTextarea(text);
-      }
-    } catch {
-      copied = false;
-    }
+    const copyResult = await this._clipboardCopy.copy(text, { signal: this.signal });
+    if (copyResult.status === 'cancelled') return;
+    const copied = copyResult.status === 'copied';
 
     button.textContent = copied ? 'Copied' : 'Copy failed';
     if (this._copyFeedbackTimer) clearTimeout(this._copyFeedbackTimer);
@@ -476,6 +453,8 @@ export class MacroTilesPanel extends Panel {
   }
 
   public override destroy(): void {
+    this._clipboardCopy.destroy();
+    this._macroFetchGate.invalidate();
     this._australiaLoadEpoch += 1;
     if (this._asxClockTimer) {
       clearInterval(this._asxClockTimer);
@@ -490,6 +469,7 @@ export class MacroTilesPanel extends Panel {
 
   public async fetchData(): Promise<boolean> {
     this._syncAustraliaMission();
+    const fetchSequence = this._macroFetchGate.begin();
     this.showLoading();
     try {
       const client = await getEconomicClient();
@@ -505,6 +485,9 @@ export class MacroTilesPanel extends Panel {
         hydratedChina ?? client.getChinaMacroSnapshot({}),
         this._australiaMissionActive ? this._loadAustraliaQuotes() : Promise.resolve(),
       ]);
+
+      this._syncAustraliaMission();
+      if (this.signal.aborted || !this._macroFetchGate.isCurrent(fetchSequence)) return false;
 
       const results = fredResp.status === 'fulfilled' ? (fredResp.value.results ?? {}) : {};
       this._estrObs = results['ESTR']?.observations ?? [];
@@ -541,6 +524,8 @@ export class MacroTilesPanel extends Panel {
       this._render();
       return true;
     } catch (e) {
+      this._syncAustraliaMission();
+      if (this.signal.aborted || !this._macroFetchGate.isCurrent(fetchSequence)) return false;
       if (this._australiaMissionActive) {
         this._hasData = true;
         this._tab = 'au';

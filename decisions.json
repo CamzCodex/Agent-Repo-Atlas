@@ -1,0 +1,12 @@
+{
+  "schemaVersion": "1.0.0",
+  "lastReviewed": "2026-07-22",
+  "decisions": [
+    {"id":"DEC-001","description":"Preserve and extend existing World Monitor architecture instead of replacing it","status":"accepted","owner":"integration-lead","dependencies":[],"rationale":"Existing map, panel, provider, cache, API, MCP, desktop and finance architecture is mature","lastReviewed":"2026-07-22"},
+    {"id":"DEC-002","description":"Use a neutral typed read-only context contract and clean-room runtime provider","status":"proposed","owner":"Cameron","dependencies":["WP1","WP2"],"rationale":"Smallest replayable integration that preserves AGPL/MIT separation","lastReviewed":"2026-07-22"},
+    {"id":"DEC-003","description":"Use static/file payload transport first; defer API/MCP/event streaming","status":"proposed","owner":"integration-lead","dependencies":["DEC-002"],"rationale":"Minimizes availability, auth and prompt-injection coupling","lastReviewed":"2026-07-22"},
+    {"id":"DEC-004","description":"Do not implement ASX breadth before licensed universe, point-in-time membership and corporate actions","status":"accepted","owner":"licensed-market-data-owner","dependencies":["WP7"],"rationale":"Prevents false coverage and survivorship bias","lastReviewed":"2026-07-22"},
+    {"id":"DEC-005","description":"Do not migrate out of Agent-Repo-Atlas until a known-green World Monitor SHA exists","status":"accepted","owner":"repo-owner","dependencies":["WP1","WP2"],"rationale":"Preserves provenance and rollback integrity","lastReviewed":"2026-07-22"},
+    {"id":"DEC-006","description":"Reuse existing stock agent roles before proposing a Cross-Domain Market Context Analyst","status":"accepted","owner":"stock-governance-owner","dependencies":["WP10","WP11"],"rationale":"Avoids redundant role proliferation without evaluation evidence","lastReviewed":"2026-07-22"}
+  ]
+}

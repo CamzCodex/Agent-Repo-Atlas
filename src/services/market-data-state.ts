@@ -7,10 +7,21 @@ export interface MarketDataDeliveryState {
   /** State of the newest fetch invocation for this symbol set. */
   latestAttemptState: BreakerDataState;
   requestKey: string | null;
+  requestToken: MarketRequestToken | null;
+}
+
+export interface MarketRequestToken {
+  requestId: string;
+  requestKey: string;
+  invocationSequence: number;
+  startedAtMs: number;
+  completedAtMs: number | null;
+  state: BreakerDataState | null;
 }
 
 let arrayStates = new WeakMap<readonly MarketData[], MarketDataDeliveryState>();
-const latestAttemptByRequestKey = new Map<string, BreakerDataState>();
+const latestRequestByKey = new Map<string, MarketRequestToken>();
+let nextInvocationSequence = 0;
 const MAX_REQUEST_KEYS = 128;
 
 function copyState(state: BreakerDataState): BreakerDataState {
@@ -23,15 +34,55 @@ function requestKey(symbols: readonly string[]): string {
     .join(',');
 }
 
-function rememberLatestAttempt(key: string, state: BreakerDataState): void {
-  if (!key) return;
-  latestAttemptByRequestKey.delete(key);
-  latestAttemptByRequestKey.set(key, copyState(state));
-  while (latestAttemptByRequestKey.size > MAX_REQUEST_KEYS) {
-    const oldest = latestAttemptByRequestKey.keys().next().value;
+function copyRequestToken(token: MarketRequestToken): MarketRequestToken {
+  return {
+    ...token,
+    state: token.state ? copyState(token.state) : null,
+  };
+}
+
+function rememberLatestRequest(token: MarketRequestToken): void {
+  const current = latestRequestByKey.get(token.requestKey);
+  if (current && current.invocationSequence > token.invocationSequence) return;
+
+  latestRequestByKey.delete(token.requestKey);
+  latestRequestByKey.set(token.requestKey, copyRequestToken(token));
+  while (latestRequestByKey.size > MAX_REQUEST_KEYS) {
+    const oldest = latestRequestByKey.keys().next().value;
     if (oldest === undefined) break;
-    latestAttemptByRequestKey.delete(oldest);
+    latestRequestByKey.delete(oldest);
   }
+}
+
+export function beginMarketRequest(
+  symbols: readonly string[],
+  options: { requestId?: string; startedAtMs?: number } = {},
+): MarketRequestToken {
+  const invocationSequence = ++nextInvocationSequence;
+  const token: MarketRequestToken = {
+    requestId: options.requestId ?? `market-request-${invocationSequence}`,
+    requestKey: requestKey(symbols),
+    invocationSequence,
+    startedAtMs: options.startedAtMs ?? Date.now(),
+    completedAtMs: null,
+    state: null,
+  };
+  rememberLatestRequest(token);
+  return copyRequestToken(token);
+}
+
+export function completeMarketRequest(
+  token: MarketRequestToken,
+  state: BreakerDataState,
+  completedAtMs: number = Date.now(),
+): MarketRequestToken {
+  const completed: MarketRequestToken = {
+    ...token,
+    completedAtMs,
+    state: copyState(state),
+  };
+  rememberLatestRequest(completed);
+  return copyRequestToken(completed);
 }
 
 export function markMarketDataState(
@@ -40,6 +91,7 @@ export function markMarketDataState(
   options: {
     latestAttemptState?: BreakerDataState;
     requestSymbols?: readonly string[];
+    requestToken?: MarketRequestToken;
   } = {},
 ): void {
   const key = options.requestSymbols ? requestKey(options.requestSymbols) : '';
@@ -48,8 +100,8 @@ export function markMarketDataState(
     dataState: copyState(state),
     latestAttemptState: copyState(latestAttemptState),
     requestKey: key || null,
+    requestToken: options.requestToken ? copyRequestToken(options.requestToken) : null,
   });
-  rememberLatestAttempt(key, latestAttemptState);
 }
 
 /** Compatibility accessor for callers that only understand displayed-data state. */
@@ -69,25 +121,27 @@ export function getMarketDataDeliveryState(
     dataState: copyState(state.dataState),
     latestAttemptState: copyState(state.latestAttemptState),
     requestKey: state.requestKey,
+    requestToken: state.requestToken ? copyRequestToken(state.requestToken) : null,
   };
 }
 
-export function markLatestMarketRequestState(
+export function getLatestMarketRequestToken(
   symbols: readonly string[],
-  state: BreakerDataState,
-): void {
-  rememberLatestAttempt(requestKey(symbols), state);
+): MarketRequestToken | null {
+  const token = latestRequestByKey.get(requestKey(symbols));
+  return token ? copyRequestToken(token) : null;
 }
 
 export function getLatestMarketRequestState(
   symbols: readonly string[],
 ): BreakerDataState | null {
-  const state = latestAttemptByRequestKey.get(requestKey(symbols));
+  const state = latestRequestByKey.get(requestKey(symbols))?.state;
   return state ? copyState(state) : null;
 }
 
 /** Test-only reset for deterministic module-state isolation. */
 export function resetMarketDataStateForTests(): void {
   arrayStates = new WeakMap<readonly MarketData[], MarketDataDeliveryState>();
-  latestAttemptByRequestKey.clear();
+  latestRequestByKey.clear();
+  nextInvocationSequence = 0;
 }
