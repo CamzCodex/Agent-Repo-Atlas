@@ -35,6 +35,16 @@ export const AUSTRALIA_DESK_BASKET_LIMITATION =
 export type AustraliaDeskMarketSymbol = typeof AUSTRALIA_DESK_MARKET_SYMBOLS[number];
 export type AustraliaDeskResourceSymbol = typeof AUSTRALIA_DESK_RESOURCE_SYMBOLS[number];
 export type AustraliaDeskDataMode = BreakerDataMode | 'unknown';
+export type AustraliaSourceReviewStatus = 'current' | 'overdue' | 'future' | 'invalid';
+
+export interface AustraliaQuoteGroupStatus {
+  /** State associated with the observations currently displayed. */
+  dataMode: AustraliaDeskDataMode;
+  dataOffline: boolean;
+  /** State of the newest refresh attempt, even when older data is retained. */
+  latestAttemptMode: AustraliaDeskDataMode;
+  latestAttemptOffline: boolean;
+}
 
 export interface AustraliaDeskObservation {
   symbol: string;
@@ -49,9 +59,13 @@ export interface AustraliaDeskObservation {
 export interface AustraliaMarketDeskSnapshot {
   generatedAt: string;
   asxSourceCheckedAt: string;
+  asxSourceReviewAgeMs: number | null;
+  asxSourceReviewStatus: AustraliaSourceReviewStatus;
   asxStatus: AsxCashEquityStatus;
   asxStatusProvenance: FinanceObservationProvenanceAssessment;
   asxStatusProvenanceLabel: string;
+  marketGroupStatus: AustraliaQuoteGroupStatus;
+  resourceGroupStatus: AustraliaQuoteGroupStatus;
   markets: AustraliaDeskObservation[];
   resources: AustraliaDeskObservation[];
   missingSymbols: string[];
@@ -64,11 +78,18 @@ export interface AustraliaMarketDeskOptions {
   fetchedAt?: string | number | Date;
   marketFetchedAt?: string | number | Date;
   resourceFetchedAt?: string | number | Date;
+  /** Explicit state wins over WeakMap compatibility metadata. */
+  marketDataState?: BreakerDataState | null;
+  resourceDataState?: BreakerDataState | null;
+  marketLatestAttemptState?: BreakerDataState | null;
+  resourceLatestAttemptState?: BreakerDataState | null;
   quoteMaxAgeMs?: number;
 }
 
 const DEFAULT_QUOTE_MAX_AGE_MS = 15 * 60 * 1000;
 const ASX_SOURCE_REVIEW_MAX_AGE_MS = 90 * 24 * 60 * 60 * 1000;
+const ASX_SOURCE_FUTURE_TOLERANCE_MS = 5 * 60 * 1000;
+const MAX_SPARKLINE_POINTS = 256;
 
 const LABELS: Readonly<Record<AustraliaDeskMarketSymbol | AustraliaDeskResourceSymbol, string>> = {
   '^AXJO': 'S&P/ASX 200',
@@ -89,15 +110,18 @@ function normalizeQuote(quote: MarketData | undefined): MarketData | null {
   const price = quote.price;
   const change = quote.change;
   if (typeof price !== 'number' || !Number.isFinite(price) || price <= 0) return null;
+  const sparkline = Array.isArray(quote.sparkline)
+    ? quote.sparkline
+      .filter((value) => Number.isFinite(value) && value > 0)
+      .slice(-MAX_SPARKLINE_POINTS)
+    : undefined;
   return {
-    symbol: quote.symbol,
+    symbol: quote.symbol.trim(),
     name: quote.name,
     display: quote.display,
     price,
     change: typeof change === 'number' && Number.isFinite(change) ? change : null,
-    ...(Array.isArray(quote.sparkline)
-      ? { sparkline: quote.sparkline.filter((value) => Number.isFinite(value) && value > 0) }
-      : {}),
+    ...(sparkline ? { sparkline } : {}),
   };
 }
 
@@ -105,13 +129,11 @@ function buildQuoteObservation(
   symbol: AustraliaDeskMarketSymbol | AustraliaDeskResourceSymbol,
   quoteMap: ReadonlyMap<string, MarketData>,
   fetchedAt: string | number | Date | undefined,
-  dataState: BreakerDataState | null,
+  groupStatus: AustraliaQuoteGroupStatus,
   nowMs: number,
   quoteMaxAgeMs: number,
 ): AustraliaDeskObservation {
   const quote = normalizeQuote(quoteMap.get(symbol));
-  const dataMode: AustraliaDeskDataMode = dataState?.mode ?? 'unknown';
-  const offline = dataState?.offline ?? false;
   const provenance = assessFinanceObservationProvenance({
     provider: 'World Monitor market seed (Yahoo Finance path)',
     sourceClass: 'undocumented',
@@ -127,18 +149,24 @@ function buildQuoteObservation(
     notes: quote
       ? [
           'Current market API does not expose the upstream observation timestamp.',
-          `Breaker return mode: ${dataMode}${offline ? ' (offline)' : ''}.`,
+          `Displayed-value breaker mode: ${groupStatus.dataMode}${groupStatus.dataOffline ? ' (offline)' : ''}.`,
+          `Latest refresh-attempt mode: ${groupStatus.latestAttemptMode}${groupStatus.latestAttemptOffline ? ' (offline)' : ''}.`,
           'When present, freshness is based on the breaker retrieval/cache timestamp rather than exchange time.',
+          'Confidence is a heuristic policy label, not a calibrated probability.',
         ]
-      : ['Symbol is absent or carries a non-positive/invalid price in the current seeded cache.'],
+      : [
+          'Symbol is absent or carries a non-positive/invalid price in the current seeded cache.',
+          `Latest refresh-attempt mode: ${groupStatus.latestAttemptMode}${groupStatus.latestAttemptOffline ? ' (offline)' : ''}.`,
+          'Confidence is a heuristic policy label, not a calibrated probability.',
+        ],
   }, nowMs);
 
   return {
     symbol,
     label: LABELS[symbol],
     quote,
-    dataMode,
-    offline,
+    dataMode: groupStatus.dataMode,
+    offline: groupStatus.dataOffline,
     provenance,
     provenanceLabel: formatFinanceObservationProvenance(provenance),
   };
@@ -147,8 +175,13 @@ function buildQuoteObservation(
 function quoteMap(quotes: readonly MarketData[]): Map<string, MarketData> {
   const result = new Map<string, MarketData>();
   for (const quote of quotes) {
-    if (!quote || typeof quote.symbol !== 'string' || !quote.symbol) continue;
-    if (!result.has(quote.symbol)) result.set(quote.symbol, quote);
+    if (!quote || typeof quote.symbol !== 'string') continue;
+    const symbol = quote.symbol.trim();
+    if (!symbol) continue;
+    const existing = result.get(symbol);
+    if (!existing || (normalizeQuote(existing) === null && normalizeQuote(quote) !== null)) {
+      result.set(symbol, quote);
+    }
   }
   return result;
 }
@@ -159,12 +192,31 @@ function sourceCheckAgeMs(nowMs: number): number | null {
   return nowMs - checkedAtMs;
 }
 
+function sourceReviewStatus(ageMs: number | null): AustraliaSourceReviewStatus {
+  if (ageMs === null || !Number.isFinite(ageMs)) return 'invalid';
+  if (ageMs < -ASX_SOURCE_FUTURE_TOLERANCE_MS) return 'future';
+  if (ageMs > ASX_SOURCE_REVIEW_MAX_AGE_MS) return 'overdue';
+  return 'current';
+}
+
 function timestampFromState(
   state: BreakerDataState | null,
   compatibilityTimestamp: string | number | Date | undefined,
 ): string | number | Date | undefined {
   if (!state) return compatibilityTimestamp;
   return state.timestamp ?? undefined;
+}
+
+function groupStatus(
+  dataState: BreakerDataState | null,
+  latestAttemptState: BreakerDataState | null,
+): AustraliaQuoteGroupStatus {
+  return {
+    dataMode: dataState?.mode ?? 'unknown',
+    dataOffline: dataState?.offline ?? false,
+    latestAttemptMode: latestAttemptState?.mode ?? dataState?.mode ?? 'unknown',
+    latestAttemptOffline: latestAttemptState?.offline ?? dataState?.offline ?? false,
+  };
 }
 
 export function buildAustraliaMarketDeskSnapshot(
@@ -179,8 +231,12 @@ export function buildAustraliaMarketDeskSnapshot(
   const quoteMaxAgeMs = Number.isFinite(options.quoteMaxAgeMs)
     ? Math.max(0, options.quoteMaxAgeMs ?? DEFAULT_QUOTE_MAX_AGE_MS)
     : DEFAULT_QUOTE_MAX_AGE_MS;
-  const marketState = getMarketDataState(marketQuotes);
-  const resourceState = getMarketDataState(commodityQuotes);
+  const marketState = options.marketDataState ?? getMarketDataState(marketQuotes);
+  const resourceState = options.resourceDataState ?? getMarketDataState(commodityQuotes);
+  const marketAttemptState = options.marketLatestAttemptState ?? marketState;
+  const resourceAttemptState = options.resourceLatestAttemptState ?? resourceState;
+  const marketGroupStatus = groupStatus(marketState, marketAttemptState);
+  const resourceGroupStatus = groupStatus(resourceState, resourceAttemptState);
   const marketFetchedAt = timestampFromState(
     marketState,
     options.marketFetchedAt ?? options.fetchedAt,
@@ -206,6 +262,7 @@ export function buildAustraliaMarketDeskSnapshot(
       `Trading-hours and calendar sources last checked ${ASX_MARKET_HOURS_METADATA.sourceCheckedAt}.`,
       `Calendar source: ${ASX_MARKET_HOURS_METADATA.calendarSourceUrl}`,
       'The model evaluation time is not a live ASX schedule retrieval time.',
+      'Confidence is a heuristic policy label, not a calibrated probability.',
       asxStatus.calendarVerified
         ? 'The local calendar year is verified.'
         : 'The local weekday calendar year is not verified; status is intentionally unknown.',
@@ -215,21 +272,23 @@ export function buildAustraliaMarketDeskSnapshot(
   const marketsMap = quoteMap(marketQuotes);
   const resourcesMap = quoteMap(commodityQuotes);
   const markets = AUSTRALIA_DESK_MARKET_SYMBOLS.map((symbol) =>
-    buildQuoteObservation(symbol, marketsMap, marketFetchedAt, marketState, nowMs, quoteMaxAgeMs));
+    buildQuoteObservation(symbol, marketsMap, marketFetchedAt, marketGroupStatus, nowMs, quoteMaxAgeMs));
   const resources = AUSTRALIA_DESK_RESOURCE_SYMBOLS.map((symbol) =>
-    buildQuoteObservation(symbol, resourcesMap, resourceFetchedAt, resourceState, nowMs, quoteMaxAgeMs));
+    buildQuoteObservation(symbol, resourcesMap, resourceFetchedAt, resourceGroupStatus, nowMs, quoteMaxAgeMs));
   const missingSymbols = [...markets, ...resources]
     .filter((observation) => observation.quote === null)
     .map((observation) => observation.symbol);
 
+  const reviewAgeMs = sourceCheckAgeMs(nowMs);
+  const reviewStatus = sourceReviewStatus(reviewAgeMs);
   const warnings: string[] = [AUSTRALIA_DESK_BASKET_LIMITATION];
   if (!asxStatus.calendarVerified) warnings.push('ASX calendar year is unverified.');
-  const reviewAgeMs = sourceCheckAgeMs(nowMs);
-  if (reviewAgeMs !== null && reviewAgeMs > ASX_SOURCE_REVIEW_MAX_AGE_MS) {
+  if (reviewStatus === 'overdue') {
     warnings.push('ASX trading-hours/calendar sources are past the 90-day review interval.');
-  }
-  if (reviewAgeMs !== null && reviewAgeMs < -5 * 60 * 1000) {
+  } else if (reviewStatus === 'future') {
     warnings.push('ASX source-check date is future-dated relative to the model clock.');
+  } else if (reviewStatus === 'invalid') {
+    warnings.push('ASX source-check date could not be evaluated.');
   }
   if (missingSymbols.length > 0) warnings.push(`${missingSymbols.length} Australia-desk symbols are unavailable or invalid.`);
   if ([...markets, ...resources].some((observation) =>
@@ -240,9 +299,22 @@ export function buildAustraliaMarketDeskSnapshot(
     observation.provenance.flags.includes('missing-observed-at'))) {
     warnings.push('Quote observation time is unavailable; retrieval time is not exchange time.');
   }
-  if (marketState?.mode === 'cached') warnings.push('Australian equity observations are being served from cache.');
-  if (resourceState?.mode === 'cached') warnings.push('AUD/resource observations are being served from cache.');
-  if (marketState?.offline || resourceState?.offline) warnings.push('One or more market groups are using offline-mode data.');
+  if (marketGroupStatus.dataMode === 'cached') warnings.push('Australian equity observations are being served from cache.');
+  if (resourceGroupStatus.dataMode === 'cached') warnings.push('AUD/resource observations are being served from cache.');
+  if (marketGroupStatus.latestAttemptMode === 'unavailable' && markets.some((entry) => entry.quote !== null)) {
+    warnings.push('Latest Australian equity refresh is unavailable; displaying the last usable observations.');
+  }
+  if (resourceGroupStatus.latestAttemptMode === 'unavailable' && resources.some((entry) => entry.quote !== null)) {
+    warnings.push('Latest AUD/resource refresh is unavailable; displaying the last usable observations.');
+  }
+  if (
+    marketGroupStatus.dataOffline
+    || marketGroupStatus.latestAttemptOffline
+    || resourceGroupStatus.dataOffline
+    || resourceGroupStatus.latestAttemptOffline
+  ) {
+    warnings.push('One or more market groups are using offline-mode data.');
+  }
   if (markets.some((observation) => observation.provenance.freshness === 'stale')) {
     warnings.push('Australian equity observations are stale.');
   }
@@ -253,12 +325,16 @@ export function buildAustraliaMarketDeskSnapshot(
   return {
     generatedAt,
     asxSourceCheckedAt: ASX_MARKET_HOURS_METADATA.sourceCheckedAt,
+    asxSourceReviewAgeMs: reviewAgeMs,
+    asxSourceReviewStatus: reviewStatus,
     asxStatus,
     asxStatusProvenance,
     asxStatusProvenanceLabel: formatFinanceObservationProvenance(asxStatusProvenance),
+    marketGroupStatus,
+    resourceGroupStatus,
     markets,
     resources,
     missingSymbols,
-    warnings,
+    warnings: Array.from(new Set(warnings)),
   };
 }
