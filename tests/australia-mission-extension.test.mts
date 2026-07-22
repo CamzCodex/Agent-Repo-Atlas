@@ -4,6 +4,7 @@ import { describe, it } from 'node:test';
 import {
   CORE_MISSION_PRESETS,
   MISSION_PRESET_EXTENSIONS,
+  applyMissionPresetToState,
   getAvailableMissionPresets,
   getMissionPreset,
 } from '../src/services/mission-presets.ts';
@@ -40,6 +41,29 @@ describe('Australia mission extension registry', () => {
         `${variant} must not expose the Australia extension`,
       );
     }
+  });
+
+  it('accepts Australia only for the explicitly supported variants', () => {
+    for (const variant of ['full', 'finance']) {
+      assert.equal(
+        applyMissionPresetToState('australia-market-watch', {}, undefined, variant).preset.id,
+        'australia-market-watch',
+      );
+    }
+
+    for (const variant of ['tech', 'commodity', 'energy', 'happy']) {
+      assert.throws(
+        () => applyMissionPresetToState('australia-market-watch', {}, undefined, variant),
+        new RegExp(`Mission preset "australia-market-watch" is not available for variant "${variant}"`),
+      );
+    }
+  });
+
+  it('rejects an unknown preset clearly', () => {
+    assert.throws(
+      () => applyMissionPresetToState('not-a-real-preset' as never, {}, undefined, 'full'),
+      /Unknown mission preset: not-a-real-preset/,
+    );
   });
 
   it('does not auto-select US/crypto-specific context panels under the Australia label', () => {

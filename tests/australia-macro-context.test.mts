@@ -209,21 +209,24 @@ describe('Macro Tiles Australia mission wiring', () => {
     assert.match(macroPanelSource, /labels: Record<Tab, string> = \{ au: 'Australia', us: 'US', eu: 'Euro Area', cn: 'China' \}/);
   });
 
-  it('loads stock and commodity cards through the existing circuit-breaker services', () => {
+  it('loads quote cards through the market services with explicit breaker states', () => {
     assert.match(macroPanelSource, /fetchMultipleStocks\(marketDefinitions\)/);
     assert.match(macroPanelSource, /fetchCommodityQuotes\(resourceDefinitions\)/);
-    assert.match(macroPanelSource, /this\._australiaMarketFetchedAt = fetchedAt/);
-    assert.match(macroPanelSource, /this\._australiaResourceFetchedAt = fetchedAt/);
-    assert.match(macroPanelSource, /marketFetchedAt: this\._australiaMarketFetchedAt/);
-    assert.match(macroPanelSource, /resourceFetchedAt: this\._australiaResourceFetchedAt/);
+    assert.match(macroPanelSource, /_australiaMarketDataState/);
+    assert.match(macroPanelSource, /_australiaResourceDataState/);
+    assert.match(macroPanelSource, /_australiaMarketLatestAttemptState/);
+    assert.match(macroPanelSource, /_australiaResourceLatestAttemptState/);
+    assert.match(macroPanelSource, /marketDataState: this\._australiaMarketDataState/);
+    assert.match(macroPanelSource, /resourceDataState: this\._australiaResourceDataState/);
+    assert.doesNotMatch(macroPanelSource, /_australiaMarketFetchedAt/);
+    assert.doesNotMatch(macroPanelSource, /_australiaResourceFetchedAt/);
   });
 
   it('copies a typed read-only context envelope rather than scraping panel HTML', () => {
     assert.match(macroPanelSource, /buildAustraliaMarketContextExport\(this\._buildAustraliaSnapshot\(now\)\)/);
     assert.match(macroPanelSource, /serializeAustraliaMarketContextExport\(context\)/);
-    assert.match(macroPanelSource, /navigator\.clipboard\?\.writeText/);
-    assert.match(macroPanelSource, /navigator\.clipboard\.writeText\(text\)/);
-    assert.match(macroPanelSource, /finally \{\s*textarea\.remove\(\)/);
+    assert.match(macroPanelSource, /ClipboardCopyController/);
+    assert.match(macroPanelSource, /this\._clipboardCopy\.copy\(text, \{ signal: this\.signal \}\)/);
     assert.match(macroPanelSource, /data-australia-context-export/);
   });
 

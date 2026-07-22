@@ -66,6 +66,7 @@ function genericQuoteEvidence(nowMs: number, group: string): FinanceObservationP
     notes: [
       `${group} quotes have not produced a usable retrieval clock in this panel session.`,
       'The current market API does not expose the upstream observation timestamp.',
+      'Confidence is a heuristic policy label, not a calibrated probability.',
     ],
   }, nowMs);
 }
@@ -201,7 +202,9 @@ function observationTone(observation: AustraliaDeskObservation): string {
   if (observation.dataMode === 'cached' || observation.provenance.freshness === 'stale') return '#f39c12';
   if (observation.dataMode === 'unavailable' || observation.offline) return '#e67e22';
   if (observation.provenance.freshness === 'future' || observation.provenance.freshness === 'invalid') return '#e74c3c';
-  return observation.quote.change !== null && observation.quote.change >= 0 ? '#27ae60' : '#e74c3c';
+  const change = observation.quote.change;
+  if (change === null || !Number.isFinite(change) || change === 0) return 'var(--text-dim)';
+  return change > 0 ? '#27ae60' : '#e74c3c';
 }
 
 function freshnessBasisLabel(evidence: FinanceObservationProvenanceAssessment): string {
@@ -291,7 +294,7 @@ export function renderAustraliaMacroContext(
     ? `${observationSection('ASX benchmark & bellwethers', snapshot.markets)}${observationSection('AUD and resource transmission', snapshot.resources)}`
     : symbolSummary(model);
   const exportButton = snapshot
-    ? '<button type="button" data-australia-context-export style="border:1px solid var(--border);background:rgba(255,255,255,0.04);color:var(--text);border-radius:5px;padding:6px 8px;font-size:9px;font-weight:600;cursor:pointer;white-space:nowrap">Copy context JSON</button>'
+    ? '<button type="button" data-australia-context-export aria-label="Copy read-only Australia market context as JSON" title="Copies provenance-labelled research context; no trading instructions" style="border:1px solid var(--border);background:rgba(255,255,255,0.04);color:var(--text);border-radius:5px;padding:6px 8px;font-size:9px;font-weight:600;cursor:pointer;white-space:nowrap">Copy context JSON</button>'
     : '';
   const marketEvidenceLabel = snapshot
     ? groupEvidenceLabel(snapshot.markets, model.marketEvidenceLabel)
@@ -318,7 +321,7 @@ export function renderAustraliaMacroContext(
     ${observations}
 
     <div>
-      ${evidenceRow('Session', model.sessionEvidenceLabel, '#27ae60')}
+      ${evidenceRow('Session', model.sessionEvidenceLabel, model.statusTone)}
       ${evidenceRow('ASX basket', marketEvidenceLabel, '#f39c12')}
       ${evidenceRow('AUD/resources', resourceEvidenceLabel, '#f39c12')}
     </div>

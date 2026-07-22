@@ -5,6 +5,9 @@ import type {
   GetChinaMacroSnapshotResponse,
 } from '@/generated/client/worldmonitor/economic/v1/service_client';
 import type { MarketData } from '@/types';
+import type { BreakerDataState } from '@/utils/circuit-breaker';
+import { ClipboardCopyController } from '@/utils/clipboard';
+import { LatestRequestGate } from '@/utils/latest-request-gate';
 import { Panel } from './Panel';
 import { t } from '@/services/i18n';
 import { escapeHtml, unsafeRawHtml } from '@/utils/sanitize';
@@ -13,7 +16,11 @@ import type { GetEurostatCountryDataResponse } from '@/services/economic';
 import { getHydratedData } from '@/services/bootstrap';
 import { loadStoredMissionPreset } from '@/services/mission-presets';
 import { COMMODITIES, MARKET_SYMBOLS } from '@/config/markets';
-import { fetchCommodityQuotes, fetchMultipleStocks } from '@/services/market';
+import {
+  fetchCommodityQuotes,
+  fetchMultipleStocks,
+  type MarketFetchResult,
+} from '@/services/market';
 import {
   AUSTRALIA_DESK_MARKET_SYMBOLS,
   AUSTRALIA_DESK_RESOURCE_SYMBOLS,
@@ -51,6 +58,26 @@ interface MacroTile {
   neutral?: boolean;
   format: (v: number) => string;
   deltaFormat?: (v: number) => string;
+}
+
+const UNAVAILABLE_BREAKER_STATE: BreakerDataState = {
+  mode: 'unavailable',
+  timestamp: null,
+  offline: false,
+};
+
+function copyBreakerState(state: BreakerDataState | null | undefined): BreakerDataState {
+  return state ? { ...state } : { ...UNAVAILABLE_BREAKER_STATE };
+}
+
+function shouldReplaceDisplayedState(
+  current: BreakerDataState | null,
+  candidate: BreakerDataState,
+): boolean {
+  if (!current) return true;
+  if (candidate.timestamp === null) return current.timestamp === null;
+  if (current.timestamp === null) return true;
+  return candidate.timestamp >= current.timestamp;
 }
 
 function pctFmt(v: number): string {
@@ -220,7 +247,6 @@ const EU_CORE = ['DE', 'FR', 'IT', 'ES'];
 
 function fmtEuDate(d: string): string {
   if (!d) return '';
-  // YYYY-MM → "Jan 2026"; YYYY-QN stays as-is
   const parts = /^(\d{4})-(\d{2})$/.exec(d);
   if (parts) {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -265,8 +291,13 @@ export class MacroTilesPanel extends Panel {
   private _australiaMissionActive = false;
   private _australiaMarkets: MarketData[] = [];
   private _australiaResources: MarketData[] = [];
-  private _australiaMarketFetchedAt: Date | null = null;
-  private _australiaResourceFetchedAt: Date | null = null;
+  private _australiaMarketDataState: BreakerDataState | null = null;
+  private _australiaResourceDataState: BreakerDataState | null = null;
+  private _australiaMarketLatestAttemptState: BreakerDataState | null = null;
+  private _australiaResourceLatestAttemptState: BreakerDataState | null = null;
+  private _australiaLoadEpoch = 0;
+  private _macroFetchGate = new LatestRequestGate();
+  private _clipboardCopy = new ClipboardCopyController();
   private _asxClockTimer: ReturnType<typeof setInterval> | null = null;
   private _copyFeedbackTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -314,6 +345,8 @@ export class MacroTilesPanel extends Panel {
     const active = loadStoredMissionPreset()?.id === 'australia-market-watch';
     if (active === this._australiaMissionActive) return;
 
+    this._macroFetchGate.invalidate();
+    this._australiaLoadEpoch += 1;
     this._australiaMissionActive = active;
     if (active) {
       this._tab = 'au';
@@ -332,8 +365,40 @@ export class MacroTilesPanel extends Panel {
     }
   }
 
+  private _applyAustraliaResult(
+    group: 'market' | 'resource',
+    result: PromiseSettledResult<MarketFetchResult>,
+  ): void {
+    const fulfilled = result.status === 'fulfilled' ? result.value : null;
+    const latestAttemptState = fulfilled
+      ? copyBreakerState(fulfilled.latestAttemptState ?? fulfilled.dataState)
+      : copyBreakerState(null);
+
+    if (group === 'market') {
+      this._australiaMarketLatestAttemptState = latestAttemptState;
+    } else {
+      this._australiaResourceLatestAttemptState = latestAttemptState;
+    }
+    if (!fulfilled || fulfilled.data.length === 0) return;
+
+    const displayedState = copyBreakerState(fulfilled.dataState ?? fulfilled.latestAttemptState);
+    const currentState = group === 'market'
+      ? this._australiaMarketDataState
+      : this._australiaResourceDataState;
+    if (!shouldReplaceDisplayedState(currentState, displayedState)) return;
+
+    if (group === 'market') {
+      this._australiaMarkets = fulfilled.data;
+      this._australiaMarketDataState = displayedState;
+    } else {
+      this._australiaResources = fulfilled.data;
+      this._australiaResourceDataState = displayedState;
+    }
+  }
+
   private async _loadAustraliaQuotes(): Promise<void> {
-    if (!this._australiaMissionActive) return;
+    if (!this._australiaMissionActive || this.signal.aborted) return;
+    const epoch = ++this._australiaLoadEpoch;
 
     const marketSymbols = new Set<string>(AUSTRALIA_DESK_MARKET_SYMBOLS);
     const resourceSymbols = new Set<string>(AUSTRALIA_DESK_RESOURCE_SYMBOLS);
@@ -343,16 +408,14 @@ export class MacroTilesPanel extends Panel {
       fetchMultipleStocks(marketDefinitions),
       fetchCommodityQuotes(resourceDefinitions),
     ]);
-    const fetchedAt = new Date();
 
-    if (marketResult.status === 'fulfilled' && marketResult.value.data.length > 0) {
-      this._australiaMarkets = marketResult.value.data;
-      this._australiaMarketFetchedAt = fetchedAt;
-    }
-    if (resourceResult.status === 'fulfilled' && resourceResult.value.data.length > 0) {
-      this._australiaResources = resourceResult.value.data;
-      this._australiaResourceFetchedAt = fetchedAt;
-    }
+    if (
+      this.signal.aborted
+      || epoch !== this._australiaLoadEpoch
+      || !this._australiaMissionActive
+    ) return;
+    this._applyAustraliaResult('market', marketResult);
+    this._applyAustraliaResult('resource', resourceResult);
   }
 
   private _buildAustraliaSnapshot(now: Date): AustraliaMarketDeskSnapshot {
@@ -361,52 +424,38 @@ export class MacroTilesPanel extends Panel {
       this._australiaResources,
       {
         now,
-        marketFetchedAt: this._australiaMarketFetchedAt ?? undefined,
-        resourceFetchedAt: this._australiaResourceFetchedAt ?? undefined,
+        marketDataState: this._australiaMarketDataState,
+        resourceDataState: this._australiaResourceDataState,
+        marketLatestAttemptState: this._australiaMarketLatestAttemptState,
+        resourceLatestAttemptState: this._australiaResourceLatestAttemptState,
       },
     );
   }
 
   private async _copyAustraliaContext(button: HTMLButtonElement): Promise<void> {
+    if (button.disabled || this.signal.aborted) return;
+    button.disabled = true;
     const now = new Date();
     const context = buildAustraliaMarketContextExport(this._buildAustraliaSnapshot(now));
     const text = serializeAustraliaMarketContextExport(context);
-    let copied = false;
-
-    try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(text);
-        copied = true;
-      } else {
-        const textarea = document.createElement('textarea');
-        textarea.value = text;
-        textarea.readOnly = true;
-        textarea.style.position = 'fixed';
-        textarea.style.opacity = '0';
-        document.body.appendChild(textarea);
-        try {
-          textarea.select();
-          copied = document.execCommand('copy');
-        } finally {
-          textarea.remove();
-        }
-      }
-    } catch {
-      copied = false;
-    }
+    const copyResult = await this._clipboardCopy.copy(text, { signal: this.signal });
+    if (copyResult.status === 'cancelled') return;
+    const copied = copyResult.status === 'copied';
 
     button.textContent = copied ? 'Copied' : 'Copy failed';
-    button.disabled = true;
     if (this._copyFeedbackTimer) clearTimeout(this._copyFeedbackTimer);
     this._copyFeedbackTimer = setTimeout(() => {
       this._copyFeedbackTimer = null;
-      if (!button.isConnected) return;
+      if (!button.isConnected || this.signal.aborted) return;
       button.textContent = 'Copy context JSON';
       button.disabled = false;
     }, 1_500);
   }
 
   public override destroy(): void {
+    this._clipboardCopy.destroy();
+    this._macroFetchGate.invalidate();
+    this._australiaLoadEpoch += 1;
     if (this._asxClockTimer) {
       clearInterval(this._asxClockTimer);
       this._asxClockTimer = null;
@@ -420,6 +469,7 @@ export class MacroTilesPanel extends Panel {
 
   public async fetchData(): Promise<boolean> {
     this._syncAustraliaMission();
+    const fetchSequence = this._macroFetchGate.begin();
     this.showLoading();
     try {
       const client = await getEconomicClient();
@@ -435,6 +485,9 @@ export class MacroTilesPanel extends Panel {
         hydratedChina ?? client.getChinaMacroSnapshot({}),
         this._australiaMissionActive ? this._loadAustraliaQuotes() : Promise.resolve(),
       ]);
+
+      this._syncAustraliaMission();
+      if (this.signal.aborted || !this._macroFetchGate.isCurrent(fetchSequence)) return false;
 
       const results = fredResp.status === 'fulfilled' ? (fredResp.value.results ?? {}) : {};
       this._estrObs = results['ESTR']?.observations ?? [];
@@ -457,7 +510,7 @@ export class MacroTilesPanel extends Panel {
       ];
 
       const hasAustralia = this._australiaMissionActive;
-      const hasUs = this._usTiles.some(t => t.value !== null);
+      const hasUs = this._usTiles.some(tile => tile.value !== null);
       const hasEu = this._eurostat !== null;
       const hasChina = isChinaLaunchReady(this._china);
       if (!hasAustralia && !hasUs && !hasEu && !hasChina) {
@@ -471,6 +524,8 @@ export class MacroTilesPanel extends Panel {
       this._render();
       return true;
     } catch (e) {
+      this._syncAustraliaMission();
+      if (this.signal.aborted || !this._macroFetchGate.isCurrent(fetchSequence)) return false;
       if (this._australiaMissionActive) {
         this._hasData = true;
         this._tab = 'au';
@@ -555,7 +610,7 @@ export class MacroTilesPanel extends Panel {
       { id: 'eu-estr', label: '€STR (ECB Rate)', ...estr, lowerIsBetter: false, neutral: true, format: pctFmt },
     ];
 
-    if (!euTiles.some(t => t.value !== null)) {
+    if (!euTiles.some(tile => tile.value !== null)) {
       return '<div style="padding:8px;color:var(--text-dim);font-size:12px">Euro Area data unavailable</div>';
     }
 

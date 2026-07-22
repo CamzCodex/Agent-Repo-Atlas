@@ -13,7 +13,9 @@ describe('market fetch per-call data-state wiring', () => {
     assert.match(source, /latestAttemptState\?: BreakerDataState/);
     assert.match(source, /onDataState: \(state\) => \{ breakerState = state; \}/);
     assert.match(source, /const latestAttemptState = \{ \.\.\.breakerState \}/);
-    assert.match(source, /markLatestMarketRequestState\(/);
+    assert.match(source, /beginMarketRequest\(/);
+    assert.match(source, /completeMarketRequest\(/);
+    assert.doesNotMatch(source, /markLatestMarketRequestState\(/);
     assert.doesNotMatch(source, /stockBreaker\.getDataState\(\)/);
     assert.doesNotMatch(source, /commodityBreaker\.getDataState\(\)/);
   });

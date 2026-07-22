@@ -1,0 +1,13 @@
+{
+  "schemaVersion": "1.0.0",
+  "lastReviewed": "2026-07-22",
+  "datasets": [
+    {"id":"DS-AU-QUOTE-FALLBACK","description":"Seeded ASX index, BHP, CBA, CSL, AUD and resource quotes","status":"current-context-only","owner":"worldmonitor-market-data","dependencies":["WM-YAHOO-AU-001"],"coverage":"seeded-basket-not-universe","lastReviewed":"2026-07-22"},
+    {"id":"DS-ASX-CALENDAR-2026","description":"Verified 2026 ASX cash-market session calendar","status":"current","owner":"worldmonitor-provider-owner","dependencies":["WM-ASX-CAL-001"],"coverage":"2026-only","lastReviewed":"2026-07-22"},
+    {"id":"DS-AU-MACRO","description":"CPI, labour, wages, spending, rates, FX, credit and lending observations","status":"planned","owner":"australia-data-owner","dependencies":["WM-ABS-001","WM-RBA-001"],"coverage":"not-implemented","lastReviewed":"2026-07-22"},
+    {"id":"DS-AU-BANKING","description":"ADI capital, liquidity, mortgage and property exposure","status":"planned","owner":"australia-data-owner","dependencies":["WM-APRA-001"],"coverage":"not-implemented","lastReviewed":"2026-07-22"},
+    {"id":"DS-AU-ENERGY","description":"AEMO prices, demand, mix, renewable penetration and interconnectors","status":"planned","owner":"energy-data-owner","dependencies":["WM-AEMO-001"],"coverage":"not-implemented","lastReviewed":"2026-07-22"},
+    {"id":"DS-ASX-REFERENCE-EVENTS","description":"Security master, membership, announcements, actions and trading status","status":"blocked-rights","owner":"licensed-market-data-owner","dependencies":["WM-ASX-LIC-001"],"coverage":"not-procured","lastReviewed":"2026-07-22"},
+    {"id":"DS-ASX-BREADTH","description":"Point-in-time ASX breadth and contribution measures","status":"blocked-prerequisites","owner":"licensed-market-data-owner","dependencies":["DS-ASX-REFERENCE-EVENTS"],"coverage":"must-publish-coverage-and-exclusions","lastReviewed":"2026-07-22"}
+  ]
+}
