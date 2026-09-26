@@ -1,0 +1,10 @@
+{
+  "repository": "koala73/worldmonitor",
+  "ref": "main",
+  "commit": "567b189acc063521818e1d0e2a55483a194508a4",
+  "tree": "2cda6cc04ea04bd0d8fc60ccaa2addaf996921ee",
+  "commitDate": "2026-09-26T09:56:09+02:00",
+  "relocatedWorkflowFiles": 49,
+  "workflowRestoreFrom": ".github/upstream-workflows-disabled",
+  "workflowRestoreTo": ".github/workflows"
+}
